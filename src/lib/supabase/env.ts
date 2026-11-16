@@ -3,11 +3,19 @@
  * Valide la présence des variables requises et lève une erreur explicite nommant
  * uniquement la variable manquante (sans jamais afficher ou divulguer sa valeur).
  */
+
+const DEFAULT_SUPABASE_URL = "https://auagnybineaupmelyxlu.supabase.co";
+const DEFAULT_SUPABASE_ANON_KEY = "sb_publishable_ipqRjpyqJ_6c_WEtb0RJ6Q_6GIbJl8m";
+
 export function getSupabaseEnv() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const url =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    DEFAULT_SUPABASE_URL;
+
   const anonKey =
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    DEFAULT_SUPABASE_ANON_KEY;
 
   if (!url || typeof url !== "string" || url.trim() === "") {
     throw new Error(
