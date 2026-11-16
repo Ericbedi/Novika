@@ -19,6 +19,7 @@ import {
 import { checkEmailAddress, validatePassword } from "@/lib/email-security";
 import { getSortedAfricanCountries, AfricanCountryConfig } from "@/config/countries";
 import { CountryFlag } from "@/components/ui/country-flag";
+import { SearchableCountrySelect } from "@/components/ui/searchable-country-select";
 import { Logo } from "@/components/brand/logo";
 import { cn } from "@/lib/utils";
 
@@ -274,22 +275,14 @@ export function SignupClient() {
                     54 pays d'Afrique disponibles
                   </span>
                 </label>
-                <div className="relative flex items-center">
-                  <div className="absolute left-3 pointer-events-none flex items-center">
-                    <CountryFlag code={selectedCountry} className="h-4 w-5 rounded-xs object-cover shadow-2xs" />
-                  </div>
-                  <select
-                    value={selectedCountry}
-                    onChange={(e) => handleCountryChange(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2.5 text-xs rounded-xl border border-black/[0.1] bg-white text-[#111111] font-semibold focus:outline-none focus:ring-2 focus:ring-black/[0.12]"
-                  >
-                    {ALL_54_COUNTRIES.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.name} ({c.dialCode}) — {c.currency}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <SearchableCountrySelect
+                  id="signup-country-select"
+                  selectedCountryCode={selectedCountry}
+                  onSelectCountry={(country) => {
+                    setSelectedCountry(country.code);
+                    setPhonePrefix(country.dialCode);
+                  }}
+                />
               </div>
 
               <div>

@@ -11,7 +11,6 @@ import {
   ArrowRight,
   RotateCw,
   Sparkles,
-  KeyRound,
 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { cn } from "@/lib/utils";
@@ -28,18 +27,10 @@ export function VerifyEmailClient() {
   const [success, setSuccess] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(45);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
-  const [devCode, setDevCode] = useState<string | null>(null);
 
   useEffect(() => {
     const effectiveEmail = urlEmail || (typeof window !== "undefined" ? sessionStorage.getItem("novika_pending_email") : null) || "contact@maboutique.com";
     setEmail(effectiveEmail);
-
-    if (typeof window !== "undefined") {
-      const storedDevCode = sessionStorage.getItem("novika_dev_verification_code");
-      if (storedDevCode) {
-        setDevCode(storedDevCode);
-      }
-    }
   }, [urlEmail]);
 
   // Masquage de l'e-mail (Ex: c•••••••@maboutique.com)
@@ -119,24 +110,10 @@ export function VerifyEmailClient() {
       const data = await res.json();
       setResendCooldown(60);
 
-      if (data.code) {
-        setDevCode(data.code);
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem("novika_dev_verification_code", data.code);
-        }
-      }
-
       setResendMessage("Un nouveau code a été envoyé à votre adresse e-mail.");
       setTimeout(() => setResendMessage(null), 5000);
     } catch {
       setError("Impossible d'envoyer un nouveau code. Veuillez réessayer.");
-    }
-  };
-
-  const handleAutoFillDevCode = () => {
-    if (devCode) {
-      setCode(devCode);
-      setError(null);
     }
   };
 
@@ -174,32 +151,20 @@ export function VerifyEmailClient() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Bannière de secours pour assistance test / démo */}
-              {devCode && (
-                <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-950 text-xs space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold flex items-center gap-1.5 text-amber-900">
-                      <KeyRound className="h-4 w-4 text-amber-700" />
-                      Code d'accès généré :
-                    </span>
-                    <span className="font-mono font-black text-base tracking-widest text-[#C2410C] bg-white px-2.5 py-0.5 rounded-lg border border-amber-300">
-                      {devCode}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between pt-1 border-t border-amber-200/60">
-                    <span className="text-[11px] text-amber-800">
-                      Si l'e-mail tarde dans vos spams :
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleAutoFillDevCode}
-                      className="px-2.5 py-1 rounded-lg bg-[#C2410C] text-white font-bold text-[11px] hover:bg-[#9A3412] transition-colors cursor-pointer"
-                    >
-                      Remplir automatiquement
-                    </button>
-                  </div>
+              {/* Notice d'information sur la réception de l'e-mail */}
+              <div className="p-3.5 rounded-2xl bg-[#FAF8F5] border border-black/[0.08] text-xs text-[#666660] space-y-1">
+                <div className="flex items-center gap-1.5 font-bold text-[#111111]">
+                  <Mail className="h-4 w-4 text-[#C2410C]" />
+                  <span>Vérifiez votre boîte de réception</span>
                 </div>
-              )}
+                <p className="text-[11px] leading-relaxed">
+                  Un e-mail contenant votre code de confirmation à 6 chiffres a été envoyé à{" "}
+                  <strong className="text-[#111111] font-mono">{maskedEmail}</strong>. Veuillez copier le code reçu dans votre boîte de messagerie et le coller ci-dessous.
+                </p>
+                <p className="text-[10px] text-[#888880] pt-0.5">
+                  💡 Astuce : Si vous ne voyez pas l'e-mail dans les 2 minutes, vérifiez vos dossiers <strong>Spams</strong> ou <strong>Courriers indésirables</strong>.
+                </p>
+              </div>
 
               <div>
                 <label className="block text-center text-xs font-bold text-[#666660] uppercase tracking-wider mb-2">

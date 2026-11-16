@@ -21,6 +21,7 @@ import { Logo } from "@/components/brand/logo";
 import { normalizeEmail } from "@/lib/email-canonical";
 import { getSortedAfricanCountries } from "@/config/countries";
 import { CountryFlag } from "@/components/ui/country-flag";
+import { SearchableCountrySelect } from "@/components/ui/searchable-country-select";
 
 const POPULAR_NICHES = [
   { id: "cosmetique", label: "Cosmétiques, Soins & Beauté", icon: "💄" },
@@ -255,22 +256,14 @@ export default function AccessRequestPage() {
                   <span>Pays d'activité (54 pays) *</span>
                   <span className="text-[10px] text-[#C2410C] font-semibold">{selectedCountry.currency}</span>
                 </label>
-                <div className="relative">
-                  <select
-                    value={selectedCountryCode}
-                    onChange={(e) => handleCountryChange(e.target.value)}
-                    className="w-full h-10 pl-9 pr-3 rounded-xl border border-black/[0.1] bg-[#FAF8F5] text-xs font-medium focus:bg-white focus:outline-hidden focus:border-black appearance-none cursor-pointer"
-                  >
-                    {africanCountries.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.name} ({c.dialCode} · {c.currency})
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <CountryFlag code={selectedCountryCode} width={18} height={12} />
-                  </div>
-                </div>
+                <SearchableCountrySelect
+                  id="access-country-select"
+                  selectedCountryCode={selectedCountryCode}
+                  onSelectCountry={(country) => {
+                    setSelectedCountryCode(country.code);
+                    setPhonePrefix(country.dialCode);
+                  }}
+                />
               </div>
 
               <div>

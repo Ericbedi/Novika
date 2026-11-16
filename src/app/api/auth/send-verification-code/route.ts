@@ -73,11 +73,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       email: normalizedEmail,
-      code: code, // Fourni pour assistance immédiate
       emailSentViaSupabase,
-      message: emailSentViaSupabase
-        ? "Un code de confirmation a été envoyé à votre adresse e-mail."
-        : "Code généré avec succès. Vérifiez votre boîte de réception ou utilisez le code de démonstration.",
+      message: "Un code de confirmation à 6 chiffres a été envoyé à votre adresse e-mail. Veuillez consulter votre boîte de réception.",
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Erreur serveur";
