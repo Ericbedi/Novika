@@ -239,6 +239,17 @@ export function VerifyEmailClient() {
                   </span>
                 </button>
               </div>
+
+              {/* Accès direct par mot de passe si retard e-mail */}
+              <div className="pt-3 border-t border-black/[0.06] text-center">
+                <Link
+                  href={`/connexion?email=${encodeURIComponent(email)}`}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-[#C2410C] hover:text-[#9A3412] hover:underline transition-colors"
+                >
+                  <span>E-mail non reçu ? Se connecter avec votre mot de passe</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
             </form>
           )}
 

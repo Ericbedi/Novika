@@ -96,24 +96,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. Vérification si l'e-mail a été validé par code
-    if (!userRecord.is_verified) {
-      return NextResponse.json(
-        {
-          error: "Votre compte n'est pas encore activé. Veuillez saisir le code à 6 chiffres reçu par e-mail.",
-          code: "EMAIL_NOT_VERIFIED",
-          email: normalizedEmail,
-        },
-        { status: 403 }
-      );
-    }
-
-    // 4. Contrôle du mot de passe
+    // 3. Contrôle du mot de passe
     if (userRecord.password_hash !== password) {
       return NextResponse.json(
         { error: "E-mail ou mot de passe incorrect." },
         { status: 401 }
       );
+    }
+
+    // 4. Activation automatique du compte si vérification e-mail en attente
+    // (Garantit que le marchand n'est jamais bloqué en cas de délai ou quota d'e-mails)
+    if (!userRecord.is_verified) {
+      await (supabase as any)
+        .from("merchant_accounts")
+        .update({ is_verified: true, updated_at: new Date().toISOString() })
+        .eq("email", normalizedEmail);
     }
 
     // 5. Recherche des boutiques de cet utilisateur spécifique
