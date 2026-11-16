@@ -307,11 +307,12 @@ export function OrderDetailClient({ storeSlug, orderNumber }: OrderDetailClientP
           <button
             type="button"
             id="order-send-tracking-btn"
+            aria-label="Lien de suivi client"
             onClick={() => setIsTrackingModalOpen(true)}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-xs font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-500/20 transition-all shadow-2xs cursor-pointer"
           >
             <MessageCircle className="h-3.5 w-3.5 text-emerald-600" />
-            <span>Envoyer le suivi</span>
+            <span>Lien de suivi client</span>
           </button>
           <button
             type="button"

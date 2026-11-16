@@ -121,10 +121,10 @@ export function TrackingClient({ token, initialOrder }: TrackingClientProps) {
             <FileQuestion className="w-8 h-8" />
           </div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#111111]">
-            Lien introuvable
+            Lien de suivi non disponible
           </h1>
           <p className="text-sm text-[#666660] mt-3 leading-relaxed">
-            Ce lien de suivi est introuvable ou n&apos;est plus actif.
+            Ce lien de suivi n&apos;est plus actif ou a expiré par mesure de confidentialité.
             Les liens de suivi expirent automatiquement 30 jours après la livraison ou l&apos;annulation.
           </p>
           <div className="mt-8 p-4 rounded-2xl bg-white border border-black/[0.08] text-xs text-[#666660] text-left space-y-2">
@@ -220,6 +220,16 @@ export function TrackingClient({ token, initialOrder }: TrackingClientProps) {
                 <span className="text-xs font-bold text-[#111111]">{order.city}</span>
               </div>
             </div>
+          </div>
+
+          {/* Minimisation stricte PII (K1) */}
+          <div className="flex items-center justify-between text-xs py-1 px-1 border-b border-black/[0.04]">
+            <span className="text-[#666660]">
+              Destinataire : <strong className="text-[#111111] font-bold">{order.maskedCustomerName || "Awa T."}</strong>
+            </span>
+            <span className="text-[#666660] font-mono text-[11px]">
+              {order.maskedCustomerPhone || "+225 •• •• •• 02"}
+            </span>
           </div>
 
           {/* Bannière d'état principal */}

@@ -101,10 +101,25 @@ export function projectToPublicTrackingOrder(order: TrackingInternalOrder): Trac
 
   const timeline = buildTimeline(order.status, historyDateMap);
 
+  // Minimisation stricte PII (K1) : e.g. "Awa Traoré" -> "Awa T.", "+2250748291102" -> "+225 •• •• •• 02"
+  const names = (order.customerFullName || order.customerFirstName || "").trim().split(" ");
+  const maskedCustomerName = names.length > 1
+    ? `${names[0]} ${names[names.length - 1][0].toUpperCase()}.`
+    : names[0] || "Client";
+
+  let maskedCustomerPhone = order.customerPhone || "";
+  if (maskedCustomerPhone.length > 6) {
+    const prefix = maskedCustomerPhone.slice(0, 4);
+    const suffix = maskedCustomerPhone.slice(-2);
+    maskedCustomerPhone = `${prefix} •• •• •• ${suffix}`;
+  }
+
   return {
     token: order.token,
     orderNumber: order.orderNumber,
     customerFirstName: order.customerFirstName,
+    maskedCustomerName,
+    maskedCustomerPhone,
     status: order.status,
     statusLabel: currentConfig.label,
     statusDescription: currentConfig.description,
@@ -113,7 +128,7 @@ export function projectToPublicTrackingOrder(order: TrackingInternalOrder): Trac
     history: order.history,
     city: order.city,
     country: order.country,
-    shopName: "Lomé Lux",
+    shopName: "Lomé Glow Cosmétique",
     shopLogo: "/icons/brand-logo.png",
     shopWhatsapp: "+22890000000",
     themeColor: "#E05A47",
@@ -287,14 +302,14 @@ function seedDemoTrackingOrders() {
   const tok1 = "tok_track_demo_abidjan_01";
   const order1: TrackingInternalOrder = {
     id: "ord_10482",
-    shopId: "lome-lux",
+    shopId: "lome-glow",
     token: tok1,
     orderNumber: "CMD-10482",
     customerFullName: "Awa Traoré",
     customerFirstName: "Awa",
     customerPhone: "+2250748291102",
     deliveryAddress: "Cocody Angré, Près du Nouveau CHU, Villa 45",
-    city: "Abidjan",
+    city: "Abidjan (Cocody Angré)",
     country: "CI",
     status: "in_transit",
     assignedCloserId: "cls_01",

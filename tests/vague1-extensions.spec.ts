@@ -172,8 +172,13 @@ test.describe("Vague 1 Extensions : K1 à K6 & Porte de Sécurité", () => {
   });
 
   test("K5: 5 Thèmes de vitrine validés et basculement 1-clic", async ({ page }) => {
-    await page.goto(`${BASE_URL}/app/lome-glow/boutique-en-ligne`);
+    await page.goto(`${BASE_URL}/app/lome-glow/boutique-en-ligne?tab=theme`);
     await page.waitForLoadState("networkidle");
+
+    const themeTab = page.locator("#tab-storefront-theme, button:has-text('Thème')").first();
+    if (await themeTab.isVisible()) {
+      await themeTab.click();
+    }
 
     // Vérifier les 5 thèmes prédéfinis
     await expect(page.getByText("Bannière Hero Impact").first()).toBeVisible();

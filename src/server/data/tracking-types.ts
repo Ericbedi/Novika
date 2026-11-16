@@ -73,7 +73,7 @@ export const TRACKING_STATUS_CONFIG: Record<
   },
   in_transit: {
     label: "En cours de livraison",
-    shortLabel: "En route",
+    shortLabel: "En livraison",
     description: "Le livreur est actuellement en route vers votre localité.",
     badgeVariant: "warning",
     isSpecial: false,
@@ -151,6 +151,8 @@ export interface TrackingPublicOrder {
   token: string;
   orderNumber: string;
   customerFirstName: string;
+  maskedCustomerName?: string;
+  maskedCustomerPhone?: string;
   status: TrackingStatus;
   statusLabel: string;
   statusDescription: string;
