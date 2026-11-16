@@ -10,7 +10,8 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test",
+    "test:e2e": "playwright test tests/smoke.spec.ts tests/vague1-extensions.spec.ts",
+    "test:e2e:all": "playwright test",
     "format": "prettier --write .",
     "check": "npm run lint && npm run typecheck && npm run test"
   },
