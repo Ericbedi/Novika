@@ -158,8 +158,10 @@ export function VerifyEmailClient() {
                   <span>Vérifiez votre boîte de réception</span>
                 </div>
                 <p className="text-[11px] leading-relaxed">
-                  Un e-mail contenant votre code de confirmation à 6 chiffres a été envoyé à{" "}
-                  <strong className="text-[#111111] font-mono">{maskedEmail}</strong>. Veuillez copier le code reçu dans votre boîte de messagerie et le coller ci-dessous.
+                  Un e-mail de confirmation a été envoyé à{" "}
+                  <strong className="text-[#111111] font-mono">{maskedEmail}</strong>. 
+                  Vous pouvez soit <strong>cliquer sur le bouton de confirmation</strong> dans votre e-mail (qui vous connectera directement), 
+                  soit <strong>saisir le code à 6 chiffres</strong> ci-dessous.
                 </p>
                 <p className="text-[10px] text-[#888880] pt-0.5">
                   💡 Astuce : Si vous ne voyez pas l'e-mail dans les 2 minutes, vérifiez vos dossiers <strong>Spams</strong> ou <strong>Courriers indésirables</strong>.

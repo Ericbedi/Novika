@@ -18,6 +18,25 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createClient();
 
+    // 0. Si le compte est déjà vérifié (ex: utilisateur ayant cliqué sur le lien de confirmation reçu par e-mail)
+    try {
+      const { data: existingAccount } = await (supabase as any)
+        .from("merchant_accounts")
+        .select("is_verified")
+        .eq("email", normalizedEmail)
+        .maybeSingle();
+
+      if (existingAccount?.is_verified) {
+        return NextResponse.json({
+          success: true,
+          source: "already_verified",
+          message: "Adresse e-mail confirmée avec succès.",
+        });
+      }
+    } catch {
+      // Poursuivre la vérification
+    }
+
     // 1. Tenter la validation via Supabase Auth
     try {
       const { data: authData, error: authError } = await supabase.auth.verifyOtp({

@@ -23,14 +23,28 @@ export async function POST(req: NextRequest) {
     try {
       const supabase = await createClient();
 
+      // Déterminer l'origine propre du client pour la redirection
+      const clientOrigin = req.headers.get("origin") || req.headers.get("referer") || "http://localhost:3000";
+      let originUrl = "http://localhost:3000";
+      try {
+        const parsed = new URL(clientOrigin);
+        originUrl = parsed.origin;
+      } catch {
+        originUrl = "http://localhost:3000";
+      }
+
+      const callbackUrl = `${originUrl}/auth/callback?email=${encodeURIComponent(normalizedEmail)}&next=${encodeURIComponent(`/connexion?email=${encodeURIComponent(normalizedEmail)}&verified=true`)}`;
+
       // 1. Tenter l'envoi de l'e-mail réel via Supabase Auth
       const { error: otpError } = await supabase.auth.signInWithOtp({
         email: normalizedEmail,
         options: {
+          emailRedirectTo: callbackUrl,
           data: {
             full_name: fullName || "",
             country: country || "TG",
             phone: phone || "",
+            verification_code: code,
           },
         },
       });
