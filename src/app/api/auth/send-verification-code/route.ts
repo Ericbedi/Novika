@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { email, fullName, country, phone, password } = body;
+    const { email, fullName, country, phone, password, niches } = body;
 
     if (!email || typeof email !== "string" || !email.includes("@")) {
       return NextResponse.json(
@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
             full_name: fullName || "Marchand Novika",
             phone: phone || null,
             country: country || "TG",
+            niches: Array.isArray(niches) ? niches : [],
             is_verified: false,
             role: "owner",
             updated_at: new Date().toISOString(),

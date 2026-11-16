@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Mail,
   Lock,
@@ -14,14 +14,24 @@ import {
   Clock,
   UserPlus,
   KeyRound,
+  CheckCircle2,
 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 
 export function LoginClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const urlEmail = searchParams.get("email");
+  const isJustVerified = searchParams.get("verified") === "true";
 
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(urlEmail || "");
   const [password, setPassword] = useState("");
+
+  useEffect(() => {
+    if (urlEmail) {
+      setEmail(urlEmail);
+    }
+  }, [urlEmail]);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -156,6 +166,17 @@ export function LoginClient() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-6 sm:px-10 rounded-3xl border border-black/[0.08] shadow-2xl space-y-6">
+          {/* Notification E-mail tout juste vérifié */}
+          {isJustVerified && (
+            <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex items-center gap-2.5">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+              <div>
+                <p className="font-bold">Votre adresse e-mail a été vérifiée avec succès !</p>
+                <p className="text-[11px] text-emerald-700">Veuillez saisir votre mot de passe pour vous connecter et créer votre boutique.</p>
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Champ E-mail */}
             <div>

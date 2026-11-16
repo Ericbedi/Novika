@@ -183,27 +183,49 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
   const [newMemberCountry, setNewMemberCountry] = useState<"BJ" | "CI" | "SN" | "TG">("TG");
   const [newMemberAgency, setNewMemberAgency] = useState("");
 
-  // Synchronisation de l'équipe avec le marchand connecté (désactivation du propriétaire démo)
+  // Synchronisation stricte de l'équipe du marchand connecté (AUCUNE donnée du fondateur démo)
   useEffect(() => {
     if (typeof window !== "undefined") {
       const userEmail = localStorage.getItem("novika_user_email");
       const userFullName = localStorage.getItem("novika_user_fullname") || (userEmail ? userEmail.split("@")[0] : null);
 
-      if (userEmail && userEmail !== "promises@afribuilder.com") {
-        setTeam((prev) => {
-          if (prev.some((m) => m.email === userEmail)) return prev;
-          const myOwnerMember: TeamMember = {
-            id: `tm_owner_${Date.now()}`,
-            name: userFullName || "Mon Compte Marchand",
-            email: userEmail,
-            phone: "+22890000000",
-            role: "owner",
-            country: "TG",
-            active: true,
-            joinedAt: new Date().toLocaleDateString("fr-FR"),
-          };
-          return [myOwnerMember, ...prev.map((m) => (m.id === "tm_01" || m.name.includes("Promises") ? { ...m, active: false } : m))];
-        });
+      if (userEmail && userEmail !== "demo@novika.com") {
+        const teamStorageKey = `novika_custom_team_${userEmail}`;
+        const savedCustomTeam = localStorage.getItem(teamStorageKey);
+
+        const myOwnerMember: TeamMember = {
+          id: `tm_owner_${userEmail.replace(/[^a-zA-Z0-9]/g, "_")}`,
+          name: userFullName || "Mon Compte Marchand",
+          email: userEmail,
+          phone: "+22890000000",
+          role: "owner",
+          country: "TG",
+          active: true,
+          joinedAt: new Date().toLocaleDateString("fr-FR"),
+        };
+
+        if (savedCustomTeam) {
+          try {
+            const parsed = JSON.parse(savedCustomTeam);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              // Filtrer tout résidu de membre démo
+              const sanitized = parsed.filter(
+                (m: any) =>
+                  !m.id?.startsWith("tm_0") &&
+                  !m.email?.includes("afribuilder.com") &&
+                  !m.name?.includes("Promises")
+              );
+              const hasOwner = sanitized.some((m: any) => m.email === userEmail);
+              const finalTeam = hasOwner ? sanitized : [myOwnerMember, ...sanitized];
+              setTeam(finalTeam);
+              return;
+            }
+          } catch {}
+        }
+
+        // Première visite du marchand : équipe propre contenant UNIQUEMENT lui-même
+        setTeam([myOwnerMember]);
+        localStorage.setItem(teamStorageKey, JSON.stringify([myOwnerMember]));
       }
     }
   }, []);
@@ -492,17 +514,27 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
     const newMember: TeamMember = {
       id: `tm_${Date.now()}`,
       name: newMemberName,
-      email: newMemberEmail || `${newMemberName.toLowerCase().replace(/\s+/g, ".")}@afribuilder.com`,
+      email: newMemberEmail || `${newMemberName.toLowerCase().replace(/\s+/g, ".")}@${storeSlug}.com`,
       phone: newMemberPhone || "+22890000000",
       role: newMemberRole,
       country: newMemberCountry,
       agencyName: newMemberAgency || (newMemberRole === "agency" ? newMemberName : undefined),
       active: true,
       joinedAt: new Date().toLocaleDateString("fr-FR"),
-      inviteLink: `https://afribuilder.com/join/${newMemberRole}_${token}`,
+      inviteLink: `https://novika.africa/invitation/${newMemberRole}_${token}`,
     };
 
-    setTeam((prev) => [...prev, newMember]);
+    setTeam((prev) => {
+      const updated = [...prev, newMember];
+      if (typeof window !== "undefined") {
+        const userEmail = localStorage.getItem("novika_user_email");
+        if (userEmail && userEmail !== "demo@novika.com") {
+          localStorage.setItem(`novika_custom_team_${userEmail}`, JSON.stringify(updated));
+        }
+      }
+      return updated;
+    });
+
     setShowAddMemberModal(false);
     setNewMemberName("");
     setNewMemberEmail("");
@@ -512,8 +544,8 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
   };
 
   const handleToggleMemberActive = (id: string) => {
-    setTeam((prev) =>
-      prev.map((m) => {
+    setTeam((prev) => {
+      const updated = prev.map((m) => {
         if (m.id === id) {
           const newStatus = !m.active;
           showToast(
@@ -524,20 +556,34 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
           return { ...m, active: newStatus };
         }
         return m;
-      })
-    );
+      });
+      if (typeof window !== "undefined") {
+        const userEmail = localStorage.getItem("novika_user_email");
+        if (userEmail && userEmail !== "demo@novika.com") {
+          localStorage.setItem(`novika_custom_team_${userEmail}`, JSON.stringify(updated));
+        }
+      }
+      return updated;
+    });
   };
 
   const handleChangeMemberRole = (id: string, newRole: UserRole) => {
-    setTeam((prev) =>
-      prev.map((m) => {
+    setTeam((prev) => {
+      const updated = prev.map((m) => {
         if (m.id === id) {
           showToast(`Rôle de ${m.name} modifié : ${USER_ROLE_LABELS[newRole]}`);
           return { ...m, role: newRole };
         }
         return m;
-      })
-    );
+      });
+      if (typeof window !== "undefined") {
+        const userEmail = localStorage.getItem("novika_user_email");
+        if (userEmail && userEmail !== "demo@novika.com") {
+          localStorage.setItem(`novika_custom_team_${userEmail}`, JSON.stringify(updated));
+        }
+      }
+      return updated;
+    });
   };
 
   const handleCopyInviteLink = (member: TeamMember) => {

@@ -93,17 +93,10 @@ export function VerifyEmailClient() {
 
       setSuccess(true);
 
-      // Enregistrer l'état de session vérifié
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem("novika_user_verified", "true");
-        window.localStorage.setItem("novika_user_email", email.trim().toLowerCase());
-        window.localStorage.setItem("novika_active_role", "owner");
-      }
-
-      // Redirection vers l'assistant de configuration ou tableau de bord
+      // Redirection automatique vers la page de connexion pour ressaisir l'e-mail et mot de passe
       setTimeout(() => {
-        router.push("/demarrer");
-      }, 1200);
+        router.push(`/connexion?email=${encodeURIComponent(email.trim().toLowerCase())}&verified=true`);
+      }, 1500);
     } catch (err: unknown) {
       setIsLoading(false);
       const msg = err instanceof Error ? err.message : "Erreur de connexion";
@@ -176,7 +169,7 @@ export function VerifyEmailClient() {
               </div>
               <h2 className="text-lg font-black text-[#111111]">E-mail vérifié avec succès !</h2>
               <p className="text-xs text-[#666660]">
-                Votre compte vendeur est maintenant activé. Redirection vers l'assistant de configuration...
+                Votre compte vendeur est activé. Redirection vers la page de connexion pour vous connecter...
               </p>
             </div>
           ) : (
