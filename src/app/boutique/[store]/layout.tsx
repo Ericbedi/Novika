@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, use } from "react";
+import React, { useState, use, Suspense } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
@@ -27,6 +27,23 @@ import { StorefrontPresencePing } from "@/components/storefront/storefront-prese
 import { MetaPixelRunner } from "@/components/storefront/meta-pixel-runner";
 import { CookieConsentBanner } from "@/components/storefront/cookie-consent-banner";
 
+function StorefrontPreviewBanner({ previewTokenValue }: { previewTokenValue?: string }) {
+  const searchParams = useSearchParams();
+  const previewToken = searchParams.get("preview_token");
+  const isPreviewMode = Boolean(previewToken && previewToken === previewTokenValue);
+
+  if (!isPreviewMode) return null;
+
+  return (
+    <div className="bg-amber-500 text-black px-4 py-2 text-center text-xs font-black flex items-center justify-center gap-2 shadow-sm z-50">
+      <Lock className="h-3.5 w-3.5" />
+      <span>
+        Mode Aperçu Privé (Brouillon non publié) — Lien confidentiel temporaire (Expire dans 72h)
+      </span>
+    </div>
+  );
+}
+
 export default function StorefrontLayout({
   children,
   params,
@@ -35,15 +52,10 @@ export default function StorefrontLayout({
   params: Promise<{ store: string }>;
 }) {
   const { store: storeSlug } = use(params);
-  const searchParams = useSearchParams();
   const pathname = usePathname();
 
   const store = MOCK_STORES.find((s) => s.slug === storeSlug) || MOCK_STORES[0];
   const storefront = MOCK_STOREFRONT_LOME;
-
-  // Détection du mode Aperçu Privé via jeton
-  const previewToken = searchParams.get("preview_token");
-  const isPreviewMode = Boolean(previewToken && previewToken === storefront.previewToken?.token);
 
   // Modal Signaler cette boutique
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -85,25 +97,13 @@ export default function StorefrontLayout({
         fontFamily: storefront.activeTheme.typography.fontFamily,
       }}
     >
-      {/* Balise noindex si en mode aperçu privé */}
-      {isPreviewMode && (
-        <head>
-          <meta name="robots" content="noindex, nofollow" />
-        </head>
-      )}
-
       {/* Télémétrie anonyme de présence en direct (sans cookie ni stockage d'IP) */}
       <StorefrontPresencePing storeSlug={storeSlug} />
 
-      {/* BANDEAU MODE APERÇU PRIVÉ SIGNÉ */}
-      {isPreviewMode && (
-        <div className="bg-amber-500 text-black px-4 py-2 text-center text-xs font-black flex items-center justify-center gap-2 shadow-sm z-50">
-          <Lock className="h-3.5 w-3.5" />
-          <span>
-            Mode Aperçu Privé (Brouillon non publié) — Lien confidentiel temporaire (Expire dans 72h)
-          </span>
-        </div>
-      )}
+      {/* BANDEAU MODE APERÇU PRIVÉ SIGNÉ (Isolé dans un Suspense boundary) */}
+      <Suspense fallback={null}>
+        <StorefrontPreviewBanner previewTokenValue={storefront.previewToken?.token} />
+      </Suspense>
 
       {/* BANDEAU D'ANNONCE DÉFILANT SUPÉRIEUR (Marquee CSS, avis vérifiés et garanties) */}
       <AnnouncementBanner

@@ -1,5 +1,7 @@
+"use client";
+
 import { Inbox, Wallet } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 import { CountryChip, InitialsAvatar, Panel, ProductThumb } from "@/components/app/bits";
 import { EmptyState } from "@/components/app/empty-state";
 import { KpiCard } from "@/components/app/kpi-card";
@@ -10,11 +12,9 @@ import { MeterList } from "@/components/charts/meter-list";
 import { Button } from "@/components/ui/button";
 import { ORDER_STATUSES } from "@/server/data/types";
 
-export const metadata = { title: "Composants" };
-
 /** Catalogue des composants (revue visuelle de la phase 1). */
-export default async function DevUiPage() {
-  const t = await getTranslations("devUi");
+export default function DevUiPage() {
+  const t = useTranslations("devUi");
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8">
       <div>
