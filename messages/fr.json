@@ -1,0 +1,45 @@
+{
+  "common": {
+    "appName": "AfriBuilder",
+    "dashboard": "Accueil",
+    "search": "Rechercher...",
+    "filter": "Filtrer",
+    "export": "Exporter",
+    "actions": "Actions",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "new": "Nouveau",
+    "close": "Fermer",
+    "loading": "Chargement...",
+    "empty": "Aucune donnée disponible"
+  },
+  "nav": {
+    "home": "Accueil",
+    "sales": "Ventes",
+    "orders": "Commandes",
+    "followups": "Relances",
+    "deliveries": "Livraisons",
+    "abandoned": "Commandes abandonnées",
+    "customers": "Clients",
+    "products": "Produits",
+    "stock": "Stock",
+    "collections": "Collections",
+    "store": "Boutique en ligne",
+    "finances": "Finances",
+    "stats": "Statistiques",
+    "settings": "Réglages"
+  },
+  "deliveries": {
+    "tabs": {
+      "board": "Tableau des livraisons",
+      "couriers": "Livreurs",
+      "zones": "Zones de livraison"
+    }
+  },
+  "devUi": {
+    "title": "Bibliothèque de composants",
+    "description": "Composants du back-office AfriBuilder"
+  }
+}

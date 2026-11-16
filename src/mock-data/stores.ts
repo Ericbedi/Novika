@@ -1,0 +1,57 @@
+import { Store } from "@/server/data/types";
+
+export const MOCK_STORES: Store[] = [
+  {
+    id: "store_tg_01",
+    name: "Lomé Glow Cosmétiques",
+    slug: "lome-glow",
+    country: "TG",
+    countryName: "Togo",
+    flag: "🇹🇬",
+    currency: "XOF",
+    whatsappNumber: "+22890123456",
+    role: "owner",
+  },
+  {
+    id: "store_ci_02",
+    name: "Abidjan Prestige Mode",
+    slug: "abidjan-prestige",
+    country: "CI",
+    countryName: "Côte d'Ivoire",
+    flag: "🇨🇮",
+    currency: "XOF",
+    whatsappNumber: "+2250708091011",
+    role: "owner",
+  },
+  {
+    id: "store_sn_03",
+    name: "Dakar Vital Santé",
+    slug: "dakar-vital",
+    country: "SN",
+    countryName: "Sénégal",
+    flag: "🇸🇳",
+    currency: "XOF",
+    whatsappNumber: "+221771234567",
+    role: "owner",
+  },
+  {
+    id: "store_bj_04",
+    name: "Cotonou Tech & Style",
+    slug: "cotonou-tech",
+    country: "BJ",
+    countryName: "Bénin",
+    flag: "🇧🇯",
+    currency: "XOF",
+    whatsappNumber: "+2290190123456",
+    role: "owner",
+  },
+];
+
+export const CURRENT_USER = {
+  id: "usr_owner_01",
+  name: "Promises Bedi",
+  email: "promises@afribuilder.africa",
+  avatar: "/avatars/promises.jpg",
+  initials: "PB",
+  defaultRole: "owner" as const,
+};

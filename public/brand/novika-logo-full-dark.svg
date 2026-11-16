@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" fill="none">
+  <rect width="44" height="44" y="2" rx="11" fill="#0B1521"/>
+  <path d="M12 36V14L23.5 28V14H32V36L20.5 22V36H12Z" fill="#F26522"/>
+  <circle cx="32" cy="14" r="2.5" fill="#4DB8B8"/>
+  <text x="56" y="32" font-family="system-ui, -apple-system, sans-serif" font-size="26" font-weight="800" fill="#FFFFFF" letter-spacing="-0.5">Novika</text>
+</svg>
