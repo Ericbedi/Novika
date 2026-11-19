@@ -12,7 +12,10 @@ import {
   Share2,
   ChevronRight,
   Package,
+  ShoppingBag,
+  Check,
 } from "lucide-react";
+import { addToCart, openCartDrawer } from "@/lib/cart-store";
 import { Product } from "@/server/data/types";
 import { QuantityOffer, OrderFormSettings, ShopGuarantee } from "@/server/data/product-page-types";
 import { CustomerReview } from "@/server/data/storefront-types";
@@ -56,6 +59,29 @@ export function NovikaProductPage({
 
   const [selectedPackQuantity, setSelectedPackQuantity] = useState<number>(1);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [addedToCartAnim, setAddedToCartAnim] = useState(false);
+
+  const handleAddToCart = () => {
+    const activeVar = (product.variants || []).find((v) => v.id === selectedVariantId);
+    const unitPrice = activeVar?.price || product.price || product.salePrice || 0;
+    const title = product.title || product.name || "Produit";
+    const image = product.images?.[0] || "";
+
+    addToCart(storeSlug, {
+      productId: product.id,
+      variantId: activeVar?.id,
+      name: title,
+      variantName: activeVar?.title || activeVar?.name,
+      image,
+      unitPrice,
+      quantity: selectedPackQuantity,
+      stock: realStock,
+    });
+
+    setAddedToCartAnim(true);
+    setTimeout(() => setAddedToCartAnim(false), 2000);
+    openCartDrawer(storeSlug);
+  };
 
   // Prix catalogue réel et prix de comparaison réel
   const activeVariant = (product.variants || []).find((v) => v.id === selectedVariantId);
@@ -280,6 +306,35 @@ export function NovikaProductPage({
               </div>
             </div>
           )}
+
+          {/* Action rapide : Ajouter au panier & Acheter maintenant (Prompt 12-b Phase 3) */}
+          <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              data-testid="btn-add-to-cart"
+              className="w-full sm:flex-1 min-h-[46px] px-4 py-2.5 rounded-2xl border-2 border-[#111111] bg-white hover:bg-[#FAF8F5] text-[#111111] text-xs font-black flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer active:scale-98"
+            >
+              {addedToCartAnim ? (
+                <>
+                  <Check className="w-4 h-4 text-emerald-600" />
+                  <span className="text-emerald-700">Ajouté au panier !</span>
+                </>
+              ) : (
+                <>
+                  <ShoppingBag className="w-4 h-4" />
+                  <span>Ajouter au panier</span>
+                </>
+              )}
+            </button>
+
+            <a
+              href="#cod-order-form"
+              className="w-full sm:flex-1 min-h-[46px] px-4 py-2.5 rounded-2xl bg-[#C2410C] hover:bg-[#a83609] text-white text-xs font-black flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer text-center"
+            >
+              <span>Acheter maintenant</span>
+            </a>
+          </div>
 
           {/* Formulaire de Commande COD Intégré (Prompt 05-F) */}
           <div id="cod-order-form" className="pt-2">

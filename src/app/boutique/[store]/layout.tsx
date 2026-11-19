@@ -32,6 +32,8 @@ import { StorefrontPresencePing } from "@/components/storefront/storefront-prese
 import { MetaPixelRunner } from "@/components/storefront/meta-pixel-runner";
 import { CookieConsentBanner } from "@/components/storefront/cookie-consent-banner";
 import { StorefrontAntiSpyShield } from "@/components/storefront/storefront-anti-spy-shield";
+import { HeaderCartButton } from "@/components/storefront/cart/HeaderCartButton";
+import { CartDrawer } from "@/components/storefront/cart/CartDrawer";
 
 function StorefrontPreviewBanner({ previewTokenValue }: { previewTokenValue?: string }) {
   const searchParams = useSearchParams();
@@ -217,6 +219,8 @@ export default function StorefrontLayout({
               storeCurrency={store.currency || "XOF"}
               defaultCountryCode={store.country || "TG"}
             />
+
+            <HeaderCartButton storeSlug={storeSlug} />
 
             <a
               href={`https://wa.me/${storefront.contact.whatsappNumber.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
@@ -470,6 +474,9 @@ export default function StorefrontLayout({
 
       {/* Bandeau de consentement aux cookies avec catégorie Marketing */}
       <CookieConsentBanner storeSlug={storeSlug} />
+
+      {/* Tiroir latéral du Panier Multi-Produits COD */}
+      <CartDrawer storeSlug={storeSlug} />
     </div>
   );
 }

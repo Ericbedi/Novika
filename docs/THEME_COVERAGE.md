@@ -125,4 +125,10 @@ Dernière mise à jour : 19 Novembre 2026 (Phase 1 & Phase 2)
 
 - [x] **Phase 1** : Réglages généraux du thème (Simple & Avancé), En-tête et Pied de page configurables, Sections d'accueil modulaires, Fiche produit COD avec `ProductImage` et 3 modèles de page, Page collection avec filtres et tri, Pages de contenu, 404 et Boutique en préparation, Mode Éditeur en direct.
 - [x] **Phase 2** : Recherche prédictive avancée, filtres multi-critères, formulaire de contact enrichi, inscription aux offres avec lien marketing (Prompt 09), Blog (articles, auteur, date, partage, produits associés COD), Sélecteur de pays multi-devises (zone monétaire partagée), Duplication et export JSON du thème, Traduction multilingue (FR / EN).
-- [ ] **Phase 3** *(optionnelle, sur demande)* : Panier multi-produits côté client avec formulaire COD unique.
+- [x] **Phase 3** : Panier multi-produits côté client avec formulaire COD unique.
+  - Store local réactif (`src/lib/cart-store.ts`) : stockage isolé par boutique (`novika_store_cart_{storeSlug}`), fallback mémoire, contrôle strict des stocks et réactivité `CustomEvent`.
+  - Tiroir latéral de panier (`src/components/storefront/cart/CartDrawer.tsx`) : tiroir coulissant slide-over accessible avec miniatures `ProductImage`, contrôles de quantité `[-] qty [+]`, suppression, sous-total et réassurance COD.
+  - Bouton panier avec badge dans l'en-tête (`src/components/storefront/cart/HeaderCartButton.tsx`) : compteur réactif en direct.
+  - Page dédiée Panier & Commande COD (`src/app/boutique/[store]/panier/page.tsx`) : récapitulatif des articles à gauche, formulaire unique COD à droite avec indicatifs des 54 pays africains, livraison gratuite 0 FCFA, validation de commande, vidage automatique du panier et confirmation avec suivi direct `/suivi/[token]` et contact WhatsApp.
+  - Intégration sur la fiche produit (`src/components/storefront/product/NovikaProductPage.tsx`) : bouton « Ajouter au panier » à côté de l'achat direct en 1 clic.
+  - API Backend multi-lignes (`src/app/api/orders/route.ts`) : insertion groupée dans `order_items` avec rétrocompatibilité commande unitaire.

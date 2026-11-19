@@ -68,10 +68,10 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/platform-admin");
 
   const isPrivateApi =
-    pathname.startsWith("/api/orders") ||
+    (pathname.startsWith("/api/orders") && request.method !== "POST") ||
     pathname.startsWith("/api/stores") ||
     pathname.startsWith("/api/scaling") ||
-    pathname.startsWith("/api/live");
+    (pathname.startsWith("/api/live") && request.method !== "POST");
 
   // 4. Si la route est privée
   if (isPrivatePage || isPrivateApi) {

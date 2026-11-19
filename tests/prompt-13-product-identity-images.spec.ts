@@ -19,6 +19,9 @@ test.describe("Prompt 13 : Identité des Produits, Image neutre de bout en bout 
     const count = await productLinks.count();
     expect(count).toBeGreaterThan(0);
 
+    // Attendre que les images distantes/locales se chargent ou déclenchent leur remplaçant neutre
+    await page.waitForTimeout(600);
+
     // Vérifier qu'il n'y a aucune image brisée dans le catalogue
     const brokenImages = await page.evaluate(() => {
       const imgs = Array.from(document.querySelectorAll("img"));
