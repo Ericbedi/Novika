@@ -162,6 +162,18 @@ export function getCountryByCode(code?: string): AfricanCountryConfig | undefine
 }
 
 /**
+ * Récupère tous les pays partageant STRICTEMENT la même devise officielle (Prompt 12-b & Règle monétaire).
+ * Ex: XOF -> 8 pays UEMOA (Bénin, Burkina, Côte d'Ivoire, Guinée-Bissau, Mali, Niger, Sénégal, Togo).
+ * Ex: XAF -> 6 pays CEMAC (Cameroun, Centrafrique, Congo, Gabon, Guinée Équatoriale, Tchad).
+ * Ex: GNF -> Guinée uniquement.
+ */
+export function getCountriesInSameCurrencyZone(currency?: string): AfricanCountryConfig[] {
+  if (!currency) return [];
+  const norm = currency.toUpperCase().trim();
+  return ALL_54_AFRICAN_COUNTRIES.filter((c) => c.currency.toUpperCase() === norm);
+}
+
+/**
  * Normalise une chaîne en retirant accents et majuscules pour recherche rapide
  */
 export function normalizeSearchString(str: string): string {

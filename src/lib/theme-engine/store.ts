@@ -9,7 +9,7 @@
  * - Contrôle d'accès : Seul l'administrateur / propriétaire peut modifier ou publier.
  */
 
-import { ShopTheme, ThemeAuditEntry, ThemeSection } from "./types";
+import { ShopTheme, ThemeAuditEntry, ThemeSection, ThemePage, ThemePageId } from "./types";
 import { createDefaultNewShopTheme, createLomeGlowDemoTheme } from "./default-theme";
 
 const THEME_STORAGE_PREFIX = "novika_shop_theme_";
@@ -179,6 +179,154 @@ export async function getThemeAuditHistory(shopId: string): Promise<ThemeAuditEn
   }
 
   return inMemoryHistory.get(shopId) || [];
+}
+
+/**
+ * Exporte les réglages et sections du thème sous forme de chaîne JSON sécurisée (Prompt 12-b Phase 2).
+ * Exclut toute donnée privée, PII, ou information client.
+ */
+export async function exportThemeToJson(shopId: string): Promise<string> {
+  const theme = await getShopTheme(shopId, { draft: false });
+  const exportPayload = {
+    schemaVersion: "1.0",
+    themePreset: theme.preset,
+    name: theme.name,
+    exportedAt: new Date().toISOString(),
+    generalSettings: theme.generalSettings,
+    pages: Object.values(theme.pages).map((p) => ({
+      pageId: p.pageId,
+      title: p.title,
+      sections: p.sections.map((s) => ({
+        type: s.type,
+        name: s.name,
+        isVisible: s.isVisible,
+        paletteId: s.paletteId,
+        order: s.order,
+        settings: s.settings,
+      })),
+    })),
+  };
+  return JSON.stringify(exportPayload, null, 2);
+}
+
+/**
+ * Importe un thème depuis un fichier JSON avec validation de structure (Prompt 12-b Phase 2).
+ */
+export async function importThemeFromJson(
+  shopId: string,
+  jsonString: string,
+  actorId: string = "admin"
+): Promise<{ success: boolean; theme?: ShopTheme; error?: string }> {
+  try {
+    const parsed = JSON.parse(jsonString);
+    if (!parsed.generalSettings || (!Array.isArray(parsed.pages) && typeof parsed.pages !== "object")) {
+      return { success: false, error: "Format de thème JSON invalide : 'generalSettings' ou 'pages' manquant." };
+    }
+
+    const currentTheme = await getShopTheme(shopId);
+    const newVersion = currentTheme.version + 1;
+
+    const pagesRecord: Record<ThemePageId, ThemePage> = { ...currentTheme.pages };
+
+    if (Array.isArray(parsed.pages)) {
+      for (const p of parsed.pages) {
+        if (p.pageId) {
+          const pageId = p.pageId as ThemePageId;
+          pagesRecord[pageId] = {
+            pageId,
+            title: p.title || p.pageId,
+            sections: (p.sections || []).map((s: any, idx: number) => ({
+              id: `sec_${Date.now()}_${idx}`,
+              type: s.type,
+              name: s.name || s.type,
+              isVisible: s.isVisible !== false,
+              paletteId: s.paletteId || "palette-1",
+              order: s.order !== undefined ? s.order : idx,
+              settings: s.settings || {},
+            })),
+          };
+        }
+      }
+    } else if (typeof parsed.pages === "object") {
+      Object.assign(pagesRecord, parsed.pages);
+    }
+
+    const importedTheme: ShopTheme = {
+      ...currentTheme,
+      id: `theme_${shopId}_v${newVersion}`,
+      shopId,
+      name: parsed.name || currentTheme.name,
+      preset: parsed.themePreset || currentTheme.preset,
+      version: newVersion,
+      isPublished: false,
+      publishedAt: currentTheme.publishedAt,
+      updatedAt: new Date().toISOString(),
+      generalSettings: parsed.generalSettings,
+      pages: pagesRecord,
+    };
+
+    const auditEntry: ThemeAuditEntry = {
+      id: `audit_${Date.now()}_import`,
+      shopId,
+      version: newVersion,
+      action: "update_draft",
+      actorId,
+      timestamp: new Date().toISOString(),
+      summary: "Import d'un thème complet depuis un fichier JSON",
+      snapshot: JSON.parse(JSON.stringify(importedTheme)),
+    };
+
+    persistTheme(shopId, importedTheme, auditEntry);
+    return { success: true, theme: importedTheme };
+  } catch (err: any) {
+    return { success: false, error: `Erreur lors de l'import JSON : ${err.message}` };
+  }
+}
+
+/**
+ * Duplique un thème existant d'une boutique vers une autre (Prompt 12-b Phase 2).
+ */
+export async function duplicateThemeToShop({
+  sourceShopId,
+  targetShopId,
+  actorId = "admin",
+}: {
+  sourceShopId: string;
+  targetShopId: string;
+  actorId?: string;
+}): Promise<{ success: boolean; theme?: ShopTheme; error?: string }> {
+  try {
+    const sourceTheme = await getShopTheme(sourceShopId);
+    const targetCurrent = await getShopTheme(targetShopId);
+    const newVersion = targetCurrent.version + 1;
+
+    const duplicatedTheme: ShopTheme = {
+      ...JSON.parse(JSON.stringify(sourceTheme)),
+      id: `theme_${targetShopId}_v${newVersion}`,
+      shopId: targetShopId,
+      name: `${sourceTheme.name} (Copie)`,
+      version: newVersion,
+      isPublished: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const auditEntry: ThemeAuditEntry = {
+      id: `audit_${Date.now()}_dup`,
+      shopId: targetShopId,
+      version: newVersion,
+      action: "update_draft",
+      actorId,
+      timestamp: new Date().toISOString(),
+      summary: `Duplication intégrale depuis la boutique ${sourceShopId}`,
+      snapshot: JSON.parse(JSON.stringify(duplicatedTheme)),
+    };
+
+    persistTheme(targetShopId, duplicatedTheme, auditEntry);
+    return { success: true, theme: duplicatedTheme };
+  } catch (err: any) {
+    return { success: false, error: `Échec de la duplication : ${err.message}` };
+  }
 }
 
 /**

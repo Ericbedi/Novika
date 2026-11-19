@@ -18,7 +18,9 @@ import {
   Lock,
   ChevronDown,
   ShoppingBag,
+  Search,
 } from "lucide-react";
+import { StorefrontCountrySelector } from "@/components/storefront/StorefrontCountrySelector";
 import { MOCK_STORES } from "@/mock-data/stores";
 import { MOCK_STOREFRONT_LOME } from "@/mock-data/storefront-data";
 import { MOCK_SHOP_BANNER_ITEMS } from "@/mock-data/product-page-data";
@@ -127,13 +129,14 @@ export default function StorefrontLayout({
     ...(!themeSettings.hideCatalog
       ? [{ label: "Catalogue", href: `/boutique/${storeSlug}/catalogue` }]
       : []),
+    { label: "Blog", href: `/boutique/${storeSlug}/blog` },
     { label: "Contact & Délais", href: `/boutique/${storeSlug}/contact` },
     { label: "À Propos", href: `/boutique/${storeSlug}/pages/a-propos` },
   ];
 
   return (
     <div
-      className="min-h-screen flex flex-col font-sans text-[#111111] antialiased selection:bg-emerald-100"
+      className="min-h-screen flex flex-col font-sans text-[#111111] antialiased selection:bg-emerald-100 overflow-x-clip"
       style={{
         backgroundColor: storefront.activeTheme.colors.background,
         fontFamily: storefront.activeTheme.typography.fontFamily,
@@ -161,20 +164,20 @@ export default function StorefrontLayout({
 
       {/* EN-TÊTE DE LA VITRINE */}
       <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-black/[0.08] shadow-2xs">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2 sm:gap-4">
           {/* Logo et Nom de la boutique */}
-          <Link href={`/boutique/${storeSlug}`} className="flex items-center gap-2.5 group">
+          <Link href={`/boutique/${storeSlug}`} className="flex items-center gap-2 group min-w-0 shrink">
             <div
-              className="h-9 w-9 rounded-xl flex items-center justify-center font-black text-white text-base shadow-sm group-hover:scale-105 transition-transform"
+              className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center font-black text-white text-sm sm:text-base shadow-sm group-hover:scale-105 transition-transform shrink-0"
               style={{ backgroundColor: storefront.activeTheme.colors.primary }}
             >
               {store.name.charAt(0)}
             </div>
-            <div>
-              <span className="font-black text-base sm:text-lg tracking-tight text-[#111111] block">
+            <div className="min-w-0">
+              <span className="font-black text-sm sm:text-lg tracking-tight text-[#111111] block truncate">
                 {store.name}
               </span>
-              <span className="text-[10px] font-semibold text-[#666660] block -mt-1">
+              <span className="hidden sm:block text-[10px] font-semibold text-[#666660] -mt-0.5 truncate">
                 Paiement à la livraison 100% Cash
               </span>
             </div>
@@ -199,12 +202,21 @@ export default function StorefrontLayout({
             </nav>
           )}
 
-          {/* Raccourcis WhatsApp & Pays */}
-          <div className="flex items-center gap-2.5">
-            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/[0.04] text-xs font-bold text-[#111111]">
-              <span>{store.flag}</span>
-              <span>{store.currency}</span>
-            </div>
+          {/* Raccourcis Recherche, Pays & WhatsApp */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+            <Link
+              href={`/boutique/${storeSlug}/recherche`}
+              className="p-1.5 sm:p-2 rounded-xl text-[#666660] hover:text-[#111111] hover:bg-black/[0.04] transition-colors shrink-0"
+              title="Recherche instantanée"
+            >
+              <Search className="h-4 w-4" />
+            </Link>
+
+            <StorefrontCountrySelector
+              storeSlug={storeSlug}
+              storeCurrency={store.currency || "XOF"}
+              defaultCountryCode={store.country || "TG"}
+            />
 
             <a
               href={`https://wa.me/${storefront.contact.whatsappNumber.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
@@ -212,7 +224,7 @@ export default function StorefrontLayout({
               )}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#25D366] text-white text-xs font-bold hover:bg-[#20bd5a] transition-all shadow-xs"
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-xl bg-[#25D366] text-white text-xs font-bold hover:bg-[#20bd5a] transition-all shadow-xs shrink-0"
             >
               <MessageCircle className="h-4 w-4" />
               <span className="hidden sm:inline">WhatsApp</span>

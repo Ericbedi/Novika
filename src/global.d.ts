@@ -2,7 +2,8 @@ import type messages from "../messages/fr.json";
 
 declare module "next-intl" {
   interface AppConfig {
-    Locale: "fr";
+    Locale: "fr" | "en";
     Messages: typeof messages;
   }
 }
+

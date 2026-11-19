@@ -94,7 +94,7 @@ describe("Prompt 12 : Moteur de Thème « Novika Classique »", () => {
       expect(result.success).toBe(true);
     });
 
-    it("vérifie que tous les 25 types de sections possèdent un schéma Zod enregistré", () => {
+    it("vérifie que tous les 26 types de sections possèdent un schéma Zod enregistré", () => {
       const expectedSections = [
         "announcement_bar",
         "header",
@@ -107,6 +107,7 @@ describe("Prompt 12 : Moteur de Thème « Novika Classique »", () => {
         "featured_collections",
         "featured_products",
         "featured_product",
+        "featured_blog_posts",
         "marquee",
         "reassurance",
         "verified_reviews",

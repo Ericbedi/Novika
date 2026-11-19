@@ -389,6 +389,19 @@ export const headerSchema = z.object({
 export type HeaderSettings = z.infer<typeof headerSchema>;
 
 // ============================================================================
+// 26. ARTICLES DE BLOG EN VEDETTE (Featured Blog Posts - Prompt 12-b Phase 2)
+// ============================================================================
+export const featuredBlogPostsSchema = z.object({
+  title: z.string().max(100).default("Nos Derniers Conseils & Articles"),
+  subtitle: z.string().max(200).default("Guides pratiques, santé naturelle et conseils d'utilisation."),
+  postCount: z.number().min(1).max(6).default(3),
+  limit: z.number().min(1).max(6).optional(),
+  showDate: z.boolean().default(true),
+  showAuthor: z.boolean().default(true),
+});
+export type FeaturedBlogPostsSettings = z.infer<typeof featuredBlogPostsSchema>;
+
+// ============================================================================
 // REGISTRE DE SCHÉMAS PAR TYPE DE SECTION
 // ============================================================================
 export const SECTION_SCHEMAS: Record<ThemeSectionType, z.ZodTypeAny> = {
@@ -403,6 +416,7 @@ export const SECTION_SCHEMAS: Record<ThemeSectionType, z.ZodTypeAny> = {
   featured_collections: featuredCollectionsSchema,
   featured_products: featuredProductsSchema,
   featured_product: featuredProductSchema,
+  featured_blog_posts: featuredBlogPostsSchema,
   marquee: marqueeSchema,
   reassurance: reassuranceSchema,
   verified_reviews: verifiedReviewsSchema,
@@ -513,6 +527,9 @@ export function isSectionEmpty(type: ThemeSectionType, settings: any): boolean {
     case "builder_block": {
       const blocks = settings.blocks || [];
       return blocks.length === 0 || blocks.every((b: any) => !b?.title?.trim() && !b?.content?.trim());
+    }
+    case "featured_blog_posts": {
+      return !settings.title?.trim() && !settings.subtitle?.trim();
     }
     case "header": {
       return false; // L'en-tête est toujours fonctionnel

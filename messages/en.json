@@ -1,0 +1,68 @@
+{
+  "common": {
+    "appName": "Novika",
+    "dashboard": "Dashboard",
+    "search": "Search...",
+    "filter": "Filter",
+    "export": "Export",
+    "actions": "Actions",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "new": "New",
+    "close": "Close",
+    "loading": "Loading...",
+    "empty": "No data available"
+  },
+  "nav": {
+    "home": "Home",
+    "sales": "Sales",
+    "orders": "Orders",
+    "followups": "Followups",
+    "deliveries": "Deliveries",
+    "abandoned": "Abandoned checkouts",
+    "customers": "Customers",
+    "products": "Products",
+    "stock": "Inventory",
+    "collections": "Collections",
+    "store": "Online store",
+    "finances": "Finances",
+    "stats": "Analytics",
+    "settings": "Settings"
+  },
+  "storefront": {
+    "home": "Home",
+    "catalog": "Catalog",
+    "contact": "Contact",
+    "blog": "Blog & Guides",
+    "search": "Search",
+    "cart": "Checkout",
+    "orderNow": "Order now",
+    "codReassurance": "Cash on delivery guaranteed",
+    "deliveryZone": "Delivery area",
+    "changeCountry": "Switch country",
+    "copyright": "All rights reserved."
+  },
+  "product": {
+    "inStock": "In stock",
+    "lowStock": "Low stock",
+    "outOfStock": "Out of stock",
+    "sale": "Sale",
+    "quantityPacks": "Bundles & Savings",
+    "description": "Product description",
+    "reviews": "Verified reviews",
+    "faq": "Frequently asked questions"
+  },
+  "deliveries": {
+    "tabs": {
+      "board": "Delivery board",
+      "couriers": "Riders",
+      "zones": "Delivery zones"
+    }
+  },
+  "devUi": {
+    "title": "Component library",
+    "description": "Novika back-office UI components"
+  }
+}

@@ -90,6 +90,7 @@ export type ThemeSectionType =
   | "featured_collections"
   | "featured_products"
   | "featured_product"
+  | "featured_blog_posts"
   | "marquee"
   | "reassurance"
   | "verified_reviews"

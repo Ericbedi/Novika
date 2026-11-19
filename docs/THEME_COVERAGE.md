@@ -1,7 +1,7 @@
 # Matrice de Couverture Complète — Thème Vitrine « Novika Classique »
 *(Conforme aux exigences des Prompts 12 et 12-b · 100% composants React + Tailwind originaux · 0 code tiers)*
 
-Dernière mise à jour : 19 Novembre 2026 (Phase 1)
+Dernière mise à jour : 19 Novembre 2026 (Phase 1 & Phase 2)
 
 ---
 
@@ -29,12 +29,15 @@ Dernière mise à jour : 19 Novembre 2026 (Phase 1)
 | **Champs de saisie** | Bordure, rayon d'arrondi, focus ring, ombre discrète | **FAIT** | Standardisé sur le formulaire COD et l'éditeur |
 | **Cartes produit** | Style standard ou carte avec padding, marge image, alignement texte, rayon, ombre | **FAIT** | `FeaturedProductsSection.tsx` et `catalogue/page.tsx` |
 | **Cartes de collection** | Ratio d'image (1:1, 4:3, 16:9), texte centré/gauche, ombre | **FAIT** | `FeaturedCollectionsSection.tsx` |
-| **Cartes d'articles de blog** | Ratio d'image, titre, extrait, auteur, date (Phase 2) | **EN COURS (Phase 2)** | Planifié pour la Phase 2 |
+| **Cartes d'articles de blog** | Ratio d'image, titre, extrait, auteur, date, temps de lecture, badges | **FAIT** | `FeaturedBlogPostsSection.tsx` & `/boutique/[store]/blog` |
 | **Conteneurs de texte & médias** | Bordures, arrondis et ombres des modales et drawers | **FAIT** | `ThemeSectionEditorModal` et tiroirs latéraux |
 | **Badges de statut** | Badges « Promo » (rose-600) et « Stock bas » (amber-500) basés sur le stock réel | **FAIT** | Calcul automatique sans faux décompte d'urgence |
 | **Informations de marque** | Accroche, description de la boutique, logo | **FAIT** | `FooterSection.tsx` et pied de page |
 | **Réseaux sociaux** | Liens Facebook, Instagram, YouTube, TikTok, X, WhatsApp, Snapchat, Pinterest | **FAIT** | `FooterSection.tsx` et en-tête |
-| **Recherche** | Recherche prédictive, affichage du prix et de la marque | **FAIT** | Command Palette & filtre catalogue temps-réel |
+| **Recherche prédictive** | Instantanée multi-entités (produits, blog, pages légales), prix, images et contact WhatsApp | **FAIT** | `/boutique/[store]/recherche` avec onglets et filtres |
+| **Sélecteur de pays & devises** | Choix restreint exclusivement aux pays partageant la même devise (XOF, XAF, GNF) | **FAIT** | `StorefrontCountrySelector.tsx` & `getCountriesInSameCurrencyZone` |
+| **Duplication & Export / Import** | Export JSON propre sans PII, validation Zod à l'import, duplication directe entre boutiques | **FAIT** | `exportThemeToJson`, `importThemeFromJson`, `duplicateThemeToShop`, API `/api/theme/export` & `/api/theme/import` |
+| **Traduction multilingue** | Système i18n prêt avec dictionnaires FR (défaut) et EN pour vitrine, catalogue, blog, recherche et panier | **FAIT** | `messages/fr.json`, `messages/en.json` et `src/i18n/request.ts` |
 | **Format de devise** | Affichage du code (FCFA, XOF, XAF, GNF, etc.), entiers stricts sans décimales pour XOF/XAF | **FAIT** | `formatFcfa` dans `src/lib/money.ts` |
 | **Récapitulatif de commande** | Remplace le panier traditionnel : affichage marque, note pour la commande, palette | **FAIT** | Formulaire COD direct 1-clic `StandardOrderForm.tsx` |
 
@@ -56,6 +59,7 @@ Dernière mise à jour : 19 Novembre 2026 (Phase 1)
 | **Collections en vedette** | `featured_collections` | **FAIT** | Masqué si aucune collection configurée. Grille avec ratio et colonnes |
 | **Produits en vedette** | `featured_products` | **FAIT** | Masqué si aucun produit. Badges « Promo » et « Stock bas » réels automatiques |
 | **Produit unique en vedette** | `featured_product` | **FAIT** | Zoom sur un article vedette avec formulaire COD intégré direct |
+| **Articles de blog en vedette** | `featured_blog_posts` | **FAIT** | Masqué si sans titre/sous-titre. 1 à 6 articles récents avec ratio d'image et liens directs |
 | **Bandeau défilant (Marquee)** | `marquee` | **FAIT** | Masqué si vide. Texte ou logos de confiance, vitesse, palette |
 | **Réassurance COD** | `reassurance` | **FAIT** | Masqué si vide. 3 à 4 blocs icône + titre + texte (Livraison rapide, Paiement après vérification) |
 | **Avis vérifiés** | `verified_reviews` | **FAIT** | Strictement réservé aux vraies commandes livrées en base (`isVerifiedBuyer === true`) |
@@ -95,6 +99,9 @@ Dernière mise à jour : 19 Novembre 2026 (Phase 1)
 | **Accueil boutique** | `/boutique/[store]` | **FAIT** | Vitrine pilotée par le moteur de thème et les sections ordonnées |
 | **Fiche produit** | `/boutique/[store]/produit/[id]` | **FAIT** | Fiche d'achat COD avec chargement par identifiant exact et 404 si introuvable |
 | **Page collection** | `/boutique/[store]/collection/[slug]` & `/catalogue` | **FAIT** | Bannière de collection, filtres (prix, stock, collection), tri |
+| **Recherche prédictive** | `/boutique/[store]/recherche` | **FAIT** | Recherche instantanée multi-entités (produits, articles de blog, pages) avec affichage direct des prix et contact WhatsApp |
+| **Blog boutique (Catalogue)** | `/boutique/[store]/blog` | **FAIT** | Liste des articles avec filtrage par tags, temps de lecture et métadonnées |
+| **Article de blog** | `/boutique/[store]/blog/[slug]` | **FAIT** | Article complet avec texte assaini, partage social et vitrine de produits associés pour conversion COD directe |
 | **Pages de contenu légal** | `/boutique/[store]/page/[slug]` | **FAIT** | CGV, Livraison & Retours, Confidentialité, Notre histoire, Contact |
 | **Page 404 Vitrine** | `src/app/not-found.tsx` & page 404 vitrine | **FAIT** | En français avec bouton de retour au catalogue ou à l'accueil |
 | **Page En préparation** | `/boutique/[store]/preparation` | **FAIT** | Remplace l'ancienne page de mot de passe Shopify |
@@ -117,5 +124,5 @@ Dernière mise à jour : 19 Novembre 2026 (Phase 1)
 ## F. Avancement par Phases
 
 - [x] **Phase 1** : Réglages généraux du thème (Simple & Avancé), En-tête et Pied de page configurables, Sections d'accueil modulaires, Fiche produit COD avec `ProductImage` et 3 modèles de page, Page collection avec filtres et tri, Pages de contenu, 404 et Boutique en préparation, Mode Éditeur en direct.
-- [ ] **Phase 2** : Recherche prédictive avancée, filtres multi-critères, formulaire de contact enrichi, inscription aux offres avec lien marketing (Prompt 09), Blog (articles, auteur, date, partage), Sélecteur de pays multi-devises, Duplication et export JSON du thème, Traduction multilingue (FR / EN).
+- [x] **Phase 2** : Recherche prédictive avancée, filtres multi-critères, formulaire de contact enrichi, inscription aux offres avec lien marketing (Prompt 09), Blog (articles, auteur, date, partage, produits associés COD), Sélecteur de pays multi-devises (zone monétaire partagée), Duplication et export JSON du thème, Traduction multilingue (FR / EN).
 - [ ] **Phase 3** *(optionnelle, sur demande)* : Panier multi-produits côté client avec formulaire COD unique.

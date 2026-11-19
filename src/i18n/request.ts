@@ -1,13 +1,17 @@
 import { getRequestConfig } from "next-intl/server";
-import messages from "../../messages/fr.json";
 
 /**
- * Une seule langue au lancement. On ne lit pas `requestLocale` :
- * aucune API d'exécution n'est touchée, les pages restent prérendues.
- * Pour ajouter une langue, renvoyer la locale de l'utilisateur ici.
+ * Configuration i18n internationale (Prompt 12-b Phase 2)
+ * Français (fr) par défaut, Anglais (en) en second.
  */
-export default getRequestConfig(async () => ({
-  locale: "fr",
-  messages,
-  timeZone: "Africa/Abidjan",
-}));
+export default getRequestConfig(async ({ requestLocale }) => {
+  const reqLocale = await requestLocale;
+  const locale: "fr" | "en" = reqLocale === "en" ? "en" : "fr";
+
+  return {
+    locale,
+    messages: (await import(`../../messages/${locale}.json`)).default,
+    timeZone: "Africa/Abidjan",
+  };
+});
+

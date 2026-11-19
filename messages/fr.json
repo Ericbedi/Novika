@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "AfriBuilder",
+    "appName": "Novika",
     "dashboard": "Accueil",
     "search": "Rechercher...",
     "filter": "Filtrer",
@@ -31,6 +31,29 @@
     "stats": "Statistiques",
     "settings": "Réglages"
   },
+  "storefront": {
+    "home": "Accueil",
+    "catalog": "Catalogue",
+    "contact": "Contact",
+    "blog": "Blog & Conseils",
+    "search": "Rechercher",
+    "cart": "Commande",
+    "orderNow": "Commander maintenant",
+    "codReassurance": "Paiement en espèces à la livraison",
+    "deliveryZone": "Zone de livraison",
+    "changeCountry": "Changer de pays",
+    "copyright": "Tous droits réservés."
+  },
+  "product": {
+    "inStock": "En stock",
+    "lowStock": "Stock bas",
+    "outOfStock": "Rupture de stock",
+    "sale": "Promo",
+    "quantityPacks": "Packs & Réductions",
+    "description": "Description du produit",
+    "reviews": "Avis vérifiés",
+    "faq": "Questions fréquentes"
+  },
   "deliveries": {
     "tabs": {
       "board": "Tableau des livraisons",
@@ -40,6 +63,6 @@
   },
   "devUi": {
     "title": "Bibliothèque de composants",
-    "description": "Composants du back-office AfriBuilder"
+    "description": "Composants du back-office Novika"
   }
 }

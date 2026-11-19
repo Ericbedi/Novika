@@ -27,6 +27,7 @@ import { FeaturedProductSection } from "./FeaturedProductSection";
 import { ContactFormSection } from "./ContactFormSection";
 import { NewsletterSignupSection } from "./NewsletterSignupSection";
 import { BuilderBlockSection } from "./BuilderBlockSection";
+import { FeaturedBlogPostsSection } from "./FeaturedBlogPostsSection";
 import { Product } from "@/server/data/types";
 import { CustomerReview } from "@/server/data/storefront-types";
 
@@ -299,6 +300,15 @@ export function ThemeSectionRenderer({
         <BuilderBlockSection
           settings={section.settings as any}
           palette={palette}
+          cardRadius={generalSettings.layout.cardRadius}
+        />
+      )}
+
+      {section.type === "featured_blog_posts" && (
+        <FeaturedBlogPostsSection
+          settings={section.settings as any}
+          palette={palette}
+          storeSlug={storeSlug}
           cardRadius={generalSettings.layout.cardRadius}
         />
       )}
