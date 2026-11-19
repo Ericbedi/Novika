@@ -8,6 +8,7 @@ import { FeaturedProductsSettings } from "@/lib/theme-engine/schemas";
 import { Product } from "@/server/data/types";
 import { formatFcfa } from "@/lib/money";
 import { cn } from "@/lib/utils";
+import { ProductImage } from "@/components/ui/ProductImage";
 
 interface FeaturedProductsSectionProps {
   settings: FeaturedProductsSettings;
@@ -104,54 +105,58 @@ export function FeaturedProductsSection({
           const isLowStock = showLowStockBadge && stock > 0 && stock <= 10;
           const productImg = (product.images && product.images[0]) || "/images/placeholder-product.png";
 
-          return (
-            <div
-              key={product.id}
-              className={cn(
-                "flex flex-col justify-between border overflow-hidden shadow-2xs hover:shadow-md transition-all group",
-                radiusClass
-              )}
-              style={{
-                backgroundColor: palette.cardBackground || palette.background,
-                color: palette.text,
-                borderColor: palette.borderColor || "transparent",
-              }}
-            >
-              <Link
-                href={`/boutique/${storeSlug}/produit/${product.id}`}
-                className="relative block aspect-square overflow-hidden bg-black/[0.03]"
+            const targetSlugOrId = product.slug || product.id;
+
+            return (
+              <div
+                key={product.id}
+                className={cn(
+                  "flex flex-col justify-between border overflow-hidden shadow-2xs hover:shadow-md transition-all group",
+                  radiusClass
+                )}
+                style={{
+                  backgroundColor: palette.cardBackground || palette.background,
+                  color: palette.text,
+                  borderColor: palette.borderColor || "transparent",
+                }}
               >
-                <img
-                  src={productImg}
-                  alt={product.title || product.name}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
+                <Link
+                  href={`/boutique/${storeSlug}/produit/${targetSlugOrId}`}
+                  className="relative block aspect-square overflow-hidden bg-black/[0.03]"
+                >
+                  <ProductImage
+                    src={productImg}
+                    alt={product.title || product.name}
+                    fill
+                    fallbackLabel={product.title || product.name}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
 
-                {/* Badges calculés automatiquement (Prompt 12) */}
-                <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
-                  {hasDiscount && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-black uppercase tracking-wider shadow-xs">
-                      <Flame className="w-2.5 h-2.5" />
-                      <span>Promo</span>
-                    </span>
-                  )}
-                  {isLowStock && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500 text-black text-[10px] font-black uppercase tracking-wider shadow-xs">
-                      <Clock className="w-2.5 h-2.5" />
-                      <span>Stock bas ({stock})</span>
-                    </span>
-                  )}
-                </div>
-              </Link>
+                  {/* Badges calculés automatiquement (Prompt 12) */}
+                  <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
+                    {hasDiscount && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-black uppercase tracking-wider shadow-xs">
+                        <Flame className="w-2.5 h-2.5" />
+                        <span>Promo</span>
+                      </span>
+                    )}
+                    {isLowStock && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500 text-black text-[10px] font-black uppercase tracking-wider shadow-xs">
+                        <Clock className="w-2.5 h-2.5" />
+                        <span>Stock bas ({stock})</span>
+                      </span>
+                    )}
+                  </div>
+                </Link>
 
-              <div className="p-3 sm:p-4 flex flex-col justify-between flex-1 space-y-3">
-                <div className="space-y-1">
-                  <Link
-                    href={`/boutique/${storeSlug}/produit/${product.id}`}
-                    className="block text-xs sm:text-sm font-black tracking-tight leading-snug line-clamp-2 hover:underline"
-                  >
-                    {product.title || product.name}
-                  </Link>
+                <div className="p-3 sm:p-4 flex flex-col justify-between flex-1 space-y-3">
+                  <div className="space-y-1">
+                    <Link
+                      href={`/boutique/${storeSlug}/produit/${targetSlugOrId}`}
+                      className="block text-xs sm:text-sm font-black tracking-tight leading-snug line-clamp-2 hover:underline"
+                    >
+                      {product.title || product.name}
+                    </Link>
                   {product.category && (
                     <p className="text-[10px] uppercase font-bold tracking-wider opacity-60">
                       {product.category}

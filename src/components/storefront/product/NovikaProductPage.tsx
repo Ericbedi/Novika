@@ -22,6 +22,7 @@ import { StickyMobileCta } from "./StickyMobileCta";
 import { StandardOrderForm } from "@/components/storefront/standard-order-form";
 import { sanitizeHtml } from "@/lib/html-sanitizer";
 import { formatFcfa } from "@/lib/money";
+import { ProductPageTemplateType } from "@/lib/theme-engine/types";
 import { cn } from "@/lib/utils";
 
 interface NovikaProductPageProps {
@@ -31,6 +32,7 @@ interface NovikaProductPageProps {
   reviews?: CustomerReview[];
   guarantees?: ShopGuarantee[];
   storeSlug: string;
+  template?: ProductPageTemplateType;
 }
 
 export function NovikaProductPage({
@@ -40,7 +42,14 @@ export function NovikaProductPage({
   reviews = [],
   guarantees = [],
   storeSlug,
+  template = "standard",
 }: NovikaProductPageProps) {
+  const activeTemplate: ProductPageTemplateType =
+    (product as any).pageTemplate || (product as any).template === "Page de vente longue"
+      ? "long_form"
+      : (product as any).template === "Minimal"
+      ? "minimal"
+      : template || "standard";
   const [selectedVariantId, setSelectedVariantId] = useState<string>(
     product.variants && product.variants.length > 0 ? product.variants[0].id : ""
   );
@@ -296,6 +305,94 @@ export function NovikaProductPage({
           )}
         </div>
       </div>
+
+      {/* Sections complémentaires pour le modèle "Page de vente longue" (Prompt 12-b Part C) */}
+      {activeTemplate === "long_form" && (
+        <div className="pt-12 border-t border-black/[0.08] space-y-12">
+          {/* Bloc de réassurance */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="p-5 rounded-2xl bg-white border border-black/[0.08] space-y-2 text-center shadow-2xs">
+              <Truck className="w-6 h-6 text-[#111111] mx-auto" />
+              <h4 className="text-xs font-black uppercase tracking-wider">Livraison Express Gratuite</h4>
+              <p className="text-[11px] text-[#666660]">Livré en 24h à 48h directement à votre domicile ou bureau.</p>
+            </div>
+            <div className="p-5 rounded-2xl bg-white border border-black/[0.08] space-y-2 text-center shadow-2xs">
+              <ShieldCheck className="w-6 h-6 text-[#111111] mx-auto" />
+              <h4 className="text-xs font-black uppercase tracking-wider">Paiement après vérification</h4>
+              <p className="text-[11px] text-[#666660]">Ouvrez le colis, inspectez votre commande, puis payez le livreur.</p>
+            </div>
+            <div className="p-5 rounded-2xl bg-white border border-black/[0.08] space-y-2 text-center shadow-2xs">
+              <CheckCircle2 className="w-6 h-6 text-[#111111] mx-auto" />
+              <h4 className="text-xs font-black uppercase tracking-wider">Garantie 100% Satisfait</h4>
+              <p className="text-[11px] text-[#666660]">Échange immédiat sans frais si le produit ne correspond pas.</p>
+            </div>
+          </div>
+
+          {/* Tableau comparatif honnête */}
+          <div className="p-6 sm:p-8 rounded-3xl bg-white border border-black/[0.08] space-y-6 shadow-2xs">
+            <h3 className="text-lg sm:text-xl font-black text-center text-[#111111] tracking-tight">
+              Pourquoi choisir notre produit authentique ?
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-black/[0.08]">
+                    <th className="py-3 px-3 font-bold text-[#888880]">Critère de comparaison</th>
+                    <th className="py-3 px-3 font-black text-[#111111] bg-emerald-50 rounded-t-xl text-center">
+                      Notre produit Novika
+                    </th>
+                    <th className="py-3 px-3 font-bold text-[#888880] text-center">Autres boutiques</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-black/[0.04]">
+                  <tr>
+                    <td className="py-3 px-3 font-semibold text-[#333330]">Qualité certifiée & traçabilité</td>
+                    <td className="py-3 px-3 text-center bg-emerald-50/50 font-black text-emerald-800">
+                      ✓ Oui (Certifié d'origine)
+                    </td>
+                    <td className="py-3 px-3 text-center text-[#888880]">✗ Imitation non garantie</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 px-3 font-semibold text-[#333330]">Paiement à la réception</td>
+                    <td className="py-3 px-3 text-center bg-emerald-50/50 font-black text-emerald-800">
+                      ✓ Espèces ou Mobile Money
+                    </td>
+                    <td className="py-3 px-3 text-center text-[#888880]">✓ Espèces</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 px-3 font-semibold text-[#333330]">Assistance WhatsApp locale</td>
+                    <td className="py-3 px-3 text-center bg-emerald-50/50 font-black text-emerald-800">
+                      ✓ Réponse en 15 minutes
+                    </td>
+                    <td className="py-3 px-3 text-center text-[#888880]">✗ Sans suivi après-vente</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* FAQ Accordion */}
+          <div className="p-6 sm:p-8 rounded-3xl bg-white border border-black/[0.08] space-y-4 shadow-2xs">
+            <h3 className="text-lg sm:text-xl font-black text-[#111111] tracking-tight">
+              Questions fréquentes
+            </h3>
+            <div className="space-y-3">
+              <div className="p-4 rounded-xl bg-[#FAF8F5] border border-black/[0.04] space-y-1">
+                <h4 className="text-xs font-black text-[#111111]">Comment fonctionne le paiement à la livraison ?</h4>
+                <p className="text-[11px] text-[#666660] leading-relaxed">
+                  Vous passez commande via le formulaire sans payer d'avance. Notre livreur vous contacte avant son passage. Vous vérifiez le produit et vous payez en espèces ou par Mobile Money.
+                </p>
+              </div>
+              <div className="p-4 rounded-xl bg-[#FAF8F5] border border-black/[0.04] space-y-1">
+                <h4 className="text-xs font-black text-[#111111]">Puis-je changer d'avis ?</h4>
+                <p className="text-[11px] text-[#666660] leading-relaxed">
+                  Oui, notre équipe de suivi vous appelle pour valider vos disponibilités et votre adresse. Vous pouvez confirmer ou annuler sans aucun frais.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bouton Sticky Mobile (iPhone 13, 390px) */}
       <StickyMobileCta

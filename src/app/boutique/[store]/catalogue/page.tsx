@@ -19,6 +19,7 @@ import { MOCK_STOREFRONT_LOME } from "@/mock-data/storefront-data";
 import { formatFcfa } from "@/lib/money";
 import { Product } from "@/server/data/types";
 import { Lock } from "lucide-react";
+import { ProductImage } from "@/components/ui/ProductImage";
 
 export default function CataloguePage({
   params,
@@ -259,6 +260,9 @@ export default function CataloguePage({
             const threshold = prod.lowStockThreshold ?? 5;
             const isLowStock = prod.stock > 0 && prod.stock <= threshold;
 
+            const prodTargetSlugOrId = prod.slug || prod.id;
+            const prodImageSrc = (prod.images && prod.images[0]) || (prod as any).image || "";
+
             return (
               <div
                 key={prod.id}
@@ -267,32 +271,34 @@ export default function CataloguePage({
                 <div className="space-y-3">
                   {/* Photo Produit & Badges */}
                   <Link
-                    href={`/boutique/${storeSlug}/produit/${prod.id}`}
+                    href={`/boutique/${storeSlug}/produit/${prodTargetSlugOrId}`}
                     className="relative block h-52 rounded-2xl bg-[#FAF8F5] overflow-hidden border border-black/[0.04]"
                   >
-                    <div className="absolute inset-0 flex items-center justify-center p-4 text-center">
-                      <span className="text-xs font-black text-[#111111] group-hover:scale-105 transition-transform">
-                        {prod.name}
-                      </span>
-                    </div>
+                    <ProductImage
+                      src={prodImageSrc}
+                      alt={prod.name}
+                      fill
+                      fallbackLabel={prod.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
 
                     {/* Badge Promo */}
                     {prod.compareAtPrice && !isOutOfStock && (
-                      <span className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-black shadow-xs">
+                      <span className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-black shadow-xs z-10">
                         Promo
                       </span>
                     )}
 
                     {/* Badge Stock Bas (basé sur le stock réel) */}
                     {isLowStock && (
-                      <span className="absolute top-2.5 right-2.5 px-2.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-black shadow-xs">
+                      <span className="absolute top-2.5 right-2.5 px-2.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-black shadow-xs z-10">
                         Stock Bas ({prod.stock} restant{prod.stock > 1 ? "s" : ""})
                       </span>
                     )}
 
                     {/* Badge Épuisé si rupture */}
                     {isOutOfStock && (
-                      <div className="absolute inset-0 bg-black/40 backdrop-blur-2xs flex items-center justify-center">
+                      <div className="absolute inset-0 bg-black/40 backdrop-blur-2xs flex items-center justify-center z-10">
                         <span className="px-3 py-1 rounded-full bg-[#111111] text-white text-xs font-black">
                           Épuisé
                         </span>
@@ -306,7 +312,7 @@ export default function CataloguePage({
                       {prod.category}
                     </span>
                     <Link
-                      href={`/boutique/${storeSlug}/produit/${prod.id}`}
+                      href={`/boutique/${storeSlug}/produit/${prodTargetSlugOrId}`}
                       className="text-xs sm:text-sm font-black text-[#111111] hover:text-emerald-700 transition-colors line-clamp-2 mt-0.5"
                     >
                       {prod.name}

@@ -20,6 +20,13 @@ import { DividerSection } from "./DividerSection";
 import { VideoSection } from "./VideoSection";
 import { WhatsAppBlockSection } from "./WhatsAppBlockSection";
 import { FooterSection } from "./FooterSection";
+import { SlideshowSection } from "./SlideshowSection";
+import { MultiLinesSection } from "./MultiLinesSection";
+import { ImageCollageSection } from "./ImageCollageSection";
+import { FeaturedProductSection } from "./FeaturedProductSection";
+import { ContactFormSection } from "./ContactFormSection";
+import { NewsletterSignupSection } from "./NewsletterSignupSection";
+import { BuilderBlockSection } from "./BuilderBlockSection";
 import { Product } from "@/server/data/types";
 import { CustomerReview } from "@/server/data/storefront-types";
 
@@ -232,6 +239,67 @@ export function ThemeSectionRenderer({
           palette={palette}
           cardRadius={generalSettings.layout.cardRadius}
           buttonRadius={generalSettings.layout.buttonRadius}
+        />
+      )}
+
+      {section.type === "slideshow" && (
+        <SlideshowSection
+          settings={section.settings as any}
+          palette={palette}
+          buttonRadius={generalSettings.layout.buttonRadius}
+        />
+      )}
+
+      {section.type === "multi_lines" && (
+        <MultiLinesSection
+          settings={section.settings as any}
+          palette={palette}
+          cardRadius={generalSettings.layout.cardRadius}
+        />
+      )}
+
+      {section.type === "image_collage" && (
+        <ImageCollageSection
+          settings={section.settings as any}
+          palette={palette}
+          cardRadius={generalSettings.layout.cardRadius}
+        />
+      )}
+
+      {section.type === "featured_product" && (
+        <FeaturedProductSection
+          settings={section.settings as any}
+          palette={palette}
+          products={products}
+          storeSlug={storeSlug}
+          cardRadius={generalSettings.layout.cardRadius}
+          buttonRadius={generalSettings.layout.buttonRadius}
+        />
+      )}
+
+      {section.type === "contact_form" && (
+        <ContactFormSection
+          settings={section.settings as any}
+          palette={palette}
+          cardRadius={generalSettings.layout.cardRadius}
+          buttonRadius={generalSettings.layout.buttonRadius}
+        />
+      )}
+
+      {section.type === "newsletter_signup" && (
+        <NewsletterSignupSection
+          settings={section.settings as any}
+          palette={palette}
+          cardRadius={generalSettings.layout.cardRadius}
+          buttonRadius={generalSettings.layout.buttonRadius}
+        />
+      )}
+
+      {section.type === "builder_block" && (
+        <BuilderBlockSection
+          settings={section.settings as any}
+          palette={palette}
+          cardRadius={generalSettings.layout.cardRadius}
         />
       )}
     </SectionWrapper>

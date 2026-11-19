@@ -271,15 +271,138 @@ export const footerSchema = z.object({
 export type FooterSettings = z.infer<typeof footerSchema>;
 
 // ============================================================================
+// 18. DIAPORAMA (Slideshow / Curseur d'images - Prompt 12-b)
+// ============================================================================
+export const slideItemSchema = z.object({
+  id: z.string().default(() => Math.random().toString(36).slice(2, 9)),
+  headline: z.string().max(80).default(""),
+  subheadline: z.string().max(160).optional().or(z.literal("")),
+  desktopImage: z.string().default(""),
+  mobileImage: z.string().optional().or(z.literal("")),
+  button1Label: z.string().max(30).optional().or(z.literal("")),
+  button1Url: z.string().max(200).optional().or(z.literal("")),
+  button2Label: z.string().max(30).optional().or(z.literal("")),
+  button2Url: z.string().max(200).optional().or(z.literal("")),
+  overlayOpacity: z.number().min(0).max(90).default(30),
+});
+
+export const slideshowSchema = z.object({
+  slides: z.array(slideItemSchema).min(1).max(5).default([]),
+  autoplaySpeed: z.number().min(3).max(10).default(5),
+  showArrows: z.boolean().default(true),
+});
+export type SlideshowSettings = z.infer<typeof slideshowSchema>;
+
+// ============================================================================
+// 19. MULTI-LIGNES (Multi-lines - Prompt 12-b)
+// ============================================================================
+export const multiLineItemSchema = z.object({
+  id: z.string().default(() => Math.random().toString(36).slice(2, 9)),
+  title: z.string().max(80).default(""),
+  text: z.string().max(400).default(""),
+  imageUrl: z.string().default(""),
+  imagePosition: z.enum(["left", "right"]).default("left"),
+});
+
+export const multiLinesSchema = z.object({
+  title: z.string().max(100).optional().or(z.literal("")),
+  lines: z.array(multiLineItemSchema).min(1).max(6).default([]),
+});
+export type MultiLinesSettings = z.infer<typeof multiLinesSchema>;
+
+// ============================================================================
+// 20. COLLAGE D'IMAGES (Image Collage - Prompt 12-b)
+// ============================================================================
+export const collageItemSchema = z.object({
+  id: z.string().default(() => Math.random().toString(36).slice(2, 9)),
+  imageUrl: z.string().default(""),
+  caption: z.string().max(80).optional().or(z.literal("")),
+  linkUrl: z.string().max(200).optional().or(z.literal("")),
+});
+
+export const imageCollageSchema = z.object({
+  title: z.string().max(100).optional().or(z.literal("")),
+  images: z.array(collageItemSchema).min(2).max(4).default([]),
+});
+export type ImageCollageSettings = z.infer<typeof imageCollageSchema>;
+
+// ============================================================================
+// 21. PRODUIT UNIQUE EN VEDETTE (Featured Product - Prompt 12-b)
+// ============================================================================
+export const featuredProductSchema = z.object({
+  productId: z.string().default(""),
+  showCodForm: z.boolean().default(true),
+  showReviews: z.boolean().default(true),
+});
+export type FeaturedProductSettings = z.infer<typeof featuredProductSchema>;
+
+// ============================================================================
+// 22. FORMULAIRE DE CONTACT (Contact Form - Prompt 12-b)
+// ============================================================================
+export const contactFormSchema = z.object({
+  title: z.string().max(100).default("Contactez-nous"),
+  subtitle: z.string().max(200).default("Notre équipe vous répond sous 24h ou immédiatement par WhatsApp."),
+  whatsappNumber: z.string().max(25).default(""),
+  recipientEmail: z.string().email().optional().or(z.literal("")),
+  openingHours: z.string().max(80).default("Lun - Sam : 08h00 - 18h30"),
+});
+export type ContactFormSettings = z.infer<typeof contactFormSchema>;
+
+// ============================================================================
+// 23. INSCRIPTION AUX OFFRES (Newsletter Signup - Prompt 12-b)
+// ============================================================================
+export const newsletterSignupSchema = z.object({
+  title: z.string().max(80).default("Offres exclusives & Ventes privées"),
+  subtitle: z.string().max(160).default("Recevez nos réductions WhatsApp avant tout le monde."),
+  buttonLabel: z.string().max(30).default("S'inscrire aux offres"),
+  consentText: z.string().max(200).default("En vous inscrivant, vous acceptez de recevoir nos offres promotionnelles par message. Désinscription possible en un clic."),
+});
+export type NewsletterSignupSettings = z.infer<typeof newsletterSignupSchema>;
+
+// ============================================================================
+// 24. CONSTRUCTEUR MODULAIRE (Builder Block - Prompt 12-b, ZÉRO HTML LIBRE)
+// ============================================================================
+export const builderBlockItemSchema = z.object({
+  id: z.string().default(() => Math.random().toString(36).slice(2, 9)),
+  type: z.enum(["text", "accordion", "image", "columns", "icon_text"]),
+  title: z.string().max(100).optional().or(z.literal("")),
+  content: z.string().max(1500).optional().or(z.literal("")),
+  imageUrl: z.string().optional().or(z.literal("")),
+});
+
+export const builderBlockSchema = z.object({
+  title: z.string().max(100).optional().or(z.literal("")),
+  blocks: z.array(builderBlockItemSchema).min(1).max(8).default([]),
+});
+export type BuilderBlockSettings = z.infer<typeof builderBlockSchema>;
+
+// ============================================================================
+// 25. EN-TÊTE DE VITRINE (Header - Prompt 12-b)
+// ============================================================================
+export const headerSchema = z.object({
+  logoPosition: z.enum(["left", "center"]).default("left"),
+  isSticky: z.boolean().default(true),
+  showSearch: z.boolean().default(true),
+  showWhatsAppButton: z.boolean().default(true),
+  showCountrySelector: z.boolean().default(false),
+});
+export type HeaderSettings = z.infer<typeof headerSchema>;
+
+// ============================================================================
 // REGISTRE DE SCHÉMAS PAR TYPE DE SECTION
 // ============================================================================
 export const SECTION_SCHEMAS: Record<ThemeSectionType, z.ZodTypeAny> = {
   announcement_bar: announcementBarSchema,
+  header: headerSchema,
   hero_banner: heroBannerSchema,
+  slideshow: slideshowSchema,
   image_with_text: imageWithTextSchema,
   multi_columns: multiColumnsSchema,
+  multi_lines: multiLinesSchema,
+  image_collage: imageCollageSchema,
   featured_collections: featuredCollectionsSchema,
   featured_products: featuredProductsSchema,
+  featured_product: featuredProductSchema,
   marquee: marqueeSchema,
   reassurance: reassuranceSchema,
   verified_reviews: verifiedReviewsSchema,
@@ -290,6 +413,9 @@ export const SECTION_SCHEMAS: Record<ThemeSectionType, z.ZodTypeAny> = {
   divider: dividerSchema,
   video: videoSchema,
   whatsapp_block: whatsappBlockSchema,
+  builder_block: builderBlockSchema,
+  contact_form: contactFormSchema,
+  newsletter_signup: newsletterSignupSchema,
   footer: footerSchema,
 };
 
@@ -362,6 +488,34 @@ export function isSectionEmpty(type: ThemeSectionType, settings: any): boolean {
     }
     case "footer": {
       return !settings.aboutText?.trim() && (!settings.links || settings.links.length === 0);
+    }
+    case "slideshow": {
+      const slides = settings.slides || [];
+      return slides.length === 0 || slides.every((s: any) => !s?.headline?.trim() && !s?.desktopImage?.trim());
+    }
+    case "multi_lines": {
+      const lines = settings.lines || [];
+      return lines.length === 0 || lines.every((l: any) => !l?.title?.trim() && !l?.text?.trim());
+    }
+    case "image_collage": {
+      const images = settings.images || [];
+      return images.length === 0 || images.every((img: any) => !img?.imageUrl?.trim());
+    }
+    case "featured_product": {
+      return !settings.productId?.trim();
+    }
+    case "contact_form": {
+      return !settings.whatsappNumber?.trim() && !settings.recipientEmail?.trim();
+    }
+    case "newsletter_signup": {
+      return !settings.title?.trim();
+    }
+    case "builder_block": {
+      const blocks = settings.blocks || [];
+      return blocks.length === 0 || blocks.every((b: any) => !b?.title?.trim() && !b?.content?.trim());
+    }
+    case "header": {
+      return false; // L'en-tête est toujours fonctionnel
     }
     default:
       return false;

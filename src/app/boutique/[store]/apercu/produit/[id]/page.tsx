@@ -15,6 +15,10 @@ import {
 import { buildProductThemePalette } from "@/lib/color-extractor";
 import { CodProductPageTemplate } from "@/components/storefront/cod-product-page-template";
 
+import { getProductByShopAndSlugOrId } from "@/lib/products-store";
+import { Product } from "@/server/data/types";
+import { NovikaProductPage } from "@/components/storefront/product/NovikaProductPage";
+
 export default function ProductPreviewPage({
   params,
 }: {
@@ -23,13 +27,23 @@ export default function ProductPreviewPage({
   const { store: storeSlug, id: productId } = use(params);
   const store = MOCK_STORES.find((s) => s.slug === storeSlug) || MOCK_STORES[0];
 
-  const targetId =
-    productId === "prod_coffee" ? "prod_01" : productId === "prod_serum" ? "prod_02" : productId;
+  // Récupérer le produit (allowDraft: true pour aperçu d'admin)
+  const [product, setProduct] = useState<Product | null>(() => {
+    return getProductByShopAndSlugOrId({
+      shopSlug: storeSlug,
+      slugOrId: productId,
+      allowDraft: true,
+    });
+  });
 
-  // Récupérer le produit (sans filtrer sur actif, car c'est un aperçu privé de brouillon)
-  const product =
-    MOCK_PRODUCTS.find((p) => p.id === targetId || p.slug === targetId) ||
-    MOCK_PRODUCTS[0];
+  useEffect(() => {
+    const loaded = getProductByShopAndSlugOrId({
+      shopSlug: storeSlug,
+      slugOrId: productId,
+      allowDraft: true,
+    });
+    setProduct(loaded);
+  }, [storeSlug, productId]);
 
   // Gestion de l'expiration du jeton (30 min)
   const [minutesRemaining, setMinutesRemaining] = useState(29);
@@ -40,6 +54,23 @@ export default function ProductPreviewPage({
     }, 60000);
     return () => clearInterval(timer);
   }, []);
+
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center p-6 text-center">
+        <div className="max-w-md space-y-3">
+          <h1 className="text-xl font-black text-[#111111]">Aperçu indisponible</h1>
+          <p className="text-xs text-[#666660]">Ce produit n'existe pas dans cette boutique.</p>
+          <Link
+            href={`/app/${storeSlug}/produits`}
+            className="inline-flex px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold"
+          >
+            Retour aux produits
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const productOffers = MOCK_QUANTITY_OFFERS.filter(
     (q) => q.productId === product.id || q.productId === "prod_coffee"

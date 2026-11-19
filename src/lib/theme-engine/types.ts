@@ -53,17 +53,43 @@ export interface ThemeGeneralSettings {
     buttonRadius: BorderRadiusOption;
     sectionSpacing: SectionSpacingOption;
     logoUrl?: string;
+    logoWidth?: number;
     faviconUrl?: string;
+  };
+  badges?: {
+    showDiscountBadge: boolean;
+    showLowStockBadge: boolean;
+    discountBadgeColor?: string;
+    lowStockBadgeColor?: string;
+  };
+  socialLinks?: {
+    facebook?: string;
+    instagram?: string;
+    tiktok?: string;
+    whatsapp?: string;
+    youtube?: string;
+    twitter?: string;
+    snapchat?: string;
+    pinterest?: string;
+  };
+  currency?: {
+    showCurrencyCode: boolean;
+    roundIntegersOnly: boolean;
   };
 }
 
 export type ThemeSectionType =
   | "announcement_bar"
+  | "header"
   | "hero_banner"
+  | "slideshow"
   | "image_with_text"
   | "multi_columns"
+  | "multi_lines"
+  | "image_collage"
   | "featured_collections"
   | "featured_products"
+  | "featured_product"
   | "marquee"
   | "reassurance"
   | "verified_reviews"
@@ -74,7 +100,12 @@ export type ThemeSectionType =
   | "divider"
   | "video"
   | "whatsapp_block"
+  | "builder_block"
+  | "contact_form"
+  | "newsletter_signup"
   | "footer";
+
+export type ProductPageTemplateType = "standard" | "long_form" | "minimal";
 
 export interface ThemeSection<T = Record<string, any>> {
   id: string;
