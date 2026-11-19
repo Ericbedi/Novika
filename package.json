@@ -10,7 +10,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test tests/smoke.spec.ts tests/vague1-extensions.spec.ts tests/prompt-06l-logout-auth.spec.ts tests/prompt-05rl-followups.spec.ts tests/prompt-11-shopify-csv-import.spec.ts",
+    "test:e2e": "playwright test tests/smoke.spec.ts tests/vague1-extensions.spec.ts tests/prompt-06l-logout-auth.spec.ts tests/prompt-05rl-followups.spec.ts tests/prompt-11-shopify-csv-import.spec.ts tests/prompt-12-novika-classic-theme.spec.ts",
     "test:e2e:all": "playwright test",
     "format": "prettier --write .",
     "check": "npm run lint && npm run typecheck && npm run test"

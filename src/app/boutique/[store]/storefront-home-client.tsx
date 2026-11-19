@@ -24,6 +24,10 @@ import { SectionEditorDrawer } from "@/components/storefront/storefront-section-
 import { PageSection } from "@/server/data/storefront-types";
 import { formatFcfa } from "@/lib/money";
 import { getLiveStoreOpenStatus, buildStoreWhatsAppLink } from "@/lib/storefront-security";
+import { getShopTheme, saveDraftTheme, publishTheme } from "@/lib/theme-engine/store";
+import { ShopTheme, ThemeSection, ThemeSectionType } from "@/lib/theme-engine/types";
+import { ThemeSectionRenderer } from "@/components/storefront/theme-sections/ThemeSectionRenderer";
+import { ThemeSectionEditorModal } from "@/components/storefront/theme-sections/ThemeSectionEditorModal";
 import { cn } from "@/lib/utils";
 
 interface StorefrontHomeClientProps {
@@ -39,6 +43,15 @@ export function StorefrontHomeClient({
   const [isOwner, setIsOwner] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingSection, setEditingSection] = useState<PageSection | null>(null);
+  const [shopTheme, setShopTheme] = useState<ShopTheme | null>(null);
+  const [editingThemeSection, setEditingThemeSection] = useState<ThemeSection | null>(null);
+
+  // Charger le thème moderne (Prompt 12)
+  useEffect(() => {
+    getShopTheme(storeSlug, { draft: isEditMode }).then((theme) => {
+      setShopTheme(theme);
+    });
+  }, [storeSlug, isEditMode]);
 
   // Détection sécurisée du rôle propriétaire côté client
   useEffect(() => {
@@ -63,13 +76,16 @@ export function StorefrontHomeClient({
   };
 
   // Bascule Publier / Dépublier la vitrine
-  const handleTogglePublish = () => {
+  const handleTogglePublish = async () => {
     const updatedStorefront = {
       ...storefront,
       isPublished: !storefront.isPublished,
     };
     if (typeof window !== "undefined") {
       localStorage.setItem(`novika_storefront_settings_${storeSlug}`, JSON.stringify(updatedStorefront));
+    }
+    if (shopTheme) {
+      await publishTheme(storeSlug, "owner");
     }
     setData((prev) => ({
       ...prev,
@@ -78,7 +94,45 @@ export function StorefrontHomeClient({
     }));
   };
 
-  // Enregistrement d'une section modifiée
+  // Enregistrement d'une section du thème moderne (Prompt 12)
+  const handleSaveThemeSection = (updatedSection: ThemeSection) => {
+    if (!shopTheme) return;
+    const currentSections = shopTheme.pages.home.sections;
+    const updatedSections = currentSections.map((s) =>
+      s.id === updatedSection.id ? updatedSection : s
+    );
+    const updatedTheme: ShopTheme = {
+      ...shopTheme,
+      pages: {
+        ...shopTheme.pages,
+        home: {
+          ...shopTheme.pages.home,
+          sections: updatedSections,
+        },
+      },
+    };
+    setShopTheme(updatedTheme);
+    saveDraftTheme(storeSlug, updatedTheme, "owner");
+  };
+
+  const handleDeleteThemeSection = (sectionId: string) => {
+    if (!shopTheme) return;
+    const updatedSections = shopTheme.pages.home.sections.filter((s) => s.id !== sectionId);
+    const updatedTheme: ShopTheme = {
+      ...shopTheme,
+      pages: {
+        ...shopTheme.pages,
+        home: {
+          ...shopTheme.pages.home,
+          sections: updatedSections,
+        },
+      },
+    };
+    setShopTheme(updatedTheme);
+    saveDraftTheme(storeSlug, updatedTheme, "owner");
+  };
+
+  // Enregistrement d'une section modifiée (legacy)
   const handleSaveSection = (updatedSection: PageSection) => {
     const updatedSections = (storefront.sections || []).map((s) =>
       s.id === updatedSection.id ? updatedSection : s
@@ -144,8 +198,29 @@ export function StorefrontHomeClient({
   return (
     <div className="space-y-16 pb-28 relative">
       {/* ========================================================================= */}
-      {/* 1. HERO BANNER */}
+      {/* MOTEUR DE THÈME MODULAIRE NOVIKA CLASSIQUE (Prompt 12) */}
       {/* ========================================================================= */}
+      {shopTheme?.pages?.home?.sections && shopTheme.pages.home.sections.length > 0 ? (
+        <div className="space-y-6">
+          {shopTheme.pages.home.sections.map((sec) => (
+            <ThemeSectionRenderer
+              key={sec.id}
+              section={sec}
+              generalSettings={shopTheme.generalSettings}
+              products={activeProducts}
+              reviews={storefront.reviews || []}
+              storeName={store.name}
+              storeSlug={storeSlug}
+              isEditMode={isEditMode && isOwner}
+              onEditSection={(sectionToEdit) => setEditingThemeSection(sectionToEdit)}
+            />
+          ))}
+        </div>
+      ) : (
+        <>
+          {/* ========================================================================= */}
+          {/* 1. HERO BANNER (LEGACY FALLBACK) */}
+          {/* ========================================================================= */}
       {heroSection && (heroSection.isVisible || isEditMode) ? (
         <section className="relative group max-w-6xl mx-auto px-4 sm:px-6 pt-6">
           {/* Crayon de modification admin */}
@@ -595,6 +670,8 @@ export function StorefrontHomeClient({
           </div>
         </section>
       )}
+        </>
+      )}
 
       {/* ========================================================================= */}
       {/* BARRE FLOTTANTE D'ADMINISTRATION POUR LE PROPRIÉTAIRE */}
@@ -609,13 +686,25 @@ export function StorefrontHomeClient({
         />
       )}
 
-      {/* PANNEAU LATÉRAL DE MODIFICATION DE SECTION */}
+      {/* PANNEAU LATÉRAL DE MODIFICATION DE SECTION (LEGACY) */}
       {editingSection && (
         <SectionEditorDrawer
           section={editingSection}
           isOpen={Boolean(editingSection)}
           onClose={() => setEditingSection(null)}
           onSave={handleSaveSection}
+        />
+      )}
+
+      {/* MODALE D'ÉDITION DE SECTION DU THÈME MODERNE (Prompt 12) */}
+      {editingThemeSection && shopTheme && (
+        <ThemeSectionEditorModal
+          section={editingThemeSection}
+          isOpen={Boolean(editingThemeSection)}
+          palettes={shopTheme.generalSettings.palettes}
+          onClose={() => setEditingThemeSection(null)}
+          onSave={handleSaveThemeSection}
+          onDelete={handleDeleteThemeSection}
         />
       )}
     </div>

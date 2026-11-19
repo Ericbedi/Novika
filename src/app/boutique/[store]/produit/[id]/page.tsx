@@ -14,6 +14,7 @@ import {
 } from "@/mock-data/product-page-data";
 import { buildProductThemePalette } from "@/lib/color-extractor";
 import { CodProductPageTemplate } from "@/components/storefront/cod-product-page-template";
+import { NovikaProductPage } from "@/components/storefront/product/NovikaProductPage";
 
 export default function ProductDetailPage({
   params,
@@ -85,13 +86,20 @@ export default function ProductDetailPage({
         }}
       />
 
-      <CodProductPageTemplate
+      <NovikaProductPage
         product={product}
-        sections={MOCK_PRODUCT_SECTIONS}
         settings={MOCK_ORDER_FORM_SETTINGS}
         quantityOffers={productOffers.length > 0 ? productOffers : MOCK_QUANTITY_OFFERS}
-        palette={productPalette}
-        reviews={MOCK_PRODUCT_REVIEWS}
+        reviews={MOCK_PRODUCT_REVIEWS.map((r) => ({
+          id: r.id,
+          authorName: r.customerName,
+          authorCity: r.customerCity,
+          authorCountry: "TG",
+          rating: r.rating,
+          comment: r.comment,
+          date: r.createdAt,
+          verifiedPurchase: r.isVerifiedBuyer,
+        }))}
         guarantees={MOCK_SHOP_GUARANTEES}
         storeSlug={storeSlug}
       />
