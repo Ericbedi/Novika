@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { brandConfig } from "@/config/brand";
 import { Logo } from "@/components/brand/logo";
+import { ROUTES } from "@/config/routes";
 import {
   landingContent,
   CountryItem,
@@ -102,7 +103,7 @@ export default function LandingPage() {
 
           <div className="flex items-center gap-3">
             <Link
-              href="/connexion"
+              href={ROUTES.login}
               className="text-sm font-bold text-[#111111] hover:text-[#D35400] px-3 py-1.5 transition-colors"
             >
               Connexion
@@ -498,7 +499,7 @@ export default function LandingPage() {
             <Link href="/acces" className="hover:text-white transition-colors">
               Demande d'accès
             </Link>
-            <Link href="/connexion" className="hover:text-white transition-colors">
+            <Link href={ROUTES.login} className="hover:text-white transition-colors">
               Espace Vendeur
             </Link>
             <a href={`mailto:${brandConfig.contact.supportEmail}`} className="hover:text-white transition-colors">

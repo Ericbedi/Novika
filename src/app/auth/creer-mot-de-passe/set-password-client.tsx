@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { cn } from "@/lib/utils";
+import { ROUTES } from "@/config/routes";
 
 // Liste de mots de passe courants et compromis
 const COMMON_PW_LIST = [
@@ -130,7 +131,7 @@ export function SetPasswordClient() {
       }
 
       setTimeout(() => {
-        router.push("/connexion");
+        router.push(ROUTES.login);
       }, 1500);
     }, 600);
   };

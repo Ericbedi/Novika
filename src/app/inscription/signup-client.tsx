@@ -22,6 +22,7 @@ import { CountryFlag } from "@/components/ui/country-flag";
 import { SearchableCountrySelect } from "@/components/ui/searchable-country-select";
 import { Logo } from "@/components/brand/logo";
 import { cn } from "@/lib/utils";
+import { ROUTES } from "@/config/routes";
 
 // Liste officielle des 54 pays d'Afrique triés alphabétiquement (Prompt 05-P)
 const ALL_54_COUNTRIES: AfricanCountryConfig[] = getSortedAfricanCountries();
@@ -71,7 +72,7 @@ export function SignupClient() {
 
     // 1. Détection anti-robot honeypot
     if (honeypot) {
-      router.push("/connexion");
+      router.push(ROUTES.login);
       return;
     }
 
@@ -384,7 +385,7 @@ export function SignupClient() {
           <div className="border-t border-black/[0.06] pt-4 text-center">
             <p className="text-xs text-[#666660]">
               Vous avez déjà un compte vendeur ?{" "}
-              <Link href="/connexion" className="font-bold text-[#111111] underline hover:text-black">
+              <Link href={ROUTES.login} className="font-bold text-[#111111] underline hover:text-black">
                 Se connecter
               </Link>
             </p>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { ROUTES } from "@/config/routes";
 
 export async function POST(req: NextRequest) {
   try {
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
         originUrl = "http://localhost:3000";
       }
 
-      const callbackUrl = `${originUrl}/auth/callback?email=${encodeURIComponent(normalizedEmail)}&next=${encodeURIComponent(`/connexion?email=${encodeURIComponent(normalizedEmail)}&verified=true`)}`;
+      const callbackUrl = `${originUrl}${ROUTES.authCallback}?email=${encodeURIComponent(normalizedEmail)}&next=${encodeURIComponent(`${ROUTES.login}?email=${encodeURIComponent(normalizedEmail)}&verified=true`)}`;
 
       // 1. Tenter l'envoi de l'e-mail réel via Supabase Auth
       const { error: otpError } = await supabase.auth.signInWithOtp({

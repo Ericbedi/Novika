@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { cn } from "@/lib/utils";
+import { ROUTES } from "@/config/routes";
 
 export function VerifyEmailClient() {
   const router = useRouter();
@@ -86,7 +87,7 @@ export function VerifyEmailClient() {
 
       // Redirection automatique vers la page de connexion pour ressaisir l'e-mail et mot de passe
       setTimeout(() => {
-        router.push(`/connexion?email=${encodeURIComponent(email.trim().toLowerCase())}&verified=true`);
+        router.push(`${ROUTES.login}?email=${encodeURIComponent(email.trim().toLowerCase())}&verified=true`);
       }, 1500);
     } catch (err: unknown) {
       setIsLoading(false);
@@ -245,7 +246,7 @@ export function VerifyEmailClient() {
               {/* Accès direct par mot de passe si retard e-mail */}
               <div className="pt-3 border-t border-black/[0.06] text-center">
                 <Link
-                  href={`/connexion?email=${encodeURIComponent(email)}`}
+                  href={`${ROUTES.login}?email=${encodeURIComponent(email)}`}
                   className="inline-flex items-center gap-1.5 text-xs font-bold text-[#C2410C] hover:text-[#9A3412] hover:underline transition-colors"
                 >
                   <span>E-mail non reçu ? Se connecter avec votre mot de passe</span>

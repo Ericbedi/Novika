@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { Mail, ArrowRight, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
+import { ROUTES } from "@/config/routes";
 
 export function ForgotPasswordClient() {
   const [email, setEmail] = useState("");
@@ -49,7 +50,7 @@ export function ForgotPasswordClient() {
               </p>
               <div className="pt-2">
                 <Link
-                  href="/connexion"
+                  href={ROUTES.login}
                   className="inline-flex items-center gap-1.5 text-xs font-bold text-[#111111] hover:underline"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" />
@@ -96,7 +97,7 @@ export function ForgotPasswordClient() {
 
               <div className="pt-2 text-center text-xs">
                 <Link
-                  href="/connexion"
+                  href={ROUTES.login}
                   className="inline-flex items-center gap-1 text-[#666660] hover:text-[#111111] font-semibold"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" />

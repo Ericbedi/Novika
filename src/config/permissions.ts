@@ -365,6 +365,14 @@ export function canViewCloserPerformance(role: UserRole): boolean {
   return role === "owner" || role === "admin" || role === "manager";
 }
 
+/**
+ * Règle stricte Prompt 07 : SEUL l'ADMIN propriétaire (owner) peut utiliser le générateur
+ * de fiches produits avec l'IA Gemini. Co-admin, manager et autres rôles : strictement interdit (403).
+ */
+export function canUseAiProductGenerator(role: UserRole): boolean {
+  return role === "owner";
+}
+
 
 
 

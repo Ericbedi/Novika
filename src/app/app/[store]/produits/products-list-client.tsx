@@ -28,7 +28,9 @@ import {
   Upload,
   ChevronDown,
   X,
+  Sparkles,
 } from "lucide-react";
+import { canUseAiProductGenerator } from "@/config/permissions";
 import { MOCK_PRODUCTS } from "@/mock-data/products";
 import { MOCK_COLLECTIONS } from "@/mock-data/collections";
 import { MOCK_SUPPLIERS } from "@/mock-data/suppliers";
@@ -352,6 +354,18 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
             <Download className="h-4 w-4 text-[#888880]" />
             <span className="hidden sm:inline">Exporter</span>
           </button>
+
+          {/* Bouton Créer une fiche avec l'IA (Réservé Owner Admin - Prompt 07) */}
+          {canUseAiProductGenerator(activeRole) && (
+            <Link
+              href={`/app/${storeSlug}/produits/nouveau-ia`}
+              id="btn-create-product-ai"
+              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-orange-500/15 to-amber-600/10 border border-amber-500/30 text-amber-950 hover:bg-amber-500/20 text-xs font-bold transition-all shadow-2xs cursor-pointer min-h-[36px]"
+            >
+              <Sparkles className="h-4 w-4 text-amber-600" />
+              <span>Créer une fiche avec l'IA</span>
+            </Link>
+          )}
 
           {/* Bouton Nouveau produit */}
           <Link

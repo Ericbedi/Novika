@@ -17,6 +17,15 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  async redirects() {
+    return [
+      {
+        source: "/auth/connexion",
+        destination: "/connexion",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

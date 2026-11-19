@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { SOUND_CONFIG } from "@/config/sounds";
+import { ROUTES } from "@/config/routes";
 
 export const NOVIKA_AUTH_BROADCAST = "novika_auth_broadcast";
 export const NOVIKA_LOGOUT_SIGNAL_KEY = "novika_logout_signal";
@@ -121,6 +122,6 @@ export async function performLogout(options: LogoutOptions = {}): Promise<void> 
     } catch {}
 
     // 5. Redirection immédiate garantie < 50ms !
-    window.location.href = `/connexion?message=${messageParam}`;
+    window.location.href = `${ROUTES.login}?message=${messageParam}`;
   }
 }

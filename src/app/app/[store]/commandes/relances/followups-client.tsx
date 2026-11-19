@@ -479,10 +479,10 @@ export function FollowupsClient({ storeSlug }: FollowupsClientProps) {
       prev.map((f) =>
         f.id === followupId
           ? {
-              ...f,
-              assignedTo: { id: "cls_02", name: "Fatou Bamba" },
-              notes: `${f.notes || ""}\n[Réassigné par le Manager à Fatou Bamba]`.trim(),
-            }
+            ...f,
+            assignedTo: { id: "cls_02", name: "Fatou Bamba" },
+            notes: `${f.notes || ""}\n[Réassigné par le Manager à Fatou Bamba]`.trim(),
+          }
           : f
       )
     );
@@ -1178,8 +1178,8 @@ export function FollowupsClient({ storeSlug }: FollowupsClientProps) {
                       {order.status === "lost_unreachable"
                         ? "Perdue – Injoignable (4 essais)"
                         : order.status === "rejected_invalid_number"
-                        ? "Rejetée – Numéro invalide"
-                        : "Rejetée par le client"}
+                          ? "Rejetée – Numéro invalide"
+                          : "Rejetée par le client"}
                     </span>
                     <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
                       ✓ Stock remis en rayon

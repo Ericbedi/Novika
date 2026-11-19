@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDefaultSpaceForRole } from "@/config/spaces";
+import { ROUTES } from "@/config/routes";
 
 export const config = {
   matcher: [
@@ -38,13 +39,19 @@ export async function middleware(request: NextRequest) {
       if (parsed && parsed.role) {
         sessionUserRole = parsed.role;
       }
-    } catch {}
+    } catch { }
   } else if (request.cookies.get("novika_active_role")?.value) {
     sessionUserRole = request.cookies.get("novika_active_role")!.value;
   }
 
-  // 2. Gestion de la page /connexion
-  if (pathname === "/connexion") {
+  // 2. Redirection permanente /auth/connexion -> ROUTES.login
+  if (pathname === "/auth/connexion") {
+    const targetUrl = new URL(ROUTES.login + search, request.url);
+    return NextResponse.redirect(targetUrl, 308);
+  }
+
+  // 3. Gestion de la page de connexion
+  if (pathname === ROUTES.login) {
     const hasMessageParam = request.nextUrl.searchParams.has("message");
     // Si l'utilisateur a déjà une session valide ET qu'il ne vient pas d'effectuer une déconnexion
     if (hasValidSession && !hasMessageParam) {
@@ -80,9 +87,9 @@ export async function middleware(request: NextRequest) {
         );
       }
 
-      // Redirection vers /connexion avec mémorisation de l'URL cible (param redirect)
+      // Redirection vers ROUTES.login avec mémorisation de l'URL cible (param redirect)
       const redirectTarget = pathname + search;
-      const loginUrl = new URL("/connexion", request.url);
+      const loginUrl = new URL(ROUTES.login, request.url);
       loginUrl.searchParams.set("message", "session_expired");
       loginUrl.searchParams.set("redirect", redirectTarget);
 

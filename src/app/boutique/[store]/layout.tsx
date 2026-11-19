@@ -22,6 +22,9 @@ import {
 import { MOCK_STORES } from "@/mock-data/stores";
 import { MOCK_STOREFRONT_LOME } from "@/mock-data/storefront-data";
 import { MOCK_SHOP_BANNER_ITEMS } from "@/mock-data/product-page-data";
+import { ShopBannerItem } from "@/server/data/product-page-types";
+import { resolveStorefrontData } from "@/lib/storefront-resolver";
+import { brandConfig, APP_NAME } from "@/config/brand";
 import { AnnouncementBanner } from "@/components/storefront/announcement-banner";
 import { StorefrontPresencePing } from "@/components/storefront/storefront-presence-ping";
 import { MetaPixelRunner } from "@/components/storefront/meta-pixel-runner";
@@ -55,8 +58,24 @@ export default function StorefrontLayout({
   const { store: storeSlug } = use(params);
   const pathname = usePathname();
 
-  const store = MOCK_STORES.find((s) => s.slug === storeSlug) || MOCK_STORES[0];
-  const storefront = MOCK_STOREFRONT_LOME;
+  const resolved = resolveStorefrontData(storeSlug);
+  const store = resolved.store;
+  const storefront = resolved.storefront;
+
+  const bannerItems: ShopBannerItem[] =
+    storeSlug === "lome-glow"
+      ? MOCK_SHOP_BANNER_ITEMS
+      : storefront.announcementBar?.isEnabled && storefront.announcementBar.text
+      ? [
+          {
+            id: "ann_01",
+            storeId: storeSlug,
+            type: "custom_announcement",
+            content: storefront.announcementBar.text,
+            isEnabled: true,
+          },
+        ]
+      : [];
 
   // Modal Signaler cette boutique
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -133,7 +152,7 @@ export default function StorefrontLayout({
 
       {/* BANDEAU D'ANNONCE DÉFILANT SUPÉRIEUR (Marquee CSS, avis vérifiés et garanties) */}
       <AnnouncementBanner
-        items={MOCK_SHOP_BANNER_ITEMS}
+        items={bannerItems}
         storeSlug={storeSlug}
         isDismissible={true}
         themePrimary={storefront.activeTheme.colors.primary}
@@ -277,29 +296,48 @@ export default function StorefrontLayout({
             <div className="space-y-3 text-xs">
               <p className="font-black uppercase tracking-wider text-[#111111]">Assistance Client</p>
               <div className="space-y-2 text-[#666660]">
-                <p className="flex items-center gap-2">
-                  <Phone className="h-3.5 w-3.5 text-[#111111]" />
-                  <span>{storefront.contact.phone}</span>
-                </p>
-                <p className="flex items-center gap-2">
-                  <Mail className="h-3.5 w-3.5 text-[#111111]" />
-                  <span>{storefront.contact.email}</span>
-                </p>
-                <p className="flex items-center gap-2">
-                  <MapPin className="h-3.5 w-3.5 text-[#111111]" />
-                  <span>{storefront.contact.city}, {storefront.contact.country}</span>
-                </p>
-                <p className="flex items-center gap-2">
-                  <Clock className="h-3.5 w-3.5 text-[#111111]" />
-                  <span className="text-[11px]">{storefront.contact.openingHours}</span>
-                </p>
+                {storefront.contact?.phone && (
+                  <p className="flex items-center gap-2">
+                    <Phone className="h-3.5 w-3.5 text-[#111111]" />
+                    <span>{storefront.contact.phone}</span>
+                  </p>
+                )}
+                {storefront.contact?.email && (
+                  <p className="flex items-center gap-2">
+                    <Mail className="h-3.5 w-3.5 text-[#111111]" />
+                    <span>{storefront.contact.email}</span>
+                  </p>
+                )}
+                {storefront.contact?.city && (
+                  <p className="flex items-center gap-2">
+                    <MapPin className="h-3.5 w-3.5 text-[#111111]" />
+                    <span>
+                      {storefront.contact.city}
+                      {storefront.contact.country ? `, ${storefront.contact.country}` : ""}
+                    </span>
+                  </p>
+                )}
+                {storefront.contact?.openingHours && (
+                  <p className="flex items-center gap-2">
+                    <Clock className="h-3.5 w-3.5 text-[#111111]" />
+                    <span className="text-[11px]">{storefront.contact.openingHours}</span>
+                  </p>
+                )}
+                {!storefront.contact?.phone &&
+                  !storefront.contact?.email &&
+                  !storefront.contact?.city &&
+                  !storefront.contact?.openingHours && (
+                    <p className="text-[11px] text-[#888880] italic">
+                      Coordonnées en cours de mise à jour par la boutique.
+                    </p>
+                  )}
               </div>
             </div>
           </div>
 
           {/* Ligne inférieure : Copyright & Bouton Signaler */}
           <div className="pt-6 border-t border-black/[0.06] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-[11px] text-[#888880]">
-            <p>© 2026 {store.name}. Hébergé et sécurisé par la plateforme AfriBuilder.</p>
+            <p>© 2026 {store.name}. Hébergé et sécurisé par la plateforme {brandConfig.name}.</p>
             <div className="flex items-center gap-4">
               <button
                 type="button"
@@ -337,7 +375,7 @@ export default function StorefrontLayout({
                 <CheckCircle2 className="h-8 w-8 text-emerald-600 mx-auto" />
                 <p className="text-xs font-bold text-emerald-950">Signalement transmis à l'équipe de sécurité</p>
                 <p className="text-[11px] text-emerald-800">
-                  Merci de contribuer à la sécurité et à l'intégrité de la communauté AfriBuilder.
+                  Merci de contribuer à la sécurité et à l'intégrité de la communauté {brandConfig.name}.
                 </p>
               </div>
             ) : (

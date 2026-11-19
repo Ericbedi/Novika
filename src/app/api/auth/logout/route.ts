@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { logAuthAudit } from "@/lib/audit-auth";
+import { ROUTES } from "@/config/routes";
 
 export async function GET() {
   // Rejet strict des requêtes GET : la déconnexion doit impérativement être une action POST
@@ -97,8 +98,8 @@ export async function POST(req: NextRequest) {
     });
 
     const redirectTarget = allDevices
-      ? "/connexion?message=all_devices_logged_out"
-      : "/connexion?message=logged_out";
+      ? `${ROUTES.login}?message=all_devices_logged_out`
+      : `${ROUTES.login}?message=logged_out`;
 
     const response = NextResponse.json(
       {

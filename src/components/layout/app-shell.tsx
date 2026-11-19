@@ -45,6 +45,7 @@ import {
   NOVIKA_LOGOUT_SIGNAL_KEY,
   TAB_CLIENT_ID,
 } from "@/lib/auth-client";
+import { ROUTES } from "@/config/routes";
 import { CommandPalette } from "./command-palette";
 import { NotificationsPanel } from "./notifications-panel";
 import { CreateStoreModal } from "@/components/app/create-store-modal";
@@ -343,7 +344,7 @@ function AppShellInner({
           if (event.data?.type === "LOGOUT") {
             if (event.data?.sourceId === TAB_CLIENT_ID) return;
             const msg = event.data?.allDevices ? "all_devices_logged_out" : "logged_out";
-            window.location.href = `/connexion?message=${msg}`;
+            window.location.href = `${ROUTES.login}?message=${msg}`;
           }
         };
       } catch {}
@@ -355,9 +356,9 @@ function AppShellInner({
           const parsed = JSON.parse(e.newValue);
           if (parsed.sourceId === TAB_CLIENT_ID) return;
           const msg = parsed.allDevices ? "all_devices_logged_out" : "logged_out";
-          window.location.href = `/connexion?message=${msg}`;
+          window.location.href = `${ROUTES.login}?message=${msg}`;
         } catch {
-          window.location.href = "/connexion?message=logged_out";
+          window.location.href = `${ROUTES.login}?message=logged_out`;
         }
       }
     };
@@ -372,7 +373,7 @@ function AppShellInner({
           localStorage.getItem("novika_user_verified") ||
           localStorage.getItem("afribuilder_user_verified");
         if (!email && verified !== "true") {
-          router.push("/connexion?message=session_expired");
+          router.push(`${ROUTES.login}?message=session_expired`);
         }
       }
     };

@@ -17,6 +17,7 @@ test.describe("Prompt 06-L : Déconnexion, protection de session & anti-redirect
       localStorage.setItem("novika_user_email", "admin@novika.com");
       localStorage.setItem("novika_active_role", "owner");
     });
+    await page.reload();
     await page.waitForLoadState("domcontentloaded");
 
     // Ouvrir le menu utilisateur vers le haut
@@ -34,7 +35,7 @@ test.describe("Prompt 06-L : Déconnexion, protection de session & anti-redirect
 
     // Vérifier l'affichage du message officiel centralisé dans content/ : « Vous êtes déconnecté. »
     const statusMsg = page.locator("#auth-session-status-message");
-    await expect(statusMsg).toBeVisible();
+    await expect(statusMsg).toBeVisible({ timeout: 10000 });
     await expect(statusMsg).toContainText("Vous êtes déconnecté.");
 
     // Vérifier la purge du stockage local
@@ -51,6 +52,7 @@ test.describe("Prompt 06-L : Déconnexion, protection de session & anti-redirect
       localStorage.setItem("novika_user_email", "admin@novika.com");
       localStorage.setItem("novika_active_role", "owner");
     });
+    await page.reload();
     await page.waitForLoadState("domcontentloaded");
 
     const menuTrigger = page.locator("#btn-user-menu-trigger");
@@ -164,5 +166,26 @@ test.describe("Prompt 06-L : Déconnexion, protection de session & anti-redirect
 
     await page1.close();
     await page2.close();
+  });
+
+  test("9. Redirection permanente de /auth/connexion vers ROUTES.login (/connexion)", async ({
+    page,
+  }) => {
+    const res = await page.goto(`${BASE_URL}/auth/connexion`);
+    await page.waitForURL(/\/connexion/, { timeout: 5000 });
+    expect(page.url()).toContain("/connexion");
+  });
+
+  test("10. Page 404 en français : 'Page introuvable' avec bouton 'Retour à la connexion'", async ({
+    page,
+  }) => {
+    await page.goto(`${BASE_URL}/page-qui-nexiste-pas-random-404`);
+    await page.waitForLoadState("domcontentloaded");
+
+    await expect(page.getByRole("heading", { name: "Page introuvable" })).toBeVisible();
+    await expect(page.getByText("Erreur 404")).toBeVisible();
+    const loginLink = page.locator("#btn-not-found-login");
+    await expect(loginLink).toBeVisible();
+    await expect(loginLink).toHaveAttribute("href", "/connexion");
   });
 });

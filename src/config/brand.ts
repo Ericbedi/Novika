@@ -38,3 +38,4 @@ export const brandConfig = {
 };
 
 export type BrandConfig = typeof brandConfig;
+export const APP_NAME = brandConfig.name;

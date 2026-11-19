@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { ROUTES } from "@/config/routes";
 
 export async function GET(req: NextRequest) {
   const requestUrl = new URL(req.url);
@@ -47,7 +48,7 @@ export async function GET(req: NextRequest) {
   const targetEmail = confirmedEmail || "";
   const destination = nextParam
     ? (nextParam.startsWith("http") ? nextParam : `${requestUrl.origin}${nextParam}`)
-    : `${requestUrl.origin}/connexion?${targetEmail ? `email=${encodeURIComponent(targetEmail)}&` : ""}verified=true`;
+    : `${requestUrl.origin}${ROUTES.login}?${targetEmail ? `email=${encodeURIComponent(targetEmail)}&` : ""}verified=true`;
 
   return NextResponse.redirect(destination);
 }
