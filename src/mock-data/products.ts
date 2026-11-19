@@ -8,7 +8,7 @@ export const MOCK_PRODUCTS: Product[] = [
     description: "Formule premium au Lion's Mane, Chaga et Reishi. Énergie propre sans palpitations, améliore la concentration et booste l'immunité au quotidien.",
     category: "Santé & Nutrition",
     collection: "Bien-être & Vitalité",
-    images: ["/products/mushroom-coffee.png", "/products/serum-eclat.png"],
+    images: ["/products/mushroom-coffee.png", "/products/serum-eclat.png", "/products/placeholder.png"],
     salePrice: 24900,
     compareAtPrice: 35000,
     costPrice: 8500, // Coût unitaire d'achat/production
@@ -51,9 +51,9 @@ export const MOCK_PRODUCTS: Product[] = [
       slug: "cafe-bio-champignon-vitality",
     },
     variants: [
-      { id: "var_01_1", name: "Pack Découverte (1 boîte)", price: 14900, costPrice: 4500, stock: 18, sku: "CF-MUSH-01", barcode: "693847291017" },
-      { id: "var_01_2", name: "Pack Double Énergie (2 boîtes)", price: 24900, costPrice: 8500, stock: 48, sku: "CF-MUSH-02", barcode: "693847291024" },
-      { id: "var_01_3", name: "Pack Cure 3 Mois (3 boîtes)", price: 34900, costPrice: 12500, stock: 12, sku: "CF-MUSH-03", barcode: "693847291031" },
+      { id: "var_01_1", name: "Pack Découverte (1 boîte)", price: 14900, costPrice: 4500, stock: 18, sku: "CF-MUSH-01", barcode: "693847291017", image: "/products/mushroom-coffee.png" },
+      { id: "var_01_2", name: "Pack Double Énergie (2 boîtes)", price: 24900, costPrice: 8500, stock: 48, sku: "CF-MUSH-02", barcode: "693847291024", image: "/products/serum-eclat.png" },
+      { id: "var_01_3", name: "Pack Cure 3 Mois (3 boîtes)", price: 34900, costPrice: 12500, stock: 12, sku: "CF-MUSH-03", barcode: "693847291031", image: "/products/placeholder.png" },
     ],
     quantityOffers: [
       { id: "qo_1", quantity: 1, unitPrice: 14900, totalPrice: 14900, badgeText: "Standard" },

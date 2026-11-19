@@ -514,7 +514,8 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
     }
   };
 
-  const handleImportSuccess = (importedCount: number) => {
+  const handleImportSuccess = (imported: Product[] | number) => {
+    const count = Array.isArray(imported) ? imported.length : imported;
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem(`novika_store_products_${storeSlug}`);
       if (saved) {
@@ -526,7 +527,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
         } catch {}
       }
     }
-    showToast(`${importedCount} produit(s) importé(s) en brouillon avec succès !`);
+    showToast(`${count} produit(s) importé(s) en brouillon avec succès !`);
   };
 
   return (

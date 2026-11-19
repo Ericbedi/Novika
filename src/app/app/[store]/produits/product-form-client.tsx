@@ -33,8 +33,30 @@ import {
   Receipt as ReceiptIcon,
   Wand2,
   Lock,
+  ArrowUp,
+  ArrowDown,
+  Star,
+  RefreshCw,
+  FileWarning,
+  ShieldCheck,
+  Pencil,
+  ExternalLink,
 } from "lucide-react";
-import { Product, ProductVariant, QuantityOffer, ProductStatus } from "@/server/data/types";
+import {
+  Product,
+  ProductVariant,
+  QuantityOffer,
+  ProductStatus,
+  ProductMediaItem,
+} from "@/server/data/types";
+import {
+  MAX_PRODUCT_IMAGES,
+  MAX_IMAGE_SIZE_BYTES,
+  validateProductImageFile,
+  stripExifAndProcessImage,
+  parseVideoUrl,
+} from "@/lib/image-utils";
+import { ProductImage, NeutralProductPlaceholder } from "@/components/ui/ProductImage";
 import { ProductReceiptContent } from "@/server/data/receipt-types";
 import { DEFAULT_RECEIPT_CONTENT } from "@/lib/receipts-engine";
 import { MOCK_PRODUCTS } from "@/mock-data/products";
@@ -74,12 +96,266 @@ export function ProductFormClient({
   const [tagsInput, setTagsInput] = useState(initialProduct?.tags ? initialProduct.tags.join(", ") : "");
   const [template, setTemplate] = useState(initialProduct?.template || "Par défaut");
 
-  // Media
+  // Media (Prompt 15)
+  const [mediaItems, setMediaItems] = useState<ProductMediaItem[]>(() => {
+    if (initialProduct?.mediaItems && initialProduct.mediaItems.length > 0) {
+      return initialProduct.mediaItems;
+    }
+    if (initialProduct?.images && initialProduct.images.length > 0) {
+      return initialProduct.images.map((img, idx) => ({
+        id: `img-${idx}-${Date.now()}`,
+        url: img,
+        alt: `${initialProduct.title || initialProduct.name || "Produit"} - Vue ${idx + 1}`,
+        isPrimary: idx === 0,
+      }));
+    }
+    return [];
+  });
+
   const [mediaList, setMediaList] = useState<string[]>(
     initialProduct?.images && initialProduct.images.length > 0
       ? initialProduct.images
       : []
   );
+
+  const [videoUrl, setVideoUrl] = useState<string>(initialProduct?.videoUrl || "");
+  const [showVideoInput, setShowVideoInput] = useState<boolean>(Boolean(initialProduct?.videoUrl));
+  const [selectedMediaIds, setSelectedMediaIds] = useState<string[]>([]);
+  const [editingAltItem, setEditingAltItem] = useState<{ id: string; alt: string } | null>(null);
+  const [uploadQueue, setUploadQueue] = useState<
+    Array<{
+      id: string;
+      fileName: string;
+      progress: number;
+      error?: string;
+      file?: File;
+    }>
+  >([]);
+  const [draggedMediaIndex, setDraggedMediaIndex] = useState<number | null>(null);
+  const [replaceTargetIndex, setReplaceTargetIndex] = useState<number | null>(null);
+  const [confirmedImageRights, setConfirmedImageRights] = useState<boolean>(true);
+  const [mediaErrorMessage, setMediaErrorMessage] = useState<string | null>(null);
+
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const replaceFileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleImageFiles = async (files: FileList | File[]) => {
+    setMediaErrorMessage(null);
+    const fileArray = Array.from(files);
+    if (fileArray.length === 0) return;
+
+    const availableSlots = MAX_PRODUCT_IMAGES - mediaItems.length;
+    if (availableSlots <= 0) {
+      setMediaErrorMessage(`Limite maximale atteinte (${MAX_PRODUCT_IMAGES} images max).`);
+      return;
+    }
+
+    const filesToProcess = fileArray.slice(0, availableSlots);
+    if (fileArray.length > availableSlots) {
+      setMediaErrorMessage(
+        `Seuls les ${availableSlots} premiers fichiers ont été acceptés (maximum 20 images).`
+      );
+    }
+
+    // Ajouter à la queue d'upload avec progression
+    const newQueueItems = filesToProcess.map((f, i) => ({
+      id: `queue-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 6)}`,
+      fileName: f.name,
+      progress: 20,
+      file: f,
+    }));
+    setUploadQueue((prev) => [...prev, ...newQueueItems]);
+
+    for (const qItem of newQueueItems) {
+      const file = qItem.file!;
+      const validation = validateProductImageFile(file);
+
+      if (!validation.valid) {
+        setUploadQueue((prev) =>
+          prev.map((item) =>
+            item.id === qItem.id
+              ? { ...item, progress: 100, error: validation.error || "Fichier invalide" }
+              : item
+          )
+        );
+        continue;
+      }
+
+      setUploadQueue((prev) =>
+        prev.map((item) => (item.id === qItem.id ? { ...item, progress: 65 } : item))
+      );
+
+      try {
+        const cleanDataUrl = await stripExifAndProcessImage(file);
+
+        setUploadQueue((prev) => prev.filter((item) => item.id !== qItem.id));
+
+        setMediaItems((prev) => {
+          const nextIndex = prev.length;
+          const updated: ProductMediaItem[] = [
+            ...prev,
+            {
+              id: `img-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+              url: cleanDataUrl,
+              alt: `${name.trim() || "Produit"} - Vue ${nextIndex + 1}`,
+              isPrimary: prev.length === 0,
+            },
+          ];
+          setMediaList(updated.map((m) => m.url));
+          return updated;
+        });
+      } catch (err: any) {
+        setUploadQueue((prev) =>
+          prev.map((item) =>
+            item.id === qItem.id
+              ? { ...item, progress: 100, error: err?.message || "Erreur de traitement" }
+              : item
+          )
+        );
+      }
+    }
+  };
+
+  const handleRetryUpload = async (queueId: string) => {
+    const queueItem = uploadQueue.find((q) => q.id === queueId);
+    if (!queueItem || !queueItem.file) return;
+
+    setUploadQueue((prev) =>
+      prev.map((item) => (item.id === queueId ? { ...item, progress: 40, error: undefined } : item))
+    );
+
+    try {
+      const cleanDataUrl = await stripExifAndProcessImage(queueItem.file);
+      setUploadQueue((prev) => prev.filter((item) => item.id !== queueId));
+      setMediaItems((prev) => {
+        const updated: ProductMediaItem[] = [
+          ...prev,
+          {
+            id: `img-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            url: cleanDataUrl,
+            alt: `${name.trim() || "Produit"} - Vue ${prev.length + 1}`,
+            isPrimary: prev.length === 0,
+          },
+        ];
+        setMediaList(updated.map((m) => m.url));
+        return updated;
+      });
+    } catch (err: any) {
+      setUploadQueue((prev) =>
+        prev.map((item) =>
+          item.id === queueId
+            ? { ...item, progress: 100, error: err?.message || "Échec du nouvel essai" }
+            : item
+        )
+      );
+    }
+  };
+
+  const handleRemoveQueueItem = (queueId: string) => {
+    setUploadQueue((prev) => prev.filter((item) => item.id !== queueId));
+  };
+
+  const handleReplaceFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0 || replaceTargetIndex === null) return;
+    const file = e.target.files[0];
+    const validation = validateProductImageFile(file);
+    if (!validation.valid) {
+      setMediaErrorMessage(validation.error || "Fichier invalide");
+      return;
+    }
+
+    try {
+      const cleanDataUrl = await stripExifAndProcessImage(file);
+      setMediaItems((prev) => {
+        const next = [...prev];
+        if (next[replaceTargetIndex]) {
+          next[replaceTargetIndex] = {
+            ...next[replaceTargetIndex],
+            url: cleanDataUrl,
+          };
+        }
+        setMediaList(next.map((m) => m.url));
+        return next;
+      });
+    } catch {
+      setMediaErrorMessage("Erreur lors du remplacement de l'image.");
+    } finally {
+      setReplaceTargetIndex(null);
+      if (replaceFileInputRef.current) replaceFileInputRef.current.value = "";
+    }
+  };
+
+  const setAsPrimary = (index: number) => {
+    if (index === 0 || index >= mediaItems.length) return;
+    setMediaItems((prev) => {
+      const item = prev[index];
+      const without = prev.filter((_, i) => i !== index);
+      const next = [{ ...item, isPrimary: true }, ...without.map((m) => ({ ...m, isPrimary: false }))];
+      setMediaList(next.map((m) => m.url));
+      return next;
+    });
+  };
+
+  const moveMedia = (fromIndex: number, toIndex: number) => {
+    if (fromIndex < 0 || toIndex < 0 || fromIndex >= mediaItems.length || toIndex >= mediaItems.length) return;
+    setMediaItems((prev) => {
+      const copy = [...prev];
+      const [moved] = copy.splice(fromIndex, 1);
+      copy.splice(toIndex, 0, moved);
+      const reindexed = copy.map((m, idx) => ({ ...m, isPrimary: idx === 0 }));
+      setMediaList(reindexed.map((m) => m.url));
+      return reindexed;
+    });
+  };
+
+  const deleteMedia = (index: number) => {
+    setMediaItems((prev) => {
+      const next = prev.filter((_, i) => i !== index).map((m, idx) => ({ ...m, isPrimary: idx === 0 }));
+      setMediaList(next.map((m) => m.url));
+      return next;
+    });
+  };
+
+  const deleteSelectedMedia = () => {
+    if (selectedMediaIds.length === 0) return;
+    setMediaItems((prev) => {
+      const next = prev.filter((m) => !selectedMediaIds.includes(m.id)).map((m, idx) => ({ ...m, isPrimary: idx === 0 }));
+      setMediaList(next.map((m) => m.url));
+      return next;
+    });
+    setSelectedMediaIds([]);
+  };
+
+  const toggleSelectMedia = (id: string) => {
+    setSelectedMediaIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllMedia = () => {
+    if (selectedMediaIds.length === mediaItems.length) {
+      setSelectedMediaIds([]);
+    } else {
+      setSelectedMediaIds(mediaItems.map((m) => m.id));
+    }
+  };
+
+  const updateMediaVariant = (index: number, variantId: string) => {
+    setMediaItems((prev) => {
+      const next = [...prev];
+      if (next[index]) {
+        next[index] = { ...next[index], variantId: variantId || undefined };
+      }
+      return next;
+    });
+  };
+
+  const saveAltText = (id: string, newAlt: string) => {
+    setMediaItems((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, alt: newAlt } : m))
+    );
+    setEditingAltItem(null);
+  };
 
   // Pricing
   const [salePrice, setSalePrice] = useState<number>(initialProduct?.salePrice || 0);
@@ -333,6 +609,11 @@ export function ProductFormClient({
 
   // Save handler
   const handleSave = () => {
+    if (!confirmedImageRights) {
+      alert("Veuillez confirmer que vous avez les droits d'utilisation sur les visuels avant d'enregistrer.");
+      return;
+    }
+
     const newId = initialProduct?.id || `prod_${Date.now()}`;
     const productSlug = seoSlug || (name.trim() || "produit").toLowerCase().replace(/[^a-z0-9]+/g, "-");
     const numSalePrice = Number(salePrice) || 0;
@@ -340,6 +621,13 @@ export function ProductFormClient({
     const numCompare = compareAtPrice ? Number(compareAtPrice) : undefined;
     const numStock = variants.length > 0 ? variants.reduce((s, v) => s + (v.stock || 0), 0) : 10;
     const numLowStock = Number(lowStockThreshold) || 10;
+
+    const currentImages =
+      mediaItems.length > 0
+        ? mediaItems.map((m) => m.url)
+        : mediaList.length > 0
+        ? mediaList
+        : ["/products/mushroom-coffee.png"];
 
     const savedProduct: Product = {
       id: newId,
@@ -350,7 +638,9 @@ export function ProductFormClient({
       category,
       collection,
       productType,
-      images: mediaList.length > 0 ? mediaList : ["/products/mushroom-coffee.png"],
+      images: currentImages,
+      mediaItems: mediaItems.length > 0 ? mediaItems : undefined,
+      videoUrl: videoUrl.trim() || undefined,
       salePrice: numSalePrice,
       price: numSalePrice,
       compareAtPrice: numCompare,
@@ -618,57 +908,538 @@ export function ProductFormClient({
             </div>
           </div>
 
-          {/* Bloc 2 : Médias (Images & Vidéos) */}
+          {/* Bloc 2 : Médias (Images & Vidéos) - Prompt 15 */}
           <div className="rounded-[20px] border border-black/[0.08] bg-[#FAF8F5] p-5 shadow-2xs space-y-4">
-            <div className="flex items-center justify-between">
+            {/* Hidden file inputs */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/jpeg,image/png,image/webp,image/avif"
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files) handleImageFiles(e.target.files);
+                e.target.value = "";
+              }}
+            />
+            <input
+              ref={replaceFileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/avif"
+              className="hidden"
+              onChange={handleReplaceFileChange}
+            />
+
+            {/* En-tête Médias & Compteur */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm font-bold text-[#111111]">Médias du produit</h3>
-                <p className="text-xs text-[#666660]">
-                  Photos et vidéos réordonnables. La première image sert de miniature principale.
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-[#111111]">Médias du produit</h3>
+                  <span
+                    data-testid="media-counter"
+                    className={cn(
+                      "px-2 py-0.5 rounded-full text-[11px] font-bold tracking-wide",
+                      mediaItems.length >= MAX_PRODUCT_IMAGES
+                        ? "bg-amber-600 text-white"
+                        : "bg-[#111111] text-white"
+                    )}
+                  >
+                    {mediaItems.length} / {MAX_PRODUCT_IMAGES} images
+                  </span>
+                </div>
+                <p className="text-xs text-[#666660] mt-0.5">
+                  Glissez-déposez jusqu'à {MAX_PRODUCT_IMAGES} visuels (JPG, PNG, WebP, max 5 Mo). La première image est l'image principale.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setMediaList((prev) => [...prev, "/products/placeholder.png"])}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-black/[0.08] bg-white text-xs font-bold text-[#111111] hover:bg-black/[0.03]"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Ajouter URL</span>
-              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowVideoInput(!showVideoInput)}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-colors cursor-pointer",
+                    showVideoInput || videoUrl
+                      ? "border-[#111111] bg-[#111111] text-white"
+                      : "border-black/[0.08] bg-white text-[#111111] hover:bg-black/[0.03]"
+                  )}
+                >
+                  <Video className="w-3.5 h-3.5" />
+                  <span>{showVideoInput || videoUrl ? "Vidéo active" : "Ajouter vidéo"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const url = prompt("Entrez l'URL de l'image (ex: https://.../image.webp) :");
+                    if (url && url.trim()) {
+                      if (mediaItems.length >= MAX_PRODUCT_IMAGES) {
+                        alert(`Limite de ${MAX_PRODUCT_IMAGES} images atteinte.`);
+                        return;
+                      }
+                      setMediaItems((prev) => {
+                        const updated: ProductMediaItem[] = [
+                          ...prev,
+                          {
+                            id: `img-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+                            url: url.trim(),
+                            alt: `${name.trim() || "Produit"} - Vue ${prev.length + 1}`,
+                            isPrimary: prev.length === 0,
+                          },
+                        ];
+                        setMediaList(updated.map((m) => m.url));
+                        return updated;
+                      });
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-black/[0.08] bg-white text-xs font-bold text-[#111111] hover:bg-black/[0.03] cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Ajouter URL</span>
+                </button>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {mediaList.map((med, idx) => (
-                <div
-                  key={idx}
-                  className="relative group rounded-xl border border-black/[0.08] bg-[#EFECE6] aspect-square flex flex-col items-center justify-center overflow-hidden p-2"
+            {/* Avertissement réglementaire & conformité publicitaire (Non bloquant) */}
+            <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-50/90 border border-amber-200/80 text-amber-900 text-xs">
+              <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <span className="font-bold">Recommandation conformité & plateformes publicitaires :</span>
+                <p className="text-[11px] text-amber-800 leading-relaxed">
+                  Vérifiez que vos visuels respectent les règles des plateformes publicitaires et la loi (allégations de santé, avant/après non trompeurs, droits d'auteur).
+                </p>
+              </div>
+            </div>
+
+            {/* Message d'erreur média ponctuel */}
+            {mediaErrorMessage && (
+              <div className="flex items-center justify-between p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{mediaErrorMessage}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMediaErrorMessage(null)}
+                  className="text-rose-600 hover:text-rose-900 font-bold ml-2"
                 >
-                  <div className="text-2xl font-black text-[#888880]">{name.charAt(0) || "P"}</div>
-                  <span className="text-[10px] text-[#666660] font-mono mt-1 truncate max-w-full">
-                    {med.split("/").pop()}
-                  </span>
-                  {idx === 0 && (
-                    <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-[#111111] text-white text-[9px] font-bold">
-                      Principale
-                    </span>
-                  )}
+                  Fermer
+                </button>
+              </div>
+            )}
+
+            {/* Barre d'action groupée (si sélection multiple) */}
+            {selectedMediaIds.length > 0 && (
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#111111] text-white text-xs animate-in fade-in duration-150">
+                <div className="flex items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => setMediaList((prev) => prev.filter((_, i) => i !== idx))}
-                    className="absolute top-1.5 right-1.5 p-1 rounded-lg bg-white/90 text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Supprimer le média"
+                    onClick={toggleSelectAllMedia}
+                    className="hover:underline font-bold"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    {selectedMediaIds.length === mediaItems.length
+                      ? "Tout désélectionner"
+                      : "Tout sélectionner"}
                   </button>
+                  <span className="opacity-40">|</span>
+                  <span className="font-medium">
+                    {selectedMediaIds.length} image(s) sélectionnée(s)
+                  </span>
                 </div>
-              ))}
-
-              {/* Upload zone */}
-              <div className="rounded-xl border-2 border-dashed border-black/[0.12] bg-white/50 aspect-square flex flex-col items-center justify-center p-3 text-center cursor-pointer hover:bg-white hover:border-black/30 transition-colors">
-                <UploadCloud className="w-6 h-6 text-[#888880] mb-1" />
-                <span className="text-[11px] font-bold text-[#111111]">Déposer des fichiers</span>
-                <span className="text-[9px] text-[#888880]">JPG, PNG, WebP, MP4</span>
+                <button
+                  type="button"
+                  onClick={deleteSelectedMedia}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold transition-colors cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Supprimer la sélection</span>
+                </button>
               </div>
+            )}
+
+            {/* Queue d'upload avec progression & statut d'erreur */}
+            {uploadQueue.length > 0 && (
+              <div className="space-y-2">
+                {uploadQueue.map((q) => (
+                  <div
+                    key={q.id}
+                    className={cn(
+                      "p-3 rounded-xl border flex items-center justify-between gap-3 text-xs",
+                      q.error
+                        ? "bg-rose-50/70 border-rose-200 text-rose-900"
+                        : "bg-white border-black/[0.08] text-[#111111]"
+                    )}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-bold truncate max-w-xs">{q.fileName}</span>
+                        <span className="font-mono text-[10px] text-[#666660]">
+                          {q.error ? "Échec" : `${q.progress}%`}
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 bg-black/[0.06] rounded-full overflow-hidden">
+                        <div
+                          className={cn(
+                            "h-full transition-all duration-300",
+                            q.error ? "bg-rose-500" : "bg-[#111111]"
+                          )}
+                          style={{ width: `${q.progress}%` }}
+                        />
+                      </div>
+                      {q.error && (
+                        <p className="text-[11px] text-rose-600 mt-1">{q.error}</p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {q.error && (
+                        <button
+                          type="button"
+                          onClick={() => handleRetryUpload(q.id)}
+                          className="px-2.5 py-1 rounded-lg bg-rose-600 text-white font-bold text-[11px] hover:bg-rose-700 flex items-center gap-1"
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                          <span>Réessayer</span>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveQueueItem(q.id)}
+                        className="p-1 rounded-lg text-[#666660] hover:text-rose-600"
+                        title="Annuler"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Grille des médias (Glisser-déposer desktop, boutons monter/descendre mobile, remplacement, variantes) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5">
+              {mediaItems.map((med, idx) => {
+                const isSelected = selectedMediaIds.includes(med.id);
+                const isPrimary = idx === 0;
+
+                return (
+                  <div
+                    key={med.id}
+                    draggable
+                    onDragStart={() => setDraggedMediaIndex(idx)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => {
+                      if (draggedMediaIndex !== null && draggedMediaIndex !== idx) {
+                        moveMedia(draggedMediaIndex, idx);
+                        setDraggedMediaIndex(null);
+                      }
+                    }}
+                    className={cn(
+                      "group relative rounded-2xl border bg-white flex flex-col justify-between overflow-hidden transition-all shadow-2xs select-none",
+                      isSelected
+                        ? "border-[#111111] ring-2 ring-[#111111]"
+                        : "border-black/[0.08] hover:border-black/20",
+                      draggedMediaIndex === idx && "opacity-40"
+                    )}
+                  >
+                    {/* Zone Visuel Image */}
+                    <div className="relative aspect-square w-full bg-[#EFECE6] overflow-hidden">
+                      <ProductImage
+                        src={med.url}
+                        alt={med.alt || `${name} - Image ${idx + 1}`}
+                        fill
+                        fallbackLabel={`#${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+
+                      {/* Checkbox sélection */}
+                      <button
+                        type="button"
+                        onClick={() => toggleSelectMedia(med.id)}
+                        className="absolute top-2 left-2 z-10 p-1 rounded-lg bg-white/90 backdrop-blur-xs text-[#111111] shadow-xs cursor-pointer hover:bg-white"
+                        title={isSelected ? "Désélectionner" : "Sélectionner"}
+                      >
+                        {isSelected ? (
+                          <CheckSquare className="w-4 h-4 text-[#111111]" />
+                        ) : (
+                          <Square className="w-4 h-4 text-black/40" />
+                        )}
+                      </button>
+
+                      {/* Badge Image Principale */}
+                      {isPrimary && (
+                        <span className="absolute top-2 right-2 px-2 py-0.5 rounded-lg bg-[#111111] text-white text-[9px] font-bold shadow-xs z-10">
+                          Principale
+                        </span>
+                      )}
+
+                      {/* Bouton rapide "Définir principale" si non-principale */}
+                      {!isPrimary && (
+                        <button
+                          type="button"
+                          onClick={() => setAsPrimary(idx)}
+                          className="absolute top-2 right-2 px-2 py-0.5 rounded-lg bg-white/90 hover:bg-[#111111] hover:text-white text-[9px] font-bold text-[#111111] shadow-xs opacity-0 group-hover:opacity-100 transition-opacity z-10 cursor-pointer"
+                          title="Définir comme image principale"
+                        >
+                          ★ Définir principale
+                        </button>
+                      )}
+
+                      {/* Poignée de drag & drop au centre au hover */}
+                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                        <span className="px-2 py-1 rounded-md bg-black/70 text-white text-[10px] font-semibold flex items-center gap-1">
+                          <GripVertical className="w-3 h-3" />
+                          Glisser pour réordonner
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Barre de contrôles sous l'image : Monter, Descendre, Remplacer, Alt, Supprimer */}
+                    <div className="p-2 space-y-2 bg-[#FAF8F5] border-t border-black/[0.06]">
+                      <div className="flex items-center justify-between text-xs">
+                        {/* Boutons Monter / Descendre (accessibles mobile & desktop) */}
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            disabled={idx === 0}
+                            onClick={() => moveMedia(idx, idx - 1)}
+                            className="p-1 rounded-md border border-black/[0.08] bg-white hover:bg-black/[0.04] disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                            title="Monter d'un rang"
+                          >
+                            <ArrowUp className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={idx === mediaItems.length - 1}
+                            onClick={() => moveMedia(idx, idx + 1)}
+                            className="p-1 rounded-md border border-black/[0.08] bg-white hover:bg-black/[0.04] disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                            title="Descendre d'un rang"
+                          >
+                            <ArrowDown className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Remplacer, Alt, Supprimer */}
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setReplaceTargetIndex(idx);
+                              replaceFileInputRef.current?.click();
+                            }}
+                            className="p-1 rounded-md border border-black/[0.08] bg-white hover:bg-black/[0.04] text-[#111111] transition-colors"
+                            title="Remplacer cette image"
+                          >
+                            <RefreshCw className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingAltItem({ id: med.id, alt: med.alt || "" })}
+                            className="p-1 rounded-md border border-black/[0.08] bg-white hover:bg-black/[0.04] text-[#111111] transition-colors"
+                            title="Modifier le texte alternatif (SEO/Accessibilité)"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteMedia(idx)}
+                            className="p-1 rounded-md border border-rose-200 bg-white hover:bg-rose-50 text-rose-600 transition-colors"
+                            title="Supprimer cette image"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Association optionnelle avec une variante */}
+                      {variants.length > 0 && (
+                        <div className="pt-1 border-t border-black/[0.04]">
+                          <select
+                            value={med.variantId || ""}
+                            onChange={(e) => updateMediaVariant(idx, e.target.value)}
+                            className="w-full text-[10px] font-medium py-1 px-1.5 rounded-lg border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
+                          >
+                            <option value="">Toutes les variantes</option>
+                            {variants.map((v) => (
+                              <option key={v.id} value={v.id}>
+                                Liée à : {v.title || v.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Zone de dépôt (Dropzone d'upload) */}
+              {mediaItems.length < MAX_PRODUCT_IMAGES && (
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (e.dataTransfer.files) {
+                      handleImageFiles(e.dataTransfer.files);
+                    }
+                  }}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="rounded-2xl border-2 border-dashed border-black/[0.15] hover:border-[#111111] bg-white/60 hover:bg-white aspect-square flex flex-col items-center justify-center p-3 text-center cursor-pointer transition-colors group"
+                >
+                  <div className="w-10 h-10 rounded-full bg-black/[0.04] group-hover:bg-[#111111] group-hover:text-white flex items-center justify-center transition-colors mb-2 text-[#888880]">
+                    <UploadCloud className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-bold text-[#111111]">
+                    Glisser des photos
+                  </span>
+                  <span className="text-[10px] text-[#666660] mt-0.5">
+                    ou parcourir
+                  </span>
+                  <span className="text-[9px] text-[#888880] mt-1 font-mono">
+                    JPG, PNG, WebP · 5 Mo max
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Slide Vidéo optionnel (YouTube, Vimeo, MP4 direct) */}
+            {(showVideoInput || videoUrl) && (
+              <div className="p-4 rounded-xl border border-black/[0.08] bg-white space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Video className="w-4 h-4 text-[#111111]" />
+                    <label className="text-xs font-bold text-[#111111]">
+                      Vidéo de démonstration du produit (slide dans la galerie)
+                    </label>
+                  </div>
+                  {videoUrl && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVideoUrl("");
+                        setShowVideoInput(false);
+                      }}
+                      className="text-xs text-rose-600 hover:underline"
+                    >
+                      Supprimer la vidéo
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
+                    placeholder="https://www.youtube.com/watch?v=..., Vimeo, ou lien direct .mp4"
+                    className="flex-1 px-3 py-2 text-xs rounded-xl border border-black/[0.08] bg-[#FAF8F5] text-[#111111] focus:outline-none focus:border-[#111111]"
+                  />
+                </div>
+
+                {videoUrl && (
+                  <div className="text-[11px] flex items-center gap-2 text-[#666660]">
+                    {(() => {
+                      const parsed = parseVideoUrl(videoUrl);
+                      if (parsed.type === "youtube") {
+                        return (
+                          <span className="text-emerald-700 font-bold flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            Format YouTube valide
+                          </span>
+                        );
+                      }
+                      if (parsed.type === "vimeo") {
+                        return (
+                          <span className="text-emerald-700 font-bold flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            Format Vimeo valide
+                          </span>
+                        );
+                      }
+                      if (parsed.type === "mp4") {
+                        return (
+                          <span className="text-emerald-700 font-bold flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            Format vidéo direct valide
+                          </span>
+                        );
+                      }
+                      return (
+                        <span className="text-amber-700 font-bold flex items-center gap-1">
+                          <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                          Lien vidéo non reconnu (fournissez un lien YouTube, Vimeo ou .mp4)
+                        </span>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Modal édition Texte Alternatif (SEO/Accessibilité) */}
+            {editingAltItem && (
+              <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+                <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl border border-black/[0.08] space-y-4 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-[#111111]">
+                      Texte alternatif de l'image (alt)
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => setEditingAltItem(null)}
+                      className="text-[#666660] hover:text-[#111111]"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <p className="text-xs text-[#666660]">
+                    Décrivez ce que montre l'image pour le référencement naturel (SEO) et les lecteurs d'écran.
+                  </p>
+                  <input
+                    type="text"
+                    value={editingAltItem.alt}
+                    onChange={(e) =>
+                      setEditingAltItem((prev) => (prev ? { ...prev, alt: e.target.value } : null))
+                    }
+                    placeholder="Ex: Montre connectée noire vue de face avec écran allumé"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-black/[0.12] focus:outline-none focus:border-[#111111]"
+                  />
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditingAltItem(null)}
+                      className="px-3 py-1.5 rounded-xl border border-black/[0.08] text-xs font-bold text-[#666660] hover:bg-black/[0.03]"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => saveAltText(editingAltItem.id, editingAltItem.alt)}
+                      className="px-4 py-1.5 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black/80"
+                    >
+                      Enregistrer
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Case de confirmation obligatoire des droits d'images */}
+            <div className="pt-2 border-t border-black/[0.06]">
+              <label className="flex items-start gap-2.5 text-xs text-[#111111] cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={confirmedImageRights}
+                  onChange={(e) => setConfirmedImageRights(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-black/20 text-[#111111] focus:ring-[#111111] cursor-pointer"
+                />
+                <span className="font-medium text-[#444440] leading-snug">
+                  Je confirme avoir le droit d'utiliser ces images et vidéos pour la vente de ce produit.
+                </span>
+              </label>
             </div>
           </div>
 

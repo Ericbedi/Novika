@@ -137,11 +137,14 @@ export function NovikaProductPage({
 
       {/* Grille principale : Galerie (gauche) & Fiche d'achat COD (droite) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-        {/* Colonne Galerie (5 colonnes sur grand écran) */}
+        {/* Colonne Galerie (6 colonnes sur grand écran) */}
         <div className="lg:col-span-6 space-y-4">
           <ProductGallery
             images={product.images || []}
             productTitle={product.title || product.name}
+            activeVariantImage={activeVariant?.image}
+            selectedVariantId={selectedVariantId}
+            videoUrl={(product as any).videoUrl}
           />
         </div>
 

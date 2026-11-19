@@ -134,6 +134,14 @@ export interface ProductVariant {
   optionValues?: { optionName: string; value: string }[];
 }
 
+export interface ProductMediaItem {
+  id: string;
+  url: string;
+  alt?: string;
+  variantId?: string;
+  isPrimary?: boolean;
+}
+
 export interface QuantityOffer {
   id: string;
   quantity: number;
@@ -167,6 +175,8 @@ export interface Product {
   type?: string;
   productType?: string;
   images: string[];
+  mediaItems?: ProductMediaItem[];
+  videoUrl?: string;
   salePrice: number;
   price?: number;
   compareAtPrice?: number;

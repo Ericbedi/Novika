@@ -32,7 +32,14 @@ describe("Prompt 14-B : Gestion de la corbeille et suppression de produits", () 
     productStatus: "active",
     variants: [],
     quantityOffers: [],
-    badgesConfig: { badges: [] },
+    badgesConfig: {
+      hasCountdown: false,
+      countdownMinutes: 60,
+      hasComparePrice: false,
+      hasLowStockWarning: false,
+      lowStockThreshold: 10,
+      hasQuantityPacks: false,
+    },
     images: ["/products/serum-eclat.png"],
     createdAt: new Date().toISOString(),
   };
