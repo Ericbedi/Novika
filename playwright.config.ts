@@ -4,6 +4,7 @@ export default defineConfig({
   testDir: "./tests",
   testMatch: "**/*.spec.ts",
   timeout: 30000,
+  workers: process.env.CI ? 1 : 2,
   use: {
     headless: true,
     baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || "http://localhost:3000",

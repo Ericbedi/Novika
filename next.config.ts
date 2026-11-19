@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
   compress: true,
   experimental: {
     optimizePackageImports: ["lucide-react"],
+    cpus: 2,
   },
   turbopack: {
     rules: {

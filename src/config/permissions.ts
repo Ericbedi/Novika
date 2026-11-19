@@ -373,7 +373,11 @@ export function canUseAiProductGenerator(role: UserRole): boolean {
   return role === "owner";
 }
 
-
-
-
+/**
+ * Règle stricte Prompt 11 : Admin et Co-admin (selon permissions.ts)
+ * peuvent importer des produits par fichier CSV.
+ */
+export function canImportProducts(role: UserRole): boolean {
+  return role === "owner" || role === "admin";
+}
 

@@ -8,6 +8,8 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 }
 
+import { brandConfig } from "@/config/brand";
+
 interface PWAInstallContextType {
   canInstall: boolean;
   isInstalled: boolean;
@@ -137,11 +139,11 @@ export function PWAInstallProvider({ children }: { children: ReactNode }) {
 
             <div className="flex items-center gap-3 mb-4">
               <div className="h-10 w-10 rounded-2xl bg-[#111111] text-[#FAF8F5] flex items-center justify-center font-black text-sm shrink-0">
-                A
+                {brandConfig.name[0]}
               </div>
               <div>
                 <h3 id="pwa-install-title" className="text-base font-black tracking-tight">
-                  Installer l'application AfriBuilder
+                  Installer l'application {brandConfig.name}
                 </h3>
                 <p className="text-xs text-[#666660]">
                   Accédez plus rapidement à vos commandes et stocks

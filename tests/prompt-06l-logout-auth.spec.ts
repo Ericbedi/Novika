@@ -11,13 +11,14 @@ test.describe("Prompt 06-L : Déconnexion, protection de session & anti-redirect
   test("1. Clic sur « Déconnexion » : session fermée et redirection vers /connexion avec message dans les 2s", async ({
     page,
   }) => {
-    await page.goto(`${BASE_URL}/app/lome-glow`);
-    await page.evaluate(() => {
-      localStorage.setItem("novika_user_verified", "true");
-      localStorage.setItem("novika_user_email", "admin@novika.com");
-      localStorage.setItem("novika_active_role", "owner");
+    await page.addInitScript(() => {
+      if (window.location.pathname.startsWith("/app")) {
+        localStorage.setItem("novika_user_verified", "true");
+        localStorage.setItem("novika_user_email", "admin@novika.com");
+        localStorage.setItem("novika_active_role", "owner");
+      }
     });
-    await page.reload();
+    await page.goto(`${BASE_URL}/app/lome-glow`);
     await page.waitForLoadState("domcontentloaded");
 
     // Ouvrir le menu utilisateur vers le haut
@@ -46,16 +47,18 @@ test.describe("Prompt 06-L : Déconnexion, protection de session & anti-redirect
   test("2. Option « Me déconnecter de tous les appareils » : redirection vers /connexion avec message", async ({
     page,
   }) => {
-    await page.goto(`${BASE_URL}/app/lome-glow`);
-    await page.evaluate(() => {
-      localStorage.setItem("novika_user_verified", "true");
-      localStorage.setItem("novika_user_email", "admin@novika.com");
-      localStorage.setItem("novika_active_role", "owner");
+    await page.addInitScript(() => {
+      if (window.location.pathname.startsWith("/app")) {
+        localStorage.setItem("novika_user_verified", "true");
+        localStorage.setItem("novika_user_email", "admin@novika.com");
+        localStorage.setItem("novika_active_role", "owner");
+      }
     });
-    await page.reload();
+    await page.goto(`${BASE_URL}/app/lome-glow`);
     await page.waitForLoadState("domcontentloaded");
 
     const menuTrigger = page.locator("#btn-user-menu-trigger");
+    await expect(menuTrigger).toBeVisible();
     await menuTrigger.click();
 
     const logoutAllBtn = page.locator("#btn-logout-all-devices");
@@ -138,19 +141,19 @@ test.describe("Prompt 06-L : Déconnexion, protection de session & anti-redirect
     page1.on("dialog", (dialog) => dialog.accept());
     page2.on("dialog", (dialog) => dialog.accept());
 
+    await page1.addInitScript(() => {
+      localStorage.setItem("novika_user_verified", "true");
+      localStorage.setItem("novika_user_email", "admin@novika.com");
+      localStorage.setItem("novika_active_role", "owner");
+    });
+    await page2.addInitScript(() => {
+      localStorage.setItem("novika_user_verified", "true");
+      localStorage.setItem("novika_user_email", "admin@novika.com");
+      localStorage.setItem("novika_active_role", "owner");
+    });
+
     await page1.goto(`${BASE_URL}/app/lome-glow`);
     await page2.goto(`${BASE_URL}/app/lome-glow`);
-
-    await page1.evaluate(() => {
-      localStorage.setItem("novika_user_verified", "true");
-      localStorage.setItem("novika_user_email", "admin@novika.com");
-      localStorage.setItem("novika_active_role", "owner");
-    });
-    await page2.evaluate(() => {
-      localStorage.setItem("novika_user_verified", "true");
-      localStorage.setItem("novika_user_email", "admin@novika.com");
-      localStorage.setItem("novika_active_role", "owner");
-    });
 
     // Déconnexion depuis l'onglet 1
     const menuTrigger1 = page1.locator("#btn-user-menu-trigger");
