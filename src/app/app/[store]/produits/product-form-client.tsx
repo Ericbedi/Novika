@@ -151,6 +151,41 @@ export function ProductFormClient({
   const [isDirty, setIsDirty] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Synchronisation avec les données enregistrées dans le store local si produit personnalisé
+  useEffect(() => {
+    if (typeof window !== "undefined" && isEditing && initialProduct?.id) {
+      try {
+        const saved = localStorage.getItem(`novika_store_products_${storeSlug}`);
+        if (saved) {
+          const list = JSON.parse(saved);
+          if (Array.isArray(list)) {
+            const found = list.find((p) => p && (p.id === initialProduct.id || p.slug === initialProduct.id));
+            if (found) {
+              if (found.name || found.title) setName(found.name || found.title);
+              if (found.description !== undefined) setDescription(found.description);
+              if (found.category) setCategory(found.category);
+              if (found.productType || found.type) setProductType(found.productType || found.type);
+              if (found.collection) setCollection(found.collection);
+              if (found.supplierId) setSupplierId(found.supplierId);
+              if (found.images && Array.isArray(found.images) && found.images.length > 0) setMediaList(found.images);
+              if (found.salePrice !== undefined) setSalePrice(found.salePrice);
+              if (found.compareAtPrice !== undefined) setCompareAtPrice(found.compareAtPrice);
+              if (found.costPrice !== undefined) setCostPrice(found.costPrice);
+              if (found.sku !== undefined) setSku(found.sku);
+              if (found.barcode !== undefined) setBarcode(found.barcode);
+              if (found.variants && Array.isArray(found.variants) && found.variants.length > 0) {
+                setVariants(found.variants);
+                setHasVariants(found.variants.length > 1);
+              }
+              if (found.productStatus) setProductStatus(found.productStatus);
+              if (found.hiddenFromCatalog !== undefined) setHiddenFromCatalog(Boolean(found.hiddenFromCatalog));
+            }
+          }
+        }
+      } catch {}
+    }
+  }, [storeSlug, isEditing, initialProduct?.id]);
+
   // Onglets du formulaire : Général vs Contenu du reçu
   const [activeFormTab, setActiveFormTab] = useState<"general" | "receipt">("general");
   const [receiptLanguage, setReceiptLanguage] = useState<string>("fr");

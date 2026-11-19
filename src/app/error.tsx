@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { RefreshCw, LogIn, Store, Home, AlertTriangle } from "lucide-react";
+import { RefreshCw, LogIn, Store, Home, AlertTriangle, Copy, Check } from "lucide-react";
 import { ROUTES } from "@/config/routes";
 import { Logo } from "@/components/brand/logo";
 
@@ -15,17 +15,33 @@ export default function GlobalError({
 }) {
   const [hasSession, setHasSession] = useState(false);
   const [userSpace, setUserSpace] = useState<string>(ROUTES.login);
+  const [copied, setCopied] = useState(false);
+
+  // Identifiant court d'incident (digest Next.js ou code généré lisible)
+  const [incidentId] = useState(() => {
+    if (error?.digest) return error.digest;
+    const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
+    return `ERR-${randomSuffix}`;
+  });
 
   useEffect(() => {
-    console.error("[Application Error]:", error);
+    // Journalisation console locale
+    console.error(`[Application Error - Incident ${incidentId}]:`, error);
+
+    let email = "";
+    let verified = "";
+    let activeStore = "lome-glow";
+
     try {
-      const email =
+      email =
         localStorage.getItem("novika_user_email") ||
-        localStorage.getItem("afribuilder_user_email");
-      const verified =
+        localStorage.getItem("afribuilder_user_email") ||
+        "";
+      verified =
         localStorage.getItem("novika_user_verified") ||
-        localStorage.getItem("afribuilder_user_verified");
-      const activeStore = localStorage.getItem("novika_active_store") || "lome-glow";
+        localStorage.getItem("afribuilder_user_verified") ||
+        "";
+      activeStore = localStorage.getItem("novika_active_store") || "lome-glow";
 
       if (email || verified === "true") {
         setHasSession(true);
@@ -38,7 +54,40 @@ export default function GlobalError({
       setHasSession(false);
       setUserSpace(ROUTES.login);
     }
-  }, [error]);
+
+    // Envoi du rapport d'erreur structuré au serveur (Prompt 14-A)
+    try {
+      const currentRoute = typeof window !== "undefined" ? window.location.pathname : "unknown";
+      // Déduire le store depuis le chemin si applicable
+      const storeMatch = currentRoute.match(/^\/app\/([^/]+)/);
+      const storeSlug = storeMatch ? storeMatch[1] : activeStore;
+
+      fetch("/api/logs/client-error", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          incidentId,
+          message: error?.message || "Erreur client non spécifiée",
+          route: currentRoute,
+          store: storeSlug,
+          userId: email ? `usr_${email.replace(/[^a-zA-Z0-9]/g, "_")}` : "anonyme",
+          timestamp: new Date().toISOString(),
+        }),
+      }).catch((logErr) => {
+        console.warn("[Error Logging Notice]:", logErr);
+      });
+    } catch {
+      // Ignorer silencieusement pour ne pas sur-échouer
+    }
+  }, [error, incidentId]);
+
+  const handleCopyIncidentId = () => {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(incidentId);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-[#F3EFE6] text-[#111111] flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-12">
@@ -63,6 +112,43 @@ export default function GlobalError({
             </h1>
             <p className="text-xs text-[#666660] leading-relaxed">
               Une difficulté temporaire s&apos;est produite. Vos données sont préservées et en sécurité.
+            </p>
+          </div>
+
+          {/* Bloc Code Incident (Prompt 14-A : Code court sans détail technique ni fuite de donnée sensible) */}
+          <div className="rounded-2xl bg-[#FAF8F5] border border-black/[0.06] p-3 text-left space-y-1.5">
+            <span className="text-[10px] uppercase font-bold text-[#888880] tracking-wider block">
+              Identifiant de l&apos;incident
+            </span>
+            <div className="flex items-center justify-between gap-2">
+              <code
+                id="incident-code-badge"
+                className="font-mono text-xs font-black text-[#111111] bg-white px-2.5 py-1 rounded-lg border border-black/[0.08] select-all tracking-wider"
+              >
+                {incidentId}
+              </code>
+              <button
+                type="button"
+                id="btn-copy-incident-code"
+                onClick={handleCopyIncidentId}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-black/[0.08] text-[11px] font-bold text-[#111111] hover:bg-black/[0.04] transition-colors cursor-pointer"
+                title="Copier le code de l'incident"
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-3 w-3 text-emerald-600" />
+                    <span className="text-emerald-700">Copié</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3 w-3 text-[#666660]" />
+                    <span>Copier</span>
+                  </>
+                )}
+              </button>
+            </div>
+            <p className="text-[10px] text-[#888880] leading-tight">
+              Transmettez ce code à l&apos;équipe Novika pour un diagnostic immédiat.
             </p>
           </div>
 

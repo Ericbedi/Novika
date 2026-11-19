@@ -43,27 +43,29 @@ export function ProductsNavTabs({ storeSlug }: ProductsNavTabsProps) {
           collections: MOCK_COLLECTIONS.length,
         });
       } else {
-        const savedProds = localStorage.getItem(`novika_store_products_${storeSlug}`);
-        const parsedProds = savedProds ? JSON.parse(savedProds) : [];
-        const savedSuppliers = localStorage.getItem(`novika_store_suppliers_${storeSlug}`);
-        const parsedSuppliers = savedSuppliers ? JSON.parse(savedSuppliers) : [];
-        const savedPos = localStorage.getItem(`novika_store_pos_${storeSlug}`);
-        const parsedPos = savedPos ? JSON.parse(savedPos) : [];
-        const savedCollections = localStorage.getItem(`novika_store_collections_${storeSlug}`);
-        const parsedCollections = savedCollections ? JSON.parse(savedCollections) : [];
+        const safeParseArray = (raw: string | null): any[] => {
+          if (!raw) return [];
+          try {
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : [];
+          } catch {
+            return [];
+          }
+        };
 
-        const reorders = Array.isArray(parsedProds)
-          ? parsedProds.filter((p: any) => (p.stock || 0) <= (p.lowStockThreshold || 10)).length
-          : 0;
+        const parsedProds = safeParseArray(localStorage.getItem(`novika_store_products_${storeSlug}`));
+        const parsedSuppliers = safeParseArray(localStorage.getItem(`novika_store_suppliers_${storeSlug}`));
+        const parsedPos = safeParseArray(localStorage.getItem(`novika_store_pos_${storeSlug}`));
+        const parsedCollections = safeParseArray(localStorage.getItem(`novika_store_collections_${storeSlug}`));
+
+        const reorders = parsedProds.filter((p: any) => (p?.stock || 0) <= (p?.lowStockThreshold || 10)).length;
 
         setTabCounts({
-          products: Array.isArray(parsedProds) ? parsedProds.length : 0,
+          products: parsedProds.length,
           reorderAlerts: reorders,
-          suppliers: Array.isArray(parsedSuppliers) ? parsedSuppliers.length : 0,
-          activeOrders: Array.isArray(parsedPos)
-            ? parsedPos.filter((po: any) => po.status === "ordered" || po.status === "shipped").length
-            : 0,
-          collections: Array.isArray(parsedCollections) ? parsedCollections.length : 0,
+          suppliers: parsedSuppliers.length,
+          activeOrders: parsedPos.filter((po: any) => po?.status === "ordered" || po?.status === "shipped").length,
+          collections: parsedCollections.length,
         });
       }
     }

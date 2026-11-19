@@ -1,12 +1,13 @@
 import React from "react";
-import { notFound } from "next/navigation";
 import { MOCK_PRODUCTS } from "@/mock-data/products";
+import { MOCK_STORES } from "@/mock-data/stores";
+import { getProductByShopAndSlugOrId } from "@/lib/products-store";
 import { ProductFormClient } from "../product-form-client";
 
 export function generateStaticParams() {
-  const stores = ["lome-lux", "abidjan-bio"];
+  const storeSlugs = MOCK_STORES.map((s) => s.slug);
   const params: { store: string; id: string }[] = [];
-  for (const store of stores) {
+  for (const store of storeSlugs) {
     for (const prod of MOCK_PRODUCTS) {
       params.push({ store, id: prod.id });
     }
@@ -20,7 +21,10 @@ export default async function ProductDetailPage({
   params: Promise<{ store: string; id: string }>;
 }) {
   const { store, id } = await params;
-  const product = MOCK_PRODUCTS.find((p) => p.id === id) || MOCK_PRODUCTS[0];
+  const product =
+    getProductByShopAndSlugOrId({ shopSlug: store, slugOrId: id, allowDraft: true }) ||
+    MOCK_PRODUCTS.find((p) => p.id === id || p.slug === id) ||
+    MOCK_PRODUCTS[0];
 
   return (
     <ProductFormClient

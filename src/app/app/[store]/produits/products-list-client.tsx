@@ -55,7 +55,10 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
       const saved = localStorage.getItem(`novika_store_products_${storeSlug}`);
       if (saved) {
         try {
-          return JSON.parse(saved);
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            return parsed.filter((p) => p && typeof p === "object");
+          }
         } catch {}
       }
       if (!isFounderDemoStore) return [];
@@ -68,12 +71,17 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
       const saved = localStorage.getItem(`novika_store_products_${storeSlug}`);
       if (saved) {
         try {
-          setProducts(JSON.parse(saved));
-          return;
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            setProducts(parsed.filter((p) => p && typeof p === "object"));
+            return;
+          }
         } catch {}
       }
       if (!isFounderDemoStore) {
         setProducts([]);
+      } else {
+        setProducts(MOCK_PRODUCTS);
       }
     }
   }, [storeSlug, isFounderDemoStore]);
@@ -110,18 +118,24 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
   // Filtrage combiné
   const filteredProducts = useMemo(() => {
     return products.filter((prod) => {
+      if (!prod || typeof prod !== "object") return false;
+      const prodName = prod.name || prod.title || "";
+      const prodCategory = prod.category || "";
+      const prodSku = prod.sku || "";
+      const prodType = prod.productType || prod.type || "";
+
       const matchSearch =
         searchQuery === "" ||
-        prod.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        prod.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (prod.sku && prod.sku.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (prod.productType && prod.productType.toLowerCase().includes(searchQuery.toLowerCase()));
+        prodName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        prodCategory.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        prodSku.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        prodType.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const currentStatus = prod.productStatus || (prod.stock > 0 ? "active" : "draft");
+      const currentStatus = prod.productStatus || ((prod.stock || 0) > 0 ? "active" : "draft");
       const matchStatus = statusFilter === "all" || currentStatus === statusFilter;
 
       const currentStockStatus =
-        prod.stockStatus || (prod.stock === 0 ? "out_of_stock" : prod.stock <= 10 ? "low_stock" : "in_stock");
+        prod.stockStatus || ((prod.stock || 0) === 0 ? "out_of_stock" : (prod.stock || 0) <= 10 ? "low_stock" : "in_stock");
       const matchStock = stockFilter === "all" || currentStockStatus === stockFilter;
 
       const matchCollection = collectionFilter === "all" || prod.collection === collectionFilter;
@@ -133,7 +147,8 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
 
   // Indicateurs globaux
   const kpis = useMemo(() => {
-    if (products.length === 0) {
+    const validProds = products.filter((p) => p && typeof p === "object");
+    if (validProds.length === 0) {
       return {
         avgVelocity: "0.0",
         criticalStockCount: 0,
@@ -146,17 +161,17 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
       };
     }
 
-    const totalVelocity = products.reduce((sum, p) => sum + (p.salesVelocity || 0), 0);
-    const avgVelocity = (totalVelocity / products.length).toFixed(1);
+    const totalVelocity = validProds.reduce((sum, p) => sum + (p.salesVelocity || 0), 0);
+    const avgVelocity = (totalVelocity / validProds.length).toFixed(1);
 
-    const criticalStockCount = products.filter((p) => (p.daysOfStock || 0) < 7 && p.stock > 0).length;
-    const warningStockCount = products.filter((p) => (p.daysOfStock || 0) >= 7 && (p.daysOfStock || 0) <= 15).length;
-    const healthyStockCount = products.filter((p) => (p.daysOfStock || 0) > 15).length;
-    const outOfStockCount = products.filter((p) => p.stock === 0).length;
+    const criticalStockCount = validProds.filter((p) => (p.daysOfStock || 0) < 7 && (p.stock || 0) > 0).length;
+    const warningStockCount = validProds.filter((p) => (p.daysOfStock || 0) >= 7 && (p.daysOfStock || 0) <= 15).length;
+    const healthyStockCount = validProds.filter((p) => (p.daysOfStock || 0) > 15).length;
+    const outOfStockCount = validProds.filter((p) => (p.stock || 0) === 0).length;
 
-    const classA = products.filter((p) => p.abcClass === "A");
-    const classB = products.filter((p) => p.abcClass === "B");
-    const classC = products.filter((p) => p.abcClass === "C");
+    const classA = validProds.filter((p) => p.abcClass === "A");
+    const classB = validProds.filter((p) => p.abcClass === "B");
+    const classC = validProds.filter((p) => p.abcClass === "C");
 
     return {
       avgVelocity,
@@ -695,17 +710,17 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
                       <td className="py-3.5 pl-2 pr-3">
                         <div className="flex items-center gap-3">
                           <div className="h-11 w-11 rounded-xl border border-black/[0.08] bg-[#EFECE6] flex items-center justify-center shrink-0 overflow-hidden font-bold text-xs text-[#666660]">
-                            {product.name.charAt(0)}
+                            {(product.name || "P").charAt(0).toUpperCase()}
                           </div>
                           <div className="min-w-0">
                             <Link
                               href={`/app/${storeSlug}/produits/${product.id}`}
                               className="font-bold text-xs text-[#111111] hover:underline block truncate max-w-xs"
                             >
-                              {product.name}
+                              {product.name || "Produit sans titre"}
                             </Link>
                             <span className="text-[10px] text-[#888880] block">
-                              SKU: {product.sku || "N/A"} · {product.variants.length} variante(s)
+                              SKU: {product.sku || "N/A"} · {product.variants ? product.variants.length : 1} variante(s)
                             </span>
                           </div>
                         </div>
@@ -1008,25 +1023,25 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
                   </div>
 
                   <div className="h-32 w-full rounded-xl bg-[#EFECE6] border border-black/[0.08] flex items-center justify-center font-bold text-2xl text-[#888880] mb-3">
-                    {product.name.charAt(0)}
+                    {(product.name || "P").charAt(0).toUpperCase()}
                   </div>
 
                   <Link
                     href={`/app/${storeSlug}/produits/${product.id}`}
                     className="font-bold text-xs text-[#111111] hover:underline block line-clamp-2"
                   >
-                    {product.name}
+                    {product.name || "Produit sans titre"}
                   </Link>
 
                   <div className="text-[10px] text-[#888880] mt-1">
-                    {product.category} · {product.productType || "Standard"}
+                    {product.category || "Général"} · {product.productType || "Standard"}
                   </div>
                 </div>
 
                 <div className="space-y-2 pt-2 border-t border-black/[0.06]">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-bold text-[#111111]">
-                      {formatFcfa(product.salePrice)}
+                      {formatFcfa(product.salePrice || 0)}
                     </span>
                     <span
                       className={cn(
