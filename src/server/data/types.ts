@@ -4,23 +4,31 @@
 
 export const ORDER_STATUSES = [
   "pending", // À traiter (bleu)
+  "confirmed", // Confirmée
+  "prepared", // Préparée
   "unreachable", // Injoignable / Je vous reviens (orange)
   "scheduled", // Programmée (violet)
   "postponed", // Reportée (jaune)
   "delivered", // Livrée (vert)
-  "rejected", // Rejetée (rouge - refus colis livraison)
-  "cancelled", // Annulée (rouge - annulée avant expédition)
+  "rejected", // Rejetée (rouge - refus client)
+  "rejected_invalid_number", // Rejetée - numéro invalide
+  "lost_unreachable", // Perdue - injoignable (cadence épuisée)
+  "cancelled", // Annulée (avant expédition)
 ] as const;
 
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   pending: "À traiter",
+  confirmed: "Confirmée",
+  prepared: "Préparée",
   unreachable: "Injoignable / Je vous reviens",
   scheduled: "Programmée",
   postponed: "Reportée",
   delivered: "Livrée",
   rejected: "Rejetée",
+  rejected_invalid_number: "Rejetée – numéro invalide",
+  lost_unreachable: "Perdue – injoignable",
   cancelled: "Annulée",
 };
 
@@ -102,7 +110,14 @@ export interface Order {
     campaign?: string;
     content?: string;
   };
+  followupCount?: number;
+  rescheduleCount?: number;
+  rejectionReason?: string;
+  isReopenedByAdmin?: boolean;
+  reopenCount?: number;
 }
+
+export * from "./followups-types";
 
 export interface ProductVariant {
   id: string;

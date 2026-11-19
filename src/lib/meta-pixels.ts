@@ -332,4 +332,14 @@ class MetaPixelsStore {
   }
 }
 
+/**
+ * Règle Prompt 05-RL & 05-Px2 :
+ * Les commandes ayant un statut final "rejected", "rejected_invalid_number", "lost_unreachable" ou "cancelled"
+ * ne doivent JAMAIS déclencher d'événement Purchase Meta.
+ */
+export function shouldSendPurchaseEvent(orderStatus: string): boolean {
+  const disallowed = ["rejected", "rejected_invalid_number", "lost_unreachable", "cancelled"];
+  return !disallowed.includes(orderStatus);
+}
+
 export const metaPixelsStore = new MetaPixelsStore();

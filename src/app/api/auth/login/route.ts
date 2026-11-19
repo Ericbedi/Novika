@@ -173,19 +173,52 @@ export async function POST(req: NextRequest) {
     }
 
     const hasStores = Boolean(userShops && userShops.length > 0);
+    const userRole = userRecord.role || "owner";
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       user: {
         id: userRecord.id,
         email: userRecord.email,
         fullName: userRecord.full_name || userRecord.email.split("@")[0],
         country: userRecord.country || "TG",
-        role: userRecord.role || "owner",
+        role: userRole,
         hasStores,
         stores: userShops,
       },
     });
+
+    const sessionPayload = JSON.stringify({
+      id: userRecord.id,
+      email: userRecord.email,
+      role: userRole,
+      createdAt: Date.now(),
+    });
+
+    response.cookies.set("novika_session", sessionPayload, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    });
+    response.cookies.set("novika_active_role", userRole, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+      sameSite: "lax",
+    });
+    response.cookies.set("novika_user_email", userRecord.email, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+      sameSite: "lax",
+    });
+    response.cookies.set("afribuilder_session", "true", {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+      sameSite: "lax",
+    });
+
+    return response;
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Erreur serveur";
     return NextResponse.json({ error: message }, { status: 500 });

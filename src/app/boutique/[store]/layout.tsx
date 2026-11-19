@@ -98,7 +98,7 @@ export default function StorefrontLayout({
             hideHeaderMenu: Boolean(parsed.hideHeaderMenu),
             hideCatalog: Boolean(parsed.hideCatalog),
           });
-        } catch {}
+        } catch { }
       }
     }
   }, [storeSlug]);
@@ -170,9 +170,8 @@ export default function StorefrontLayout({
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`transition-colors hover:text-[#111111] ${
-                      isActive ? "text-[#111111] font-black underline underline-offset-8" : ""
-                    }`}
+                    className={`transition-colors hover:text-[#111111] ${isActive ? "text-[#111111] font-black underline underline-offset-8" : ""
+                      }`}
                   >
                     {link.label}
                   </Link>

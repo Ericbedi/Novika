@@ -17,15 +17,33 @@ import {
 import { Logo } from "@/components/brand/logo";
 import { AuthDeliveryIllustration } from "@/components/auth/auth-delivery-illustration";
 import { createClient } from "@/lib/supabase/client";
+import { getAuthMessage } from "@/content";
+import { getDefaultSpaceForRole, sanitizeInternalRedirect } from "@/config/spaces";
 
 export function LoginClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlEmail = searchParams.get("email");
   const isJustVerified = searchParams.get("verified") === "true";
+  const messageKey = searchParams.get("message");
+  const statusMessage = getAuthMessage(messageKey);
 
   const [email, setEmail] = useState(urlEmail || "");
   const [password, setPassword] = useState("");
+
+  // Redirection automatique si l'utilisateur est déjà authentifié (sans message de déconnexion)
+  useEffect(() => {
+    if (typeof window !== "undefined" && !messageKey) {
+      const userEmail = localStorage.getItem("novika_user_email");
+      const userVerified = localStorage.getItem("novika_user_verified");
+      const userRole = localStorage.getItem("novika_active_role") || "owner";
+      if (userEmail && userVerified === "true") {
+        const rawRedirect = searchParams.get("redirect");
+        const target = sanitizeInternalRedirect(rawRedirect, userRole);
+        router.replace(target);
+      }
+    }
+  }, [messageKey, router, searchParams]);
 
   useEffect(() => {
     if (urlEmail) {
@@ -93,9 +111,8 @@ export function LoginClient() {
           return;
         }
 
-        if (res.status === 404 || data.code === "ACCOUNT_NOT_FOUND") {
-          setAccountNotFound(true);
-          setError("Aucun compte associé à cette adresse e-mail. Veuillez d'abord vous inscrire.");
+        if (res.status === 404 || data.code === "ACCOUNT_NOT_FOUND" || res.status === 401) {
+          setError("E-mail ou mot de passe incorrect.");
           return;
         }
 
@@ -121,23 +138,17 @@ export function LoginClient() {
         }
       }
 
-      // Redirection selon le profil
+      // Redirection selon le profil avec validation stricte anti-redirection ouverte (Prompt 06-L)
       const user = data.user;
-      if (user.role === "closer") {
-        router.push("/app/lome-glow/commandes");
-      } else if (user.role === "rider") {
-        router.push("/app/lome-glow/livraisons");
-      } else if (user.role === "agency") {
-        router.push("/app/lome-glow/commandes?view=agency");
+      const rawRedirect = searchParams.get("redirect");
+      const firstSlug = (user.stores && user.stores[0]?.slug) || "lome-glow";
+
+      if (rawRedirect) {
+        const safeRedirect = sanitizeInternalRedirect(rawRedirect, user.role, firstSlug);
+        router.push(safeRedirect);
       } else {
-        if (user.isDemo) {
-          router.push("/app/lome-glow");
-        } else if (!user.hasStores) {
-          router.push("/demarrer");
-        } else {
-          const firstSlug = user.stores[0]?.slug || "lome-glow";
-          router.push(`/app/${firstSlug}`);
-        }
+        const defaultSpace = getDefaultSpaceForRole(user.role, firstSlug);
+        router.push(defaultSpace);
       }
     } catch (err: unknown) {
       setIsLoading(false);
@@ -198,6 +209,17 @@ export function LoginClient() {
         <div className="bg-[#FAF8F5]/80 rounded-3xl p-3 border border-black/[0.04]">
           <AuthDeliveryIllustration />
         </div>
+
+        {/* Message d'état de session / déconnexion (Prompt 06-L) */}
+        {statusMessage && (
+          <div
+            id="auth-session-status-message"
+            className="p-3.5 rounded-2xl bg-amber-50/90 border border-amber-200/80 text-amber-900 text-xs flex items-center gap-2.5 shadow-2xs"
+          >
+            <CheckCircle2 className="h-4 w-4 text-amber-700 shrink-0" />
+            <p className="font-semibold">{statusMessage}</p>
+          </div>
+        )}
 
         {/* Alerte e-mail tout juste validé */}
         {isJustVerified && (

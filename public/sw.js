@@ -43,3 +43,35 @@ self.addEventListener("push", (event) => {
   };
   event.waitUntil(self.registration.showNotification(title, options));
 });
+
+// Prompt 06-L : Vidage du cache du service worker pour les pages et données privées
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.action === "CLEAR_PRIVATE_CACHE") {
+    event.waitUntil(
+      caches.keys().then((keys) => {
+        return Promise.all(
+          keys.map((key) => {
+            return caches.open(key).then((cache) => {
+              return cache.keys().then((requests) => {
+                return Promise.all(
+                  requests.map((req) => {
+                    const url = new URL(req.url);
+                    if (
+                      url.pathname.startsWith("/app") ||
+                      url.pathname.startsWith("/api") ||
+                      url.pathname.startsWith("/demarrer") ||
+                      url.pathname.startsWith("/platform-admin")
+                    ) {
+                      return cache.delete(req);
+                    }
+                    return Promise.resolve();
+                  })
+                );
+              });
+            });
+          })
+        );
+      })
+    );
+  }
+});

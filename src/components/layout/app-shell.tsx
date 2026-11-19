@@ -30,6 +30,7 @@ import {
   Tag,
   TrendingUp,
   Users,
+  Laptop,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MOCK_STORES, CURRENT_USER } from "@/mock-data/stores";
@@ -38,6 +39,12 @@ import { CountryFlagSvg } from "@/components/app/bits";
 import { SidebarNav } from "./sidebar-nav";
 import { BetaFeedbackModal } from "@/components/app/beta-feedback-modal";
 import { BetaInfoModal } from "./beta-info-modal";
+import {
+  performLogout,
+  NOVIKA_AUTH_BROADCAST,
+  NOVIKA_LOGOUT_SIGNAL_KEY,
+  TAB_CLIENT_ID,
+} from "@/lib/auth-client";
 import { CommandPalette } from "./command-palette";
 import { NotificationsPanel } from "./notifications-panel";
 import { CreateStoreModal } from "@/components/app/create-store-modal";
@@ -306,38 +313,79 @@ function AppShellInner({
     router.push(`/app/${newStore.slug}`);
   };
 
-  const handleLogout = async () => {
+  const handleLogout = async (allDevices = false) => {
     if (typeof window !== "undefined") {
       const offlinePending = localStorage.getItem("afribuilder_offline_queue");
-      if (offlinePending && JSON.parse(offlinePending).length > 0) {
-        const confirm = window.confirm(
-          "Attention : vous avez des commandes ou actions non synchronisées en mode hors-ligne. Vous risquez de perdre ces données en vous déconnectant maintenant. Confirmer la déconnexion ?"
-        );
-        if (!confirm) return;
+      if (offlinePending) {
+        try {
+          if (JSON.parse(offlinePending).length > 0) {
+            const confirm = window.confirm(
+              "Attention : vous avez des commandes ou actions non synchronisées en mode hors-ligne. Vous risquez de perdre ces données en vous déconnectant maintenant. Confirmer la déconnexion ?"
+            );
+            if (!confirm) return;
+          }
+        } catch {}
       }
     }
 
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-    } catch {
-      // Poursuivre le nettoyage local même en cas d'échec réseau
+    await performLogout({ allDevices, reason: "voluntary" });
+  };
+
+  // Écouteurs de synchronisation multi-onglets et cycle de vie PWA (Prompt 06-L)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let bc: BroadcastChannel | null = null;
+    if ("BroadcastChannel" in window) {
+      try {
+        bc = new BroadcastChannel(NOVIKA_AUTH_BROADCAST);
+        bc.onmessage = (event) => {
+          if (event.data?.type === "LOGOUT") {
+            if (event.data?.sourceId === TAB_CLIENT_ID) return;
+            const msg = event.data?.allDevices ? "all_devices_logged_out" : "logged_out";
+            window.location.href = `/connexion?message=${msg}`;
+          }
+        };
+      } catch {}
     }
 
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("afribuilder_session");
-      localStorage.removeItem("afribuilder_auth");
-      localStorage.removeItem("afribuilder_active_role");
-      if (window.indexedDB) {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === NOVIKA_LOGOUT_SIGNAL_KEY && e.newValue) {
         try {
-          window.indexedDB.deleteDatabase("afribuilder_offline_db");
+          const parsed = JSON.parse(e.newValue);
+          if (parsed.sourceId === TAB_CLIENT_ID) return;
+          const msg = parsed.allDevices ? "all_devices_logged_out" : "logged_out";
+          window.location.href = `/connexion?message=${msg}`;
         } catch {
-          // Ignorer
+          window.location.href = "/connexion?message=logged_out";
         }
       }
-    }
+    };
+    window.addEventListener("storage", handleStorage);
 
-    router.push("/auth/connexion");
-  };
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        const email =
+          localStorage.getItem("novika_user_email") ||
+          localStorage.getItem("afribuilder_user_email");
+        const verified =
+          localStorage.getItem("novika_user_verified") ||
+          localStorage.getItem("afribuilder_user_verified");
+        if (!email && verified !== "true") {
+          router.push("/connexion?message=session_expired");
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", handleVisibility);
+
+    return () => {
+      if (bc) bc.close();
+      window.removeEventListener("storage", handleStorage);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", handleVisibility);
+    };
+  }, []);
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -682,12 +730,21 @@ function AppShellInner({
                     </div>
                   </div>
 
-                  {/* Déconnexion en rouge discret */}
-                  <div className="pt-1.5 border-t border-black/[0.08]">
+                  {/* Options de déconnexion (Prompt 06-L) */}
+                  <div className="pt-1.5 border-t border-black/[0.08] space-y-0.5">
+                    <button
+                      type="button"
+                      id="btn-logout-all-devices"
+                      onClick={() => handleLogout(true)}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-[#666660] hover:text-rose-600 hover:bg-rose-50/70 transition-colors cursor-pointer text-left"
+                    >
+                      <Laptop className="h-3.5 w-3.5 text-[#888880]" />
+                      <span>Me déconnecter de tous les appareils</span>
+                    </button>
                     <button
                       type="button"
                       id="btn-user-logout"
-                      onClick={handleLogout}
+                      onClick={() => handleLogout(false)}
                       className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer text-left"
                     >
                       <LogOut className="h-3.5 w-3.5 text-rose-600" />
@@ -803,14 +860,26 @@ function AppShellInner({
                   <span>{currentUser.name}</span>
                   <span className="text-[10px] text-[#666660]">{USER_ROLE_LABELS[activeRole]}</span>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="w-full py-2 rounded-xl bg-rose-50 text-rose-700 text-xs font-bold hover:bg-rose-100 flex items-center justify-center gap-1.5"
-                >
-                  <LogOut className="h-3.5 w-3.5" />
-                  <span>Déconnexion</span>
-                </button>
+                <div className="pt-1 border-t border-black/[0.06] space-y-1">
+                  <button
+                    type="button"
+                    id="btn-mobile-logout-all-devices"
+                    onClick={() => handleLogout(true)}
+                    className="w-full py-1.5 rounded-xl text-[11px] font-semibold text-[#666660] hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center gap-1.5"
+                  >
+                    <Laptop className="h-3.5 w-3.5 text-[#888880]" />
+                    <span>Me déconnecter de tous les appareils</span>
+                  </button>
+                  <button
+                    type="button"
+                    id="btn-mobile-logout"
+                    onClick={() => handleLogout(false)}
+                    className="w-full py-2 rounded-xl bg-rose-50 text-rose-700 text-xs font-bold hover:bg-rose-100 flex items-center justify-center gap-1.5"
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                    <span>Déconnexion</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>

@@ -332,6 +332,40 @@ export function canManagePixels(role: UserRole): boolean {
   return role === "owner" || role === "admin";
 }
 
+/**
+ * Droits d'accès aux Relances / Rappels (Prompt 05-RL)
+ * - Closeuse : ses propres rappels et ses commandes.
+ * - Manager : toute l'équipe, réassignation, tableau anti-abus.
+ * - Admin / Owner : tout, y compris réouverture de commande rejetée.
+ * - Livreurs et agences : strictement aucun accès (false).
+ */
+export function canAccessFollowups(role: UserRole): boolean {
+  return role === "owner" || role === "admin" || role === "manager" || role === "closer";
+}
+
+export function canReassignFollowups(role: UserRole): boolean {
+  return role === "owner" || role === "admin" || role === "manager";
+}
+
+export function canReopenRejectedOrders(
+  role: UserRole,
+  isCorrectedPhoneSubmitted: boolean = false,
+  reopenCount: number = 0
+): boolean {
+  if (role === "owner" || role === "admin" || role === "manager") {
+    return true;
+  }
+  if (role === "closer") {
+    return isCorrectedPhoneSubmitted && reopenCount === 0;
+  }
+  return false;
+}
+
+export function canViewCloserPerformance(role: UserRole): boolean {
+  return role === "owner" || role === "admin" || role === "manager";
+}
+
+
 
 
 

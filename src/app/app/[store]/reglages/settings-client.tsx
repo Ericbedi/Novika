@@ -247,8 +247,15 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
     showToast("Profil mis à jour !");
   };
 
-  const handleLogoutAllSessions = () => {
+  const handleLogoutAllSessions = async () => {
     setActiveSessions((prev) => prev.filter((s) => s.current));
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ allDevices: true, reason: "settings_profile" }),
+      });
+    } catch {}
     showToast("Toutes les autres sessions ont été révoquées avec succès !");
   };
 

@@ -41,11 +41,35 @@ const STATUS_STYLES: Record<OrderStatus, { bg: string; text: string; border: str
     border: "border-emerald-200 dark:border-emerald-800/60",
     dot: "bg-emerald-500",
   },
+  confirmed: {
+    bg: "bg-emerald-50 dark:bg-emerald-950/50",
+    text: "text-emerald-800 dark:text-emerald-300",
+    border: "border-emerald-200 dark:border-emerald-800/60",
+    dot: "bg-emerald-500",
+  },
+  prepared: {
+    bg: "bg-teal-50 dark:bg-teal-950/50",
+    text: "text-teal-800 dark:text-teal-300",
+    border: "border-teal-200 dark:border-teal-800/60",
+    dot: "bg-teal-500",
+  },
   rejected: {
     bg: "bg-rose-50 dark:bg-rose-950/50",
     text: "text-rose-700 dark:text-rose-300",
     border: "border-rose-200 dark:border-rose-800/60",
     dot: "bg-rose-500",
+  },
+  rejected_invalid_number: {
+    bg: "bg-neutral-100 dark:bg-neutral-900",
+    text: "text-neutral-700 dark:text-neutral-300",
+    border: "border-neutral-300 dark:border-neutral-700",
+    dot: "bg-neutral-500",
+  },
+  lost_unreachable: {
+    bg: "bg-neutral-100 dark:bg-neutral-900",
+    text: "text-neutral-700 dark:text-neutral-300",
+    border: "border-neutral-300 dark:border-neutral-700",
+    dot: "bg-neutral-500",
   },
   cancelled: {
     bg: "bg-rose-50 dark:bg-rose-950/50",
