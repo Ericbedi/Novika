@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Package, Boxes, Truck, ShoppingCart, FolderTree, AlertTriangle } from "lucide-react";
@@ -19,14 +20,54 @@ export function ProductsNavTabs({ storeSlug }: ProductsNavTabsProps) {
   const isAgency = activeRole === "agency";
   const isRestricted = isCloser || isRider || isAgency;
 
-  // Counts
-  const totalProducts = MOCK_PRODUCTS.length;
-  const reorderAlertsCount = MOCK_REORDER_ITEMS.length;
-  const suppliersCount = MOCK_SUPPLIERS.length;
-  const activeOrdersCount = MOCK_PURCHASE_ORDERS.filter(
-    (po) => po.status === "ordered" || po.status === "shipped"
-  ).length;
-  const collectionsCount = MOCK_COLLECTIONS.length;
+  const isFounderDemoStore = storeSlug === "lome-glow";
+
+  const [tabCounts, setTabCounts] = useState({
+    products: isFounderDemoStore ? MOCK_PRODUCTS.length : 0,
+    reorderAlerts: isFounderDemoStore ? MOCK_REORDER_ITEMS.length : 0,
+    suppliers: isFounderDemoStore ? MOCK_SUPPLIERS.length : 0,
+    activeOrders: isFounderDemoStore
+      ? MOCK_PURCHASE_ORDERS.filter((po) => po.status === "ordered" || po.status === "shipped").length
+      : 0,
+    collections: isFounderDemoStore ? MOCK_COLLECTIONS.length : 0,
+  });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if (isFounderDemoStore) {
+        setTabCounts({
+          products: MOCK_PRODUCTS.length,
+          reorderAlerts: MOCK_REORDER_ITEMS.length,
+          suppliers: MOCK_SUPPLIERS.length,
+          activeOrders: MOCK_PURCHASE_ORDERS.filter((po) => po.status === "ordered" || po.status === "shipped").length,
+          collections: MOCK_COLLECTIONS.length,
+        });
+      } else {
+        const savedProds = localStorage.getItem(`novika_store_products_${storeSlug}`);
+        const parsedProds = savedProds ? JSON.parse(savedProds) : [];
+        const savedSuppliers = localStorage.getItem(`novika_store_suppliers_${storeSlug}`);
+        const parsedSuppliers = savedSuppliers ? JSON.parse(savedSuppliers) : [];
+        const savedPos = localStorage.getItem(`novika_store_pos_${storeSlug}`);
+        const parsedPos = savedPos ? JSON.parse(savedPos) : [];
+        const savedCollections = localStorage.getItem(`novika_store_collections_${storeSlug}`);
+        const parsedCollections = savedCollections ? JSON.parse(savedCollections) : [];
+
+        const reorders = Array.isArray(parsedProds)
+          ? parsedProds.filter((p: any) => (p.stock || 0) <= (p.lowStockThreshold || 10)).length
+          : 0;
+
+        setTabCounts({
+          products: Array.isArray(parsedProds) ? parsedProds.length : 0,
+          reorderAlerts: reorders,
+          suppliers: Array.isArray(parsedSuppliers) ? parsedSuppliers.length : 0,
+          activeOrders: Array.isArray(parsedPos)
+            ? parsedPos.filter((po: any) => po.status === "ordered" || po.status === "shipped").length
+            : 0,
+          collections: Array.isArray(parsedCollections) ? parsedCollections.length : 0,
+        });
+      }
+    }
+  }, [storeSlug, isFounderDemoStore]);
 
   const tabs = [
     {
@@ -35,7 +76,7 @@ export function ProductsNavTabs({ storeSlug }: ProductsNavTabsProps) {
       href: `/app/${storeSlug}/produits`,
       exact: true,
       icon: Package,
-      badge: totalProducts,
+      badge: tabCounts.products,
       badgeColor: "bg-[#EAE4D9] text-[#111111]",
     },
     {
@@ -44,7 +85,7 @@ export function ProductsNavTabs({ storeSlug }: ProductsNavTabsProps) {
       href: `/app/${storeSlug}/produits/stock`,
       aliases: [`/app/${storeSlug}/stock`],
       icon: Boxes,
-      badge: reorderAlertsCount > 0 ? `${reorderAlertsCount} à renouveler` : undefined,
+      badge: tabCounts.reorderAlerts > 0 ? `${tabCounts.reorderAlerts} à renouveler` : undefined,
       badgeColor: "bg-amber-100 text-amber-800",
       badgeIcon: AlertTriangle,
     },
@@ -55,7 +96,7 @@ export function ProductsNavTabs({ storeSlug }: ProductsNavTabsProps) {
           label: "Fournisseurs",
           href: `/app/${storeSlug}/produits/fournisseurs`,
           icon: Truck,
-          badge: suppliersCount,
+          badge: tabCounts.suppliers,
           badgeColor: "bg-[#EAE4D9] text-[#111111]",
         },
         {
@@ -64,8 +105,8 @@ export function ProductsNavTabs({ storeSlug }: ProductsNavTabsProps) {
           href: `/app/${storeSlug}/produits/achats`,
           aliases: [`/app/${storeSlug}/sourcing`, `/app/${storeSlug}/produits/sourcing`],
           icon: ShoppingCart,
-          badge: activeOrdersCount > 0 ? `${activeOrdersCount} en cours` : `${MOCK_PURCHASE_ORDERS.length}`,
-          badgeColor: activeOrdersCount > 0 ? "bg-blue-100 text-blue-800" : "bg-[#EAE4D9] text-[#111111]",
+          badge: tabCounts.activeOrders > 0 ? `${tabCounts.activeOrders} en cours` : `${tabCounts.activeOrders}`,
+          badgeColor: tabCounts.activeOrders > 0 ? "bg-blue-100 text-blue-800" : "bg-[#EAE4D9] text-[#111111]",
         },
       ]
       : []),
@@ -75,7 +116,7 @@ export function ProductsNavTabs({ storeSlug }: ProductsNavTabsProps) {
       href: `/app/${storeSlug}/produits/collections`,
       aliases: [`/app/${storeSlug}/collections`],
       icon: FolderTree,
-      badge: collectionsCount,
+      badge: tabCounts.collections,
       badgeColor: "bg-[#EAE4D9] text-[#111111]",
     },
   ];
@@ -108,8 +149,8 @@ export function ProductsNavTabs({ storeSlug }: ProductsNavTabsProps) {
               key={tab.id}
               href={tab.href}
               className={`group flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap shadow-xs ${active
-                  ? "bg-[#111111] text-white shadow-sm"
-                  : "bg-white text-[#4A4A4A] hover:text-[#111111] hover:bg-[#F3EFE6] border border-[#E6E0D4]"
+                ? "bg-[#111111] text-white shadow-sm"
+                : "bg-white text-[#4A4A4A] hover:text-[#111111] hover:bg-[#F3EFE6] border border-[#E6E0D4]"
                 }`}
             >
               <Icon

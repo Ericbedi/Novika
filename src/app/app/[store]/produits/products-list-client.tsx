@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   Package,
@@ -46,7 +46,42 @@ interface ProductsListClientProps {
 
 export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
   const { activeRole } = useApp();
-  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
+  const isFounderDemoStore = storeSlug === "lome-glow";
+
+  const [products, setProducts] = useState<Product[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(`novika_store_products_${storeSlug}`);
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {}
+      }
+      if (!isFounderDemoStore) return [];
+    }
+    return isFounderDemoStore ? MOCK_PRODUCTS : [];
+  });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(`novika_store_products_${storeSlug}`);
+      if (saved) {
+        try {
+          setProducts(JSON.parse(saved));
+          return;
+        } catch {}
+      }
+      if (!isFounderDemoStore) {
+        setProducts([]);
+      }
+    }
+  }, [storeSlug, isFounderDemoStore]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && !isFounderDemoStore) {
+      localStorage.setItem(`novika_store_products_${storeSlug}`, JSON.stringify(products));
+    }
+  }, [products, storeSlug, isFounderDemoStore]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "draft" | "archived">("all");
   const [stockFilter, setStockFilter] = useState<"all" | "in_stock" | "low_stock" | "out_of_stock">("all");
@@ -96,8 +131,21 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
 
   // Indicateurs globaux
   const kpis = useMemo(() => {
+    if (products.length === 0) {
+      return {
+        avgVelocity: "0.0",
+        criticalStockCount: 0,
+        warningStockCount: 0,
+        healthyStockCount: 0,
+        outOfStockCount: 0,
+        classA: 0,
+        classB: 0,
+        classC: 0,
+      };
+    }
+
     const totalVelocity = products.reduce((sum, p) => sum + (p.salesVelocity || 0), 0);
-    const avgVelocity = (totalVelocity / (products.length || 1)).toFixed(1);
+    const avgVelocity = (totalVelocity / products.length).toFixed(1);
 
     const criticalStockCount = products.filter((p) => (p.daysOfStock || 0) < 7 && p.stock > 0).length;
     const warningStockCount = products.filter((p) => (p.daysOfStock || 0) >= 7 && (p.daysOfStock || 0) <= 15).length;
@@ -333,8 +381,15 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
               <TrendingUp className="w-4 h-4 text-emerald-600" />
               Vitesse de Vente Moyenne
             </span>
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">
-              +12.4% vs 30j
+            <span
+              className={cn(
+                "text-[11px] px-2 py-0.5 rounded-full font-bold",
+                products.length === 0
+                  ? "bg-black/[0.05] text-[#888880]"
+                  : "bg-emerald-100 text-emerald-800"
+              )}
+            >
+              {products.length === 0 ? "Nouveau compte" : "+12.4% vs 30j"}
             </span>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
@@ -354,32 +409,38 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
               Jours de Stock Restants
             </span>
             <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold">
-              {kpis.criticalStockCount + kpis.outOfStockCount} alertes
+              {kpis.criticalStockCount + kpis.outOfStockCount} {kpis.criticalStockCount + kpis.outOfStockCount <= 1 ? "alerte" : "alertes"}
             </span>
           </div>
           <div className="mt-3 flex items-center gap-2">
             <div className="flex-1 space-y-1">
               <div className="flex h-3 w-full rounded-full overflow-hidden bg-[#EAE4D9]">
-                <div
-                  style={{ width: `${(kpis.outOfStockCount / (products.length || 1)) * 100}%` }}
-                  className="bg-rose-500"
-                  title={`${kpis.outOfStockCount} Rupture`}
-                />
-                <div
-                  style={{ width: `${(kpis.criticalStockCount / (products.length || 1)) * 100}%` }}
-                  className="bg-amber-500"
-                  title={`${kpis.criticalStockCount} < 7 jours`}
-                />
-                <div
-                  style={{ width: `${(kpis.warningStockCount / (products.length || 1)) * 100}%` }}
-                  className="bg-blue-400"
-                  title={`${kpis.warningStockCount} 7-15 jours`}
-                />
-                <div
-                  style={{ width: `${(kpis.healthyStockCount / (products.length || 1)) * 100}%` }}
-                  className="bg-emerald-500"
-                  title={`${kpis.healthyStockCount} > 15 jours`}
-                />
+                {products.length === 0 ? (
+                  <div className="h-full w-full bg-[#EAE4D9]" />
+                ) : (
+                  <>
+                    <div
+                      style={{ width: `${(kpis.outOfStockCount / products.length) * 100}%` }}
+                      className="bg-rose-500"
+                      title={`${kpis.outOfStockCount} Rupture`}
+                    />
+                    <div
+                      style={{ width: `${(kpis.criticalStockCount / products.length) * 100}%` }}
+                      className="bg-amber-500"
+                      title={`${kpis.criticalStockCount} < 7 jours`}
+                    />
+                    <div
+                      style={{ width: `${(kpis.warningStockCount / products.length) * 100}%` }}
+                      className="bg-blue-400"
+                      title={`${kpis.warningStockCount} 7-15 jours`}
+                    />
+                    <div
+                      style={{ width: `${(kpis.healthyStockCount / products.length) * 100}%` }}
+                      className="bg-emerald-500"
+                      title={`${kpis.healthyStockCount} > 15 jours`}
+                    />
+                  </>
+                )}
               </div>
               <div className="flex justify-between text-[10px] text-[#666660] font-semibold pt-1">
                 <span className="text-rose-600 font-bold">{kpis.outOfStockCount} rupture</span>
@@ -530,18 +591,29 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
             <Package className="h-7 w-7" />
           </div>
           <div>
-            <h3 className="text-base font-black text-[#111111]">Aucun produit trouvé</h3>
+            <h3 className="text-base font-black text-[#111111]">
+              {products.length === 0 ? "Votre catalogue est vide" : "Aucun produit trouvé"}
+            </h3>
             <p className="text-xs text-[#666660] max-w-sm mx-auto mt-1">
-              {searchQuery
+              {products.length === 0
+                ? "Vous démarrez avec une boutique vierge. Ajoutez vos propres produits ou importez un catalogue CSV pour commencer à vendre."
+                : searchQuery
                 ? `Aucun produit ne correspond à votre recherche "${searchQuery}". Essayez un autre filtre.`
                 : "Vous n'avez aucun article correspondant aux critères sélectionnés."}
             </p>
           </div>
-          <div className="pt-2">
+          <div className="pt-2 flex flex-wrap items-center justify-center gap-2.5">
+            <Link
+              href={`/app/${storeSlug}/produits/nouveau`}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#111111] text-white text-xs font-bold shadow-2xs hover:bg-black transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Ajouter mon premier produit</span>
+            </Link>
             <button
               type="button"
               onClick={() => setIsImportModalOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-black/[0.08] text-[#111111] text-xs font-bold shadow-2xs hover:bg-black/[0.04] transition-colors"
             >
               <Upload className="w-4 h-4" />
               <span>Importer un fichier CSV</span>
@@ -627,21 +699,32 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
 
                       {/* Statut Produit (Actif, Brouillon, Archivé) */}
                       <td className="py-3.5 px-3">
-                        {currentStatus === "active" && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
-                            Actif
-                          </span>
-                        )}
-                        {currentStatus === "draft" && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">
-                            Brouillon
-                          </span>
-                        )}
-                        {currentStatus === "archived" && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-stone-200 text-stone-700">
-                            Archivé
-                          </span>
-                        )}
+                        <div className="flex flex-col items-start gap-1">
+                          {currentStatus === "active" && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
+                              Actif
+                            </span>
+                          )}
+                          {currentStatus === "draft" && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">
+                              Brouillon
+                            </span>
+                          )}
+                          {currentStatus === "archived" && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-stone-200 text-stone-700">
+                              Archivé
+                            </span>
+                          )}
+                          {product.hiddenFromCatalog && (
+                            <span
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-black bg-purple-100 text-purple-800"
+                              title="Masqué du catalogue public (Accessible par lien direct)"
+                            >
+                              <EyeOff className="w-2.5 h-2.5" />
+                              Lien direct
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* Colonne Visible : Interrupteur Actif / Brouillon */}

@@ -17,6 +17,8 @@ import { MOCK_STORES } from "@/mock-data/stores";
 import { MOCK_PRODUCTS } from "@/mock-data/products";
 import { MOCK_STOREFRONT_LOME } from "@/mock-data/storefront-data";
 import { formatFcfa } from "@/lib/money";
+import { Product } from "@/server/data/types";
+import { Lock } from "lucide-react";
 
 export default function CataloguePage({
   params,
@@ -27,6 +29,41 @@ export default function CataloguePage({
   const store = MOCK_STORES.find((s) => s.slug === storeSlug) || MOCK_STORES[0];
   const storefront = MOCK_STOREFRONT_LOME;
 
+  const isFounderDemo = storeSlug === "lome-glow";
+
+  const [productsList, setProductsList] = useState<Product[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(`novika_store_products_${storeSlug}`);
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {}
+      }
+      if (!isFounderDemo) return [];
+    }
+    return isFounderDemo ? MOCK_PRODUCTS : [];
+  });
+
+  const [hideCatalog, setHideCatalog] = useState(false);
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedProds = localStorage.getItem(`novika_store_products_${storeSlug}`);
+      if (savedProds) {
+        try {
+          setProductsList(JSON.parse(savedProds));
+        } catch {}
+      }
+      const savedSettings = localStorage.getItem(`novika_storefront_settings_${storeSlug}`);
+      if (savedSettings) {
+        try {
+          const parsed = JSON.parse(savedSettings);
+          setHideCatalog(Boolean(parsed.hideCatalog));
+        } catch {}
+      }
+    }
+  }, [storeSlug, isFounderDemo]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCollection, setSelectedCollection] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"newest" | "price_asc" | "price_desc" | "sales">("sales");
@@ -34,14 +71,14 @@ export default function CataloguePage({
 
   // Extraire les collections uniques
   const collections = useMemo(() => {
-    const list = Array.from(new Set(MOCK_PRODUCTS.map((p) => p.collection).filter(Boolean)));
+    const list = Array.from(new Set(productsList.map((p) => p.collection).filter(Boolean)));
     return ["all", ...list];
-  }, []);
+  }, [productsList]);
 
-  // Filtrage et Tri des produits
+  // Filtrage et Tri des produits (exclut les produits masqués)
   const filteredProducts = useMemo(() => {
-    // Règle stricte : Seuls les produits Actifs apparaissent dans la vitrine
-    return MOCK_PRODUCTS.filter((p) => p.productStatus === "active")
+    return productsList
+      .filter((p) => (p.productStatus === "active" || (!p.productStatus && p.stock > 0)) && !p.hiddenFromCatalog)
       .filter((p) => {
         const matchesSearch =
           searchQuery === "" ||
@@ -60,7 +97,30 @@ export default function CataloguePage({
         if (sortBy === "sales") return (b.salesSummary?.unitsSold || 0) - (a.salesSummary?.unitsSold || 0);
         return 0; // newest par défaut
       });
-  }, [searchQuery, selectedCollection, inStockOnly, sortBy]);
+  }, [productsList, searchQuery, selectedCollection, inStockOnly, sortBy]);
+
+  if (hideCatalog) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-24 text-center space-y-4">
+        <div className="h-16 w-16 mx-auto rounded-3xl bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-800">
+          <Lock className="h-8 w-8" />
+        </div>
+        <h1 className="text-2xl font-black text-[#111111]">Catalogue privé</h1>
+        <p className="text-xs text-[#666660] leading-relaxed">
+          Le catalogue complet de cette boutique est configuré en mode confidentiel direct.
+          Veuillez accéder directement à la page de votre offre via son lien dédié ou contacter le vendeur via WhatsApp.
+        </p>
+        <div className="pt-2">
+          <Link
+            href={`/boutique/${storeSlug}`}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#111111] text-white text-xs font-bold"
+          >
+            Retour à l'accueil
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8">

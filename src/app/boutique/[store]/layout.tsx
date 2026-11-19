@@ -26,6 +26,7 @@ import { AnnouncementBanner } from "@/components/storefront/announcement-banner"
 import { StorefrontPresencePing } from "@/components/storefront/storefront-presence-ping";
 import { MetaPixelRunner } from "@/components/storefront/meta-pixel-runner";
 import { CookieConsentBanner } from "@/components/storefront/cookie-consent-banner";
+import { StorefrontAntiSpyShield } from "@/components/storefront/storefront-anti-spy-shield";
 
 function StorefrontPreviewBanner({ previewTokenValue }: { previewTokenValue?: string }) {
   const searchParams = useSearchParams();
@@ -82,9 +83,31 @@ export default function StorefrontLayout({
     }, 2500);
   };
 
+  const [themeSettings, setThemeSettings] = useState({
+    hideHeaderMenu: false,
+    hideCatalog: false,
+  });
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(`novika_storefront_settings_${storeSlug}`);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setThemeSettings({
+            hideHeaderMenu: Boolean(parsed.hideHeaderMenu),
+            hideCatalog: Boolean(parsed.hideCatalog),
+          });
+        } catch {}
+      }
+    }
+  }, [storeSlug]);
+
   const navLinks = [
     { label: "Accueil", href: `/boutique/${storeSlug}` },
-    { label: "Catalogue", href: `/boutique/${storeSlug}/catalogue` },
+    ...(!themeSettings.hideCatalog
+      ? [{ label: "Catalogue", href: `/boutique/${storeSlug}/catalogue` }]
+      : []),
     { label: "Contact & Délais", href: `/boutique/${storeSlug}/contact` },
     { label: "À Propos", href: `/boutique/${storeSlug}/pages/a-propos` },
   ];
@@ -97,6 +120,9 @@ export default function StorefrontLayout({
         fontFamily: storefront.activeTheme.typography.fontFamily,
       }}
     >
+      {/* Bouclier Anti-Espion & Anti-Extensions Chrome (Empêche le scan et le vol de catalogue) */}
+      <StorefrontAntiSpyShield storeSlug={storeSlug} />
+
       {/* Télémétrie anonyme de présence en direct (sans cookie ni stockage d'IP) */}
       <StorefrontPresencePing storeSlug={storeSlug} />
 
@@ -135,23 +161,25 @@ export default function StorefrontLayout({
             </div>
           </Link>
 
-          {/* Navigation principale */}
-          <nav className="hidden md:flex items-center gap-6 text-xs font-bold text-[#444440]">
-            {navLinks.map((link) => {
-              const isActive = pathname === link.href;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`transition-colors hover:text-[#111111] ${
-                    isActive ? "text-[#111111] font-black underline underline-offset-8" : ""
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              );
-            })}
-          </nav>
+          {/* Navigation principale (masquable via option thème) */}
+          {!themeSettings.hideHeaderMenu && (
+            <nav className="hidden md:flex items-center gap-6 text-xs font-bold text-[#444440]">
+              {navLinks.map((link) => {
+                const isActive = pathname === link.href;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`transition-colors hover:text-[#111111] ${
+                      isActive ? "text-[#111111] font-black underline underline-offset-8" : ""
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          )}
 
           {/* Raccourcis WhatsApp & Pays */}
           <div className="flex items-center gap-2.5">

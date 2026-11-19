@@ -111,8 +111,12 @@ export function SidebarNav({
   const allowedStandalone = config.standaloneRoot.filter(isItemAllowed);
   const allowedGroups = config.groups.filter(isGroupAllowed);
 
+  const isFounderDemoStore = basePath.includes("lome-glow");
+  const effectiveUnreadNotifications = isFounderDemoStore ? unreadNotificationsCount : 0;
+
   // Vérifier si un groupe a une action en attente (badge > 0)
   const groupHasPendingAction = (group: NavGroupConfig): boolean => {
+    if (!isFounderDemoStore) return false;
     return group.items.some((item) => {
       if (!isItemAllowed(item) || !item.badgeKey) return false;
       return (MOCK_NAV_COUNTS[item.badgeKey] || 0) > 0;
@@ -121,7 +125,7 @@ export function SidebarNav({
 
   // Rendu d'une pastille de compteur normalisée (hauteur 20px, min-w 24px, texte 12px semi-gras)
   const renderBadge = (item: NavItemConfig) => {
-    if (!item.badgeKey) return null;
+    if (!item.badgeKey || !isFounderDemoStore) return null;
     const count = MOCK_NAV_COUNTS[item.badgeKey] || 0;
     if (count <= 0) return null;
 
@@ -218,7 +222,7 @@ export function SidebarNav({
           type="button"
           id="btn-nav-notifications"
           onClick={handleNotificationsClick}
-          title={isCollapsed ? `Notifications (${unreadNotificationsCount})` : undefined}
+          title={isCollapsed ? `Notifications (${effectiveUnreadNotifications})` : undefined}
           className={cn(
             "w-full h-11 flex items-center gap-3 px-2.5 rounded-xl text-[14px] font-semibold text-[#111111] hover:bg-black/[0.04] transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/[0.15] cursor-pointer text-left relative min-w-0",
             isNotificationsOpen && "bg-black/[0.06]",
@@ -227,25 +231,25 @@ export function SidebarNav({
         >
           <div className="relative shrink-0">
             <Bell className="h-5 w-5 text-[#666660] group-hover:text-[#111111]" />
-            {isCollapsed && unreadNotificationsCount > 0 && (
+            {isCollapsed && effectiveUnreadNotifications > 0 && (
               <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-[#C2410C]" />
             )}
           </div>
           {!isCollapsed && (
             <>
               <span className="truncate flex-1 min-w-0 font-medium">Notifications</span>
-              {unreadNotificationsCount > 0 && (
+              {effectiveUnreadNotifications > 0 && (
                 <span
                   role="status"
-                  aria-label={`${unreadNotificationsCount} notifications non lues`}
+                  aria-label={`${effectiveUnreadNotifications} notifications non lues`}
                   className={cn(
                     "inline-flex items-center justify-center h-5 min-w-[22px] px-1.5 rounded-full text-[11px] font-bold shrink-0 ml-auto",
-                    unreadNotificationsCount > 0
+                    effectiveUnreadNotifications > 0
                       ? "bg-[#C2410C] text-white"
                       : "bg-black/[0.06] text-[#666660]"
                   )}
                 >
-                  {unreadNotificationsCount > 9 ? "9+" : unreadNotificationsCount}
+                  {effectiveUnreadNotifications > 9 ? "9+" : effectiveUnreadNotifications}
                 </span>
               )}
             </>

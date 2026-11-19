@@ -39,6 +39,8 @@ export interface ThemeConfig {
     buttonStyle: ButtonStyle;
     borderRadius: CardBorderRadius;
     showShadows: boolean;
+    hideHeaderMenu?: boolean; // Option pour masquer le menu de l'en-tête
+    hideCatalog?: boolean; // Option pour masquer le catalogue complet
   };
 }
 
@@ -148,7 +150,9 @@ export interface StorefrontData {
     logoHeight: number;
     showSearch: boolean;
     showCountryPicker: boolean;
+    hideHeaderMenu?: boolean; // Masquer les liens de navigation de l'en-tête
   };
+  hideCatalog?: boolean; // Masquer la page catalogue complète (Mode tunnel direct)
   sections: PageSection[];
   contact: StoreContactInfo;
   reviews: CustomerReview[];

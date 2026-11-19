@@ -65,7 +65,71 @@ export function CreateStoreModal({
 
   const [error, setError] = useState<string | null>(null);
 
+  // Vérification de la règle 1 compte = 1 seule boutique
+  const [hasExistingStore, setHasExistingStore] = useState(false);
+  const [existingStoreName, setExistingStoreName] = useState("");
+  const [existingStoreSlug, setExistingStoreSlug] = useState("");
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const email = localStorage.getItem("novika_user_email") || "";
+      if (email && email !== "admin@novika.com" && email !== "demo@novika.com") {
+        const savedStores = localStorage.getItem(`novika_user_stores_${email}`);
+        if (savedStores) {
+          try {
+            const list = JSON.parse(savedStores);
+            if (Array.isArray(list) && list.length >= 1) {
+              setHasExistingStore(true);
+              setExistingStoreName(list[0].name);
+              setExistingStoreSlug(list[0].slug);
+            }
+          } catch {}
+        }
+      }
+    }
+  }, []);
+
   if (!isOpen) return null;
+
+  if (hasExistingStore) {
+    return (
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+      >
+        <div className="relative w-full max-w-md rounded-3xl bg-[#FAF8F5] border border-black/10 p-6 shadow-2xl text-center space-y-4">
+          <div className="h-14 w-14 rounded-2xl bg-amber-100 border border-amber-200 flex items-center justify-center mx-auto text-amber-800">
+            <Lock className="h-7 w-7" />
+          </div>
+          <div>
+            <h3 className="text-lg font-black text-[#111111]">Limite de boutique atteinte</h3>
+            <p className="text-xs text-[#666660] mt-1.5 leading-relaxed">
+              Sur Novika, un e-mail / compte marchand a le droit de créer <strong>une seule boutique unique</strong> dans une devise donnée.
+            </p>
+            <p className="text-xs text-[#111111] font-bold mt-2">
+              Votre boutique active : {existingStoreName}
+            </p>
+          </div>
+          <div className="pt-2 flex flex-col gap-2">
+            <a
+              href={`/app/${existingStoreSlug}`}
+              className="w-full py-2.5 rounded-xl bg-[#111111] text-white text-xs font-bold shadow-xs hover:bg-black transition-colors"
+            >
+              Accéder à ma boutique
+            </a>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full py-2 rounded-xl text-xs font-semibold text-[#666660] hover:bg-black/[0.04] cursor-pointer"
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const currentCountry = getCountryByCode(selectedCountryCode) || ALL_54_AFRICAN_COUNTRIES[0];
   const currencyInfo = ALL_CURRENCIES.find((c) => c.code === selectedCurrencyCode) || ALL_CURRENCIES[0];
@@ -85,6 +149,11 @@ export function CreateStoreModal({
 
   const toggleServedCountry = (code: string) => {
     if (code === selectedCountryCode) return; // Le pays principal est toujours inclus
+    const country = ALL_54_AFRICAN_COUNTRIES.find((c) => c.code === code);
+    if (!country || country.currency !== selectedCurrencyCode) {
+      setError(`Vous ne pouvez vendre que dans les pays utilisant la même devise (${selectedCurrencyCode}).`);
+      return;
+    }
     setServedCountryCodes((prev) =>
       prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
     );
@@ -108,6 +177,10 @@ export function CreateStoreModal({
 
   const handleFinalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (hasExistingStore) {
+      setError("Un compte marchand est limité à la création d'une seule boutique unique.");
+      return;
+    }
     if (!storeName.trim()) {
       setError("Le nom de la boutique est obligatoire.");
       return;

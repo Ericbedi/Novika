@@ -194,10 +194,10 @@ export function SchedulesClient({ storeSlug }: SchedulesClientProps) {
             onChange={(e) => setCurrentRole(e.target.value as UserRole)}
             className="text-xs font-bold text-[#111111] bg-transparent border-none focus:outline-hidden cursor-pointer"
           >
-            <option value="owner">Admin Propriétaire (Complet)</option>
-            <option value="admin">Co-administrateur (Lecture seule dimanche)</option>
-            <option value="manager">Manager (Lecture seule)</option>
-            <option value="closer">Closeuse (Lecture seule)</option>
+            <option value="owner">Admin (Complet)</option>
+            <option value="closer">Closeur (Lecture seule)</option>
+            <option value="rider">Livreur (Lecture seule)</option>
+            <option value="agency">Agence de livraison (Lecture seule)</option>
           </select>
         </div>
       </div>

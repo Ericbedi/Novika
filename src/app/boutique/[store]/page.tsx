@@ -58,9 +58,9 @@ export default async function BoutiqueHomePage({
     );
   }
 
-  // Filtrer les produits actifs pour la sélection vedette (4 à 8 produits réels)
+  // Filtrer les produits actifs pour la sélection vedette (exclut les produits masqués)
   const featuredProducts = MOCK_PRODUCTS.filter(
-    (p) => p.productStatus === "active"
+    (p) => p.productStatus === "active" && !p.hiddenFromCatalog
   ).slice(0, 4);
 
   // Bannières actives pour le carrousel principal

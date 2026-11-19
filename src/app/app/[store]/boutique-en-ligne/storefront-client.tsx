@@ -133,6 +133,23 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
   // Feedback toast
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Options d'affichage et discrétion de la vitrine
+  const [hideHeaderMenu, setHideHeaderMenu] = useState<boolean>(false);
+  const [hideEntireCatalog, setHideEntireCatalog] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(`novika_storefront_settings_${storeSlug}`);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setHideHeaderMenu(Boolean(parsed.hideHeaderMenu));
+          setHideEntireCatalog(Boolean(parsed.hideCatalog));
+        } catch {}
+      }
+    }
+  }, [storeSlug]);
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
@@ -392,6 +409,16 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
       name: infoStoreName,
       country: infoCountry,
     });
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        `novika_storefront_settings_${storeSlug}`,
+        JSON.stringify({
+          hideHeaderMenu,
+          hideCatalog: hideEntireCatalog,
+        })
+      );
+    }
 
     showToast("Informations de la boutique et vitrine enregistrées avec succès !");
   };
@@ -1074,6 +1101,52 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
                       {btn.label}
                     </button>
                   ))}
+                </div>
+              </div>
+
+              {/* Options de Visibilité & Discrétion Vitrine */}
+              <div className="space-y-3 pt-3 border-t border-black/[0.08]">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-[#C2410C]" />
+                  <label className="text-xs font-bold uppercase tracking-wider text-[#111111] block">
+                    En-tête & Protection Anti-Espion
+                  </label>
+                </div>
+
+                {/* Option 1 : Masquer le menu de navigation de l'en-tête */}
+                <div className="p-3.5 rounded-2xl border border-black/[0.08] bg-white space-y-2">
+                  <label className="flex items-start gap-2.5 text-xs font-bold text-[#111111] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={hideHeaderMenu}
+                      onChange={(e) => setHideHeaderMenu(e.target.checked)}
+                      className="mt-0.5 rounded border-gray-300 text-[#C2410C] focus:ring-[#C2410C] cursor-pointer"
+                    />
+                    <div className="space-y-0.5">
+                      <span className="block">Masquer le menu de navigation de l&apos;en-tête</span>
+                      <span className="text-[11px] font-normal text-[#666660] block leading-relaxed">
+                        Supprime les liens (Accueil, Catalogue, Contact) dans l&apos;en-tête. Seul le logo et le bouton WhatsApp restent visibles. Empêche les concurrents et espions de naviguer dans vos catégories.
+                      </span>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Option 2 : Masquer le catalogue complet */}
+                <div className="p-3.5 rounded-2xl border border-black/[0.08] bg-white space-y-2">
+                  <label className="flex items-start gap-2.5 text-xs font-bold text-[#111111] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={hideEntireCatalog}
+                      onChange={(e) => setHideEntireCatalog(e.target.checked)}
+                      className="mt-0.5 rounded border-gray-300 text-[#C2410C] focus:ring-[#C2410C] cursor-pointer"
+                    />
+                    <div className="space-y-0.5">
+                      <span className="block">Masquer le catalogue complet de la boutique</span>
+                      <span className="text-[11px] font-normal text-[#666660] block leading-relaxed">
+                        Verrouille l&apos;accès public à la page /catalogue. Idéal pour vendre exclusivement via des pages produits / tunnels de conversion directs créés pour TikTok et Facebook Ads.
+                      </span>
+                    </div>
+                  </label>
                 </div>
               </div>
             </div>

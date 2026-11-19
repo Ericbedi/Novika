@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -50,7 +50,41 @@ type TabStatus = "all" | OrderStatus | "rejected_cancelled";
 export function OrdersListClient({ storeSlug }: OrdersListClientProps) {
   const router = useRouter();
   const { activeRole } = useApp();
-  const [orders, setOrders] = useState<Order[]>(MOCK_ORDERS);
+  const isFounderDemoStore = storeSlug === "lome-glow";
+
+  const [orders, setOrders] = useState<Order[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(`novika_store_orders_${storeSlug}`);
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {}
+      }
+      if (!isFounderDemoStore) return [];
+    }
+    return isFounderDemoStore ? MOCK_ORDERS : [];
+  });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(`novika_store_orders_${storeSlug}`);
+      if (saved) {
+        try {
+          setOrders(JSON.parse(saved));
+          return;
+        } catch {}
+      }
+      if (!isFounderDemoStore) {
+        setOrders([]);
+      }
+    }
+  }, [storeSlug, isFounderDemoStore]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && !isFounderDemoStore) {
+      localStorage.setItem(`novika_store_orders_${storeSlug}`, JSON.stringify(orders));
+    }
+  }, [orders, storeSlug, isFounderDemoStore]);
   const [activeTab, setActiveTab] = useState<TabStatus>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCountry, setSelectedCountry] = useState<string>("all");
@@ -869,8 +903,12 @@ export function OrdersListClient({ storeSlug }: OrdersListClientProps) {
           keyExtractor={(item) => item.id}
           onRowClick={(item) => router.push(`/app/${storeSlug}/commandes/${item.orderNumber}`)}
           renderMobileCard={renderMobileCard}
-          emptyTitle="Aucune commande trouvée"
-          emptyDescription="Aucune commande ne correspond aux filtres ou à la recherche sélectionnés."
+          emptyTitle={orders.length === 0 ? "Aucune commande pour le moment" : "Aucune commande trouvée"}
+          emptyDescription={
+            orders.length === 0
+              ? "Votre boutique n'a pas encore reçu de commande. Partagez le lien de votre vitrine ou créez votre première commande manuelle."
+              : "Aucune commande ne correspond aux filtres ou à la recherche sélectionnés."
+          }
         />
       </ScrollReveal>
     </div>

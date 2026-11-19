@@ -49,13 +49,57 @@ import { OnboardingCard } from "@/components/dashboard/onboarding-card";
 import { InitialSetupWizard } from "@/components/dashboard/initial-setup-wizard";
 import { RevenueGoalCard } from "@/components/finance/revenue-goal-card";
 import { MOCK_GOALS } from "@/mock-data/goals";
+import { ChartDayData, DashboardKpi, Order, StatusDistributionItem } from "@/server/data/types";
 
 export function DashboardClient({ storeSlug }: { storeSlug: string }) {
   const { activeStore } = useApp();
   const [period, setPeriod] = useState<PeriodType>("last7");
   const [isWizardOpen, setIsWizardOpen] = useState(false);
 
-  const kpis = MOCK_KPIS_BY_PERIOD[period] || MOCK_KPIS_BY_PERIOD.last7;
+  const isFounderDemo = storeSlug === "lome-glow";
+
+  const emptyKpis: DashboardKpi = {
+    visitors: { value: 0, delta: 0, isUpGood: true },
+    totalSales: { value: 0, delta: 0, isUpGood: true },
+    deliveredSales: { value: 0, delta: 0, isUpGood: true },
+    ordersCount: { value: 0, delta: 0, isUpGood: true },
+    conversionRate: { value: 0, delta: 0, isUpGood: true },
+    pendingOrdersCount: 0,
+    todayDeliveriesCount: 0,
+  };
+
+  const kpis = isFounderDemo ? (MOCK_KPIS_BY_PERIOD[period] || MOCK_KPIS_BY_PERIOD.last7) : emptyKpis;
+
+  const [orders] = useState<Order[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(`novika_store_orders_${storeSlug}`);
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {}
+      }
+      if (!isFounderDemo) return [];
+    }
+    return isFounderDemo ? MOCK_ORDERS : [];
+  });
+
+  const emptyStatusDistribution: StatusDistributionItem[] = [
+    { status: "delivered", label: "Livrées", count: 0, percentage: 0, color: "#10B981" },
+    { status: "pending", label: "À confirmer", count: 0, percentage: 0, color: "#3B82F6" },
+    { status: "scheduled", label: "Programmées", count: 0, percentage: 0, color: "#F59E0B" },
+    { status: "cancelled", label: "Annulées", count: 0, percentage: 0, color: "#EF4444" },
+    { status: "rejected", label: "Rejetées", count: 0, percentage: 0, color: "#8B5CF6" },
+  ];
+
+  const emptyChartDays: ChartDayData[] = MOCK_CHART_DAYS.map((d) => ({
+    ...d,
+    visitors: 0,
+    sales: 0,
+    orders: 0,
+    delivered: 0,
+    profit: 0,
+    expenses: 0,
+  }));
 
   const periodLabels: Record<PeriodType, string> = {
     today: "Aujourd'hui",
@@ -121,12 +165,14 @@ export function DashboardClient({ storeSlug }: { storeSlug: string }) {
       </ScrollReveal>
 
       {/* 3.B. Objectif du mois de CA encaissé (Barre segmentée + Allure) */}
-      <ScrollReveal delay={120}>
-        <RevenueGoalCard
-          goal={MOCK_GOALS[0]}
-          basePath={`/app/${storeSlug}`}
-        />
-      </ScrollReveal>
+      {isFounderDemo && (
+        <ScrollReveal delay={120}>
+          <RevenueGoalCard
+            goal={MOCK_GOALS[0]}
+            basePath={`/app/${storeSlug}`}
+          />
+        </ScrollReveal>
+      )}
 
       {/* 4. Raccourcis Rapides (Quick Actions Bar) */}
       <ScrollReveal delay={150}>
@@ -217,7 +263,7 @@ export function DashboardClient({ storeSlug }: { storeSlug: string }) {
 
       {/* 5. Graphique Principal : Visiteurs / Ventes / Commandes / Livrées avec onglets */}
       <ScrollReveal delay={200}>
-        <MainPerformanceChart data={MOCK_CHART_DAYS} />
+        <MainPerformanceChart data={isFounderDemo ? MOCK_CHART_DAYS : emptyChartDays} />
       </ScrollReveal>
 
       {/* 6. Grille 2 Colonnes : Répartition des Statuts & Meilleurs Produits */}
@@ -225,7 +271,7 @@ export function DashboardClient({ storeSlug }: { storeSlug: string }) {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-5">
             <StatusDonutChart
-              items={MOCK_STATUS_DISTRIBUTION}
+              items={isFounderDemo ? MOCK_STATUS_DISTRIBUTION : emptyStatusDistribution}
               totalOrders={kpis.ordersCount.value}
               className="h-full"
             />
@@ -233,7 +279,7 @@ export function DashboardClient({ storeSlug }: { storeSlug: string }) {
 
           <div className="lg:col-span-7">
             <TopProductsCard
-              products={MOCK_TOP_PRODUCTS}
+              products={isFounderDemo ? MOCK_TOP_PRODUCTS : []}
               storeSlug={storeSlug}
               className="h-full"
             />
@@ -243,12 +289,12 @@ export function DashboardClient({ storeSlug }: { storeSlug: string }) {
 
       {/* 7. Graphique « Budget, coûts, bénéfice et livraisons » avec cases à cocher et pastilles de couleur cliquables */}
       <ScrollReveal delay={300}>
-        <ProfitDeliveryChart data={MOCK_CHART_DAYS} />
+        <ProfitDeliveryChart data={isFounderDemo ? MOCK_CHART_DAYS : emptyChartDays} />
       </ScrollReveal>
 
       {/* 8. Tableau des Dernières Commandes (Desktop & Mobile First) */}
       <ScrollReveal delay={350}>
-        <RecentOrdersTable orders={MOCK_ORDERS} storeSlug={storeSlug} />
+        <RecentOrdersTable orders={orders} storeSlug={storeSlug} />
       </ScrollReveal>
     </div>
   );

@@ -63,86 +63,65 @@ export function ProductFormClient({
   // Form states
   const [name, setName] = useState(initialProduct?.name || "");
   const [description, setDescription] = useState(
-    initialProduct?.description ||
-      "<p>Formule exclusive testée dermatologiquement pour des résultats rapides.</p><ul><li>Action ciblée</li><li>100% naturel</li><li>Paiement à la livraison</li></ul>"
+    initialProduct?.description || ""
   );
   const [category, setCategory] = useState(initialProduct?.category || "Santé & Nutrition");
-  const [productType, setProductType] = useState(initialProduct?.productType || "Complément alimentaire");
-  const [collection, setCollection] = useState(initialProduct?.collection || "Bien-être & Vitalité");
+  const [productType, setProductType] = useState(initialProduct?.productType || "Standard");
+  const [collection, setCollection] = useState(initialProduct?.collection || "Général");
   const [supplierId, setSupplierId] = useState(initialProduct?.supplierId || "sup_01");
-  const [tagsInput, setTagsInput] = useState(initialProduct?.tags ? initialProduct.tags.join(", ") : "best-seller, cod, santé");
+  const [tagsInput, setTagsInput] = useState(initialProduct?.tags ? initialProduct.tags.join(", ") : "");
   const [template, setTemplate] = useState(initialProduct?.template || "Par défaut");
 
   // Media
   const [mediaList, setMediaList] = useState<string[]>(
     initialProduct?.images && initialProduct.images.length > 0
       ? initialProduct.images
-      : ["/products/mushroom-coffee.png", "/products/serum-eclat.png"]
+      : []
   );
 
   // Pricing
-  const [salePrice, setSalePrice] = useState<number>(initialProduct?.salePrice || 15000);
+  const [salePrice, setSalePrice] = useState<number>(initialProduct?.salePrice || 0);
   const [compareAtPrice, setCompareAtPrice] = useState<number | undefined>(
-    initialProduct?.compareAtPrice || 22000
+    initialProduct?.compareAtPrice
   );
-  const [costPrice, setCostPrice] = useState<number>(initialProduct?.costPrice || 5000);
+  const [costPrice, setCostPrice] = useState<number>(initialProduct?.costPrice || 0);
   const [chargeTax, setChargeTax] = useState<boolean>(initialProduct?.chargeTax ?? false);
 
   // Inventory tracking
   const [trackStock, setTrackStock] = useState<boolean>(initialProduct?.trackStock ?? true);
-  const [sku, setSku] = useState(initialProduct?.sku || "PROD-COD-01");
-  const [barcode, setBarcode] = useState(initialProduct?.barcode || "693847291024");
+  const [sku, setSku] = useState(initialProduct?.sku || "");
+  const [barcode, setBarcode] = useState(initialProduct?.barcode || "");
   const [lowStockThreshold, setLowStockThreshold] = useState<number>(
     initialProduct?.lowStockThreshold ?? 10
   );
 
   // Physical product & shipping
   const [isPhysical, setIsPhysical] = useState<boolean>(initialProduct?.isPhysical ?? true);
-  const [weightKg, setWeightKg] = useState<number>(initialProduct?.weightKg || 0.35);
+  const [weightKg, setWeightKg] = useState<number>(initialProduct?.weightKg || 0.2);
 
   // Variants
   const [hasVariants, setHasVariants] = useState<boolean>(
-    (initialProduct?.variants && initialProduct.variants.length > 1) ?? true
+    (initialProduct?.variants && initialProduct.variants.length > 1) ?? false
   );
   const [variants, setVariants] = useState<ProductVariant[]>(
     initialProduct?.variants && initialProduct.variants.length > 0
       ? initialProduct.variants
-      : [
-          {
-            id: "var_1",
-            name: "Pack Découverte (1 boîte)",
-            price: 15000,
-            costPrice: 4500,
-            stock: 25,
-            sku: "PROD-VAR-01",
-            barcode: "693847291017",
-          },
-          {
-            id: "var_2",
-            name: "Pack Double Énergie (2 boîtes)",
-            price: 25000,
-            costPrice: 8500,
-            stock: 45,
-            sku: "PROD-VAR-02",
-            barcode: "693847291024",
-          },
-        ]
+      : []
   );
 
   // Quantity offers (COD packs)
   const [quantityOffers, setQuantityOffers] = useState<QuantityOffer[]>(
     initialProduct?.quantityOffers && initialProduct.quantityOffers.length > 0
       ? initialProduct.quantityOffers
-      : [
-          { id: "qo_1", quantity: 1, unitPrice: 15000, totalPrice: 15000, badgeText: "Standard" },
-          { id: "qo_2", quantity: 2, unitPrice: 12500, totalPrice: 25000, badgeText: "Le Plus Populaire" },
-          { id: "qo_3", quantity: 3, unitPrice: 11000, totalPrice: 33000, badgeText: "Meilleure Économie (-35%)" },
-        ]
+      : []
   );
 
   // Status & Publishing
   const [productStatus, setProductStatus] = useState<ProductStatus>(
     initialProduct?.productStatus || (initialProduct?.stock && initialProduct.stock > 0 ? "active" : "draft")
+  );
+  const [hiddenFromCatalog, setHiddenFromCatalog] = useState<boolean>(
+    initialProduct?.hiddenFromCatalog ?? false
   );
   const [publishedChannels, setPublishedChannels] = useState<string[]>(
     initialProduct?.publishedChannels || ["Boutique en ligne", "WhatsApp Catalogue", "TikTok Ads"]
@@ -317,9 +296,91 @@ export function ProductFormClient({
 
   // Save handler
   const handleSave = () => {
+    const newId = initialProduct?.id || `prod_${Date.now()}`;
+    const productSlug = seoSlug || (name.trim() || "produit").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const numSalePrice = Number(salePrice) || 0;
+    const numCostPrice = Number(costPrice) || 0;
+    const numCompare = compareAtPrice ? Number(compareAtPrice) : undefined;
+    const numStock = variants.length > 0 ? variants.reduce((s, v) => s + (v.stock || 0), 0) : 10;
+    const numLowStock = Number(lowStockThreshold) || 10;
+
+    const savedProduct: Product = {
+      id: newId,
+      name: name.trim() || "Nouveau produit",
+      title: name.trim() || "Nouveau produit",
+      slug: productSlug,
+      description,
+      category,
+      collection,
+      productType,
+      images: mediaList.length > 0 ? mediaList : ["/products/mushroom-coffee.png"],
+      salePrice: numSalePrice,
+      price: numSalePrice,
+      compareAtPrice: numCompare,
+      costPrice: numCostPrice,
+      marginAmount: numSalePrice - numCostPrice,
+      marginPercent: numSalePrice > 0 ? Math.round(((numSalePrice - numCostPrice) / numSalePrice) * 100) : 0,
+      chargeTax,
+      trackStock,
+      sku: sku || `SKU-${Date.now().toString().slice(-6)}`,
+      barcode,
+      lowStockThreshold: numLowStock,
+      isPhysical,
+      weightKg,
+      stock: numStock,
+      availableStock: numStock,
+      physicalStock: numStock,
+      reservedStock: 0,
+      status: productStatus,
+      productStatus,
+      hiddenFromCatalog,
+      stockStatus: numStock === 0 ? "out_of_stock" : numStock <= numLowStock ? "low_stock" : "in_stock",
+      supplierId,
+      variants,
+      quantityOffers,
+      badgesConfig: initialProduct?.badgesConfig || {
+        hasCountdown: false,
+        countdownMinutes: 60,
+        hasComparePrice: false,
+        hasLowStockWarning: false,
+        lowStockThreshold: 10,
+        hasQuantityPacks: false,
+      },
+      receiptContent,
+      salesVelocity: initialProduct?.salesVelocity || 0,
+      daysOfStock: numStock > 0 ? 30 : 0,
+      abcClass: "A",
+      publishedChannels,
+      seo: {
+        title: seoTitle,
+        description: seoDescription,
+        slug: productSlug,
+      },
+      createdAt: initialProduct?.createdAt || new Date().toISOString(),
+    };
+
+    if (typeof window !== "undefined") {
+      const storageKey = `novika_store_products_${storeSlug}`;
+      const saved = localStorage.getItem(storageKey);
+      let list: Product[] = [];
+      if (saved) {
+        try {
+          list = JSON.parse(saved);
+        } catch {}
+      }
+      if (isEditing) {
+        list = list.map((p) => (p.id === newId ? savedProduct : p));
+      } else {
+        list = [savedProduct, ...list];
+      }
+      localStorage.setItem(storageKey, JSON.stringify(list));
+    }
+
     setIsDirty(false);
-    setToastMessage("Fiche produit enregistrée avec succès !");
-    setTimeout(() => setToastMessage(null), 3000);
+    setToastMessage("Fiche produit enregistrée avec succès ! Redirection...");
+    setTimeout(() => {
+      router.push(`/app/${storeSlug}/produits`);
+    }, 800);
   };
 
   return (
@@ -972,6 +1033,43 @@ export function ProductFormClient({
             </select>
             <p className="text-[11px] text-[#666660]">
               Un produit actif est disponible à l'achat sur les canaux sélectionnés.
+            </p>
+          </div>
+
+          {/* Option Discrétion / Anti-Espion : Masquer du catalogue public */}
+          <div className="rounded-[20px] border border-black/[0.08] bg-[#FAF8F5] p-5 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Eye className="w-4 h-4 text-[#C2410C]" />
+                <h3 className="text-sm font-bold text-[#111111]">Visibilité catalogue</h3>
+              </div>
+              <span
+                className={cn(
+                  "text-[10px] px-2 py-0.5 rounded-full font-bold",
+                  hiddenFromCatalog
+                    ? "bg-amber-100 text-amber-800"
+                    : "bg-emerald-100 text-emerald-800"
+                )}
+              >
+                {hiddenFromCatalog ? "Discret (Masqué)" : "Public"}
+              </span>
+            </div>
+            <label className="flex items-start gap-2.5 text-xs font-semibold text-[#111111] cursor-pointer pt-1">
+              <input
+                type="checkbox"
+                checked={hiddenFromCatalog}
+                onChange={(e) => {
+                  setHiddenFromCatalog(e.target.checked);
+                  setIsDirty(true);
+                }}
+                className="mt-0.5 rounded border-gray-300 text-[#C2410C] focus:ring-[#C2410C] cursor-pointer"
+              />
+              <span className="leading-snug">
+                Masquer ce produit du catalogue public de la vitrine
+              </span>
+            </label>
+            <p className="text-[11px] text-[#666660] leading-relaxed">
+              Le produit ne s&apos;affichera pas dans la liste des articles de la boutique ni dans les recherches. Il reste accessible et commandable uniquement par son lien direct (idéal pour les tunnels Facebook / TikTok Ads privés et la protection contre les espions concurrents).
             </p>
           </div>
 

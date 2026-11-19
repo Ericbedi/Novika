@@ -28,9 +28,9 @@ export type UserRole = "owner" | "admin" | "manager" | "closer" | "rider" | "cou
 
 export const USER_ROLE_LABELS: Record<UserRole, string> = {
   owner: "Admin",
-  admin: "Co-admin",
-  manager: "Manager",
-  closer: "Closeuse",
+  admin: "Admin",
+  manager: "Admin",
+  closer: "Closeur",
   rider: "Livreur",
   courier: "Livreur",
   agency: "Agence de livraison",
@@ -183,6 +183,7 @@ export interface Product {
   supplierId?: string;
   supplierName?: string;
   hasActivePO?: boolean; // Badge "Réappro en cours"
+  hiddenFromCatalog?: boolean; // Option discrétion : Masquer du catalogue public (accessible uniquement par lien direct / tunnel ads)
   variants: ProductVariant[];
   quantityOffers: QuantityOffer[];
   badgesConfig: ProductBadgesConfig;

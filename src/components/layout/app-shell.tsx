@@ -176,10 +176,13 @@ function AppShellInner({
 
       const savedRole = (localStorage.getItem("novika_active_role") || localStorage.getItem("afribuilder_active_role")) as UserRole | null;
       const urlRole = searchParams?.get("role") as UserRole | null;
-      if (urlRole && ["owner", "admin", "manager", "closer", "rider", "courier", "agency"].includes(urlRole)) {
+      const allowedRolesList: UserRole[] = ["owner", "closer", "rider", "agency"];
+      if (urlRole && allowedRolesList.includes(urlRole)) {
         setActiveRoleState(urlRole);
-      } else if (savedRole && ["owner", "admin", "manager", "closer", "rider", "courier", "agency"].includes(savedRole)) {
+      } else if (savedRole && allowedRolesList.includes(savedRole)) {
         setActiveRoleState(savedRole);
+      } else {
+        setActiveRoleState("owner");
       }
       const verified = localStorage.getItem("novika_user_verified") || localStorage.getItem("afribuilder_user_verified");
       const urlUnverified =
@@ -350,7 +353,17 @@ function AppShellInner({
         activeRole,
         setActiveRole,
         stores: storesList,
-        openCreateStoreModal: () => setIsCreateStoreOpen(true),
+        openCreateStoreModal: () => {
+          if (
+            storesList.length >= 1 &&
+            currentUser.email !== "admin@novika.com" &&
+            currentUser.email !== "demo@novika.com"
+          ) {
+            alert("Règle de la plateforme : Un compte marchand est limité à la création d'une seule boutique unique.");
+            return;
+          }
+          setIsCreateStoreOpen(true);
+        },
       }}
     >
       <div className="min-h-screen bg-[#F3EFE6] text-[#111111] flex selection:bg-[#111111] selection:text-[#FAF8F5]">
@@ -642,16 +655,16 @@ function AppShellInner({
                   <div className="my-1.5 pt-1.5 border-t border-black/[0.08]">
                     <div className="flex items-center gap-1 px-1 mb-1 text-[9px] font-bold text-[#888880] uppercase tracking-wider">
                       <ShieldCheck className="h-3 w-3 text-[#111111]" />
-                      <span>Rôle de test (développement)</span>
+                      <span>Rôle d'équipe</span>
                     </div>
-                    <div className="grid grid-cols-6 gap-0.5">
-                      {(["owner", "admin", "manager", "closer", "rider", "agency"] as UserRole[]).map((role) => (
+                    <div className="grid grid-cols-4 gap-1">
+                      {(["owner", "closer", "rider", "agency"] as UserRole[]).map((role) => (
                         <button
                           key={role}
                           type="button"
                           onClick={() => setActiveRole(role)}
                           className={cn(
-                            "py-0.5 text-[8px] font-medium rounded transition-colors text-center border truncate cursor-pointer",
+                            "py-1 text-[9px] font-bold rounded-lg transition-colors text-center border truncate cursor-pointer",
                             activeRole === role
                               ? "bg-[#111111] text-[#FAF8F5] font-extrabold border-[#111111] shadow-2xs"
                               : "bg-white text-[#555550] border-black/[0.08] hover:border-black/20"
@@ -659,15 +672,11 @@ function AppShellInner({
                         >
                           {role === "owner"
                             ? "Admin"
-                            : role === "admin"
-                              ? "Co-admin"
-                              : role === "manager"
-                                ? "Manager"
-                                : role === "closer"
-                                  ? "Closeuse"
-                                  : role === "rider"
-                                    ? "Livreur"
-                                    : "Agence"}
+                            : role === "closer"
+                              ? "Closeur"
+                              : role === "rider"
+                                ? "Livreur"
+                                : "Agence"}
                         </button>
                       ))}
                     </div>

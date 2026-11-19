@@ -131,9 +131,10 @@ export function MarketStatsClient({ storeSlug }: MarketStatsClientProps) {
               onChange={(e) => setCurrentRole(e.target.value as UserRole)}
               className="text-xs font-bold text-[#111111] bg-transparent border-none focus:outline-hidden cursor-pointer"
             >
-              <option value="owner">Admin Propriétaire (Complet)</option>
-              <option value="admin">Co-administrateur (Complet)</option>
-              <option value="manager">Manager (Volumes & Taux seuls)</option>
+              <option value="owner">Admin (Complet)</option>
+              <option value="closer">Closeur (Lecture seule)</option>
+              <option value="rider">Livreur (Lecture seule)</option>
+              <option value="agency">Agence de livraison (Lecture seule)</option>
             </select>
           </div>
 

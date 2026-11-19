@@ -2126,19 +2126,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
                       : "bg-white text-[#666660] border border-black/[0.08]"
                   )}
                 >
-                  Propriétaire ({team.filter((m) => m.role === "owner").length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTeamFilterRole("admin")}
-                  className={cn(
-                    "px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
-                    teamFilterRole === "admin"
-                      ? "bg-purple-700 text-white"
-                      : "bg-white text-[#666660] border border-black/[0.08]"
-                  )}
-                >
-                  Admins ({team.filter((m) => m.role === "admin").length})
+                  Admin ({team.filter((m) => m.role === "owner" || m.role === "admin").length})
                 </button>
                 <button
                   type="button"
@@ -2150,7 +2138,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
                       : "bg-white text-[#666660] border border-black/[0.08]"
                   )}
                 >
-                  Closeuses ({team.filter((m) => m.role === "closer").length})
+                  Closeurs ({team.filter((m) => m.role === "closer").length})
                 </button>
                 <button
                   type="button"
@@ -2238,11 +2226,10 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
                           onChange={(e: any) => setNewMemberRole(e.target.value)}
                           className="w-full p-2.5 rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
                         >
-                          <option value="closer">Closeuse WhatsApp</option>
+                          <option value="owner">Admin</option>
+                          <option value="closer">Closeur WhatsApp</option>
                           <option value="rider">Livreur de tournées</option>
                           <option value="agency">Agence de livraison partenaire</option>
-                          <option value="admin">Administrateur</option>
-                          <option value="owner">Propriétaire</option>
                         </select>
                       </div>
                     </div>

@@ -23,6 +23,23 @@ export async function POST(req: NextRequest) {
     try {
       const supabase = await createClient();
 
+      // 0. Règle absolue : 1 email = 1 seul compte sur la plateforme
+      const { data: existingAccount } = await (supabase as any)
+        .from("merchant_accounts")
+        .select("email, is_verified")
+        .eq("email", normalizedEmail)
+        .maybeSingle();
+
+      if (existingAccount && existingAccount.is_verified) {
+        return NextResponse.json(
+          {
+            error: "Un compte existe déjà avec cette adresse e-mail. Vous ne pouvez créer qu'un seul compte par adresse. Veuillez vous connecter directement.",
+            accountExists: true,
+          },
+          { status: 409 }
+        );
+      }
+
       // Déterminer l'origine propre du client pour la redirection
       const clientOrigin = req.headers.get("origin") || req.headers.get("referer") || "http://localhost:3000";
       let originUrl = "http://localhost:3000";

@@ -25,6 +25,7 @@ import {
 import { CountryFlag } from "@/components/ui/country-flag";
 import { UserRole } from "@/server/data/types";
 import { canManageShopCountries } from "@/config/permissions";
+import { useApp } from "@/components/layout/app-shell";
 import { cn } from "@/lib/utils";
 
 interface CountriesClientProps {
@@ -32,6 +33,9 @@ interface CountriesClientProps {
 }
 
 export function CountriesClient({ storeSlug }: CountriesClientProps) {
+  const { activeStore } = useApp();
+  const storeCurrency = activeStore?.currency || "XOF";
+
   // Rôle simulant l'utilisateur connecté (par défaut "owner" pour l'admin propriétaire)
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>("owner");
   const [searchQuery, setSearchQuery] = useState("");
@@ -79,6 +83,15 @@ export function CountriesClient({ storeSlug }: CountriesClientProps) {
     }
 
     const isCurrentlyEnabled = enabledCountryCodes.has(country.code);
+
+    // Règle monétaire stricte : Une boutique ne peut vendre que dans les pays partageant sa devise (ex: XOF, XAF, GNF)
+    if (!isCurrentlyEnabled && country.currency !== storeCurrency) {
+      setFeedbackMessage({
+        type: "error",
+        text: `Incompatibilité de devise : Votre boutique opère en ${storeCurrency}. Vous ne pouvez activer que les pays utilisant la devise ${storeCurrency}.`,
+      });
+      return;
+    }
 
     // Règle absolue Prompt 05-P : Au moins un pays doit rester activé
     if (isCurrentlyEnabled && enabledCountryCodes.size <= 1) {
@@ -157,11 +170,10 @@ export function CountriesClient({ storeSlug }: CountriesClientProps) {
             className="bg-background border border-border rounded px-2 py-1 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
             aria-label="Changer le rôle de test"
           >
-            <option value="owner">Admin Propriétaire (Écriture)</option>
-            <option value="admin">Co-admin (Lecture seule)</option>
-            <option value="manager">Manager (Lecture seule)</option>
-            <option value="closer">Closeuse (Lecture seule)</option>
+            <option value="owner">Admin (Écriture)</option>
+            <option value="closer">Closeur (Lecture seule)</option>
             <option value="rider">Livreur (Lecture seule)</option>
+            <option value="agency">Agence de livraison (Lecture seule)</option>
           </select>
         </div>
       </div>

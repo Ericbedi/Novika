@@ -16,6 +16,25 @@ export async function POST(req: NextRequest) {
     const cleanSlug = slug.toLowerCase().trim().replace(/[^a-z0-9-]+/g, "-");
     const supabase = await createClient();
 
+    // Règle stricte Novika : 1 email = 1 seule boutique autorisée sur la plateforme
+    if (ownerEmail && ownerEmail !== "admin@novika.com" && ownerEmail !== "demo@novika.com") {
+      const { data: existingShop } = await (supabase as any)
+        .from("shops")
+        .select("id, slug, name")
+        .eq("owner_email", ownerEmail)
+        .maybeSingle();
+
+      if (existingShop) {
+        return NextResponse.json(
+          {
+            error: "Un compte marchand ne peut créer qu'une seule boutique sur la plateforme.",
+            existingStore: existingShop,
+          },
+          { status: 409 }
+        );
+      }
+    }
+
     // Insertion dans public.shops
     const { data: newShop, error: shopErr } = await (supabase as any)
       .from("shops")

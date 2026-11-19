@@ -49,6 +49,7 @@ export default function DemarrerAssistantPage() {
           if (Array.isArray(parsed) && parsed.length > 0) {
             setFirstStoreSlug(parsed[0].slug);
             setCompletedSteps([1]);
+            router.push(`/app/${parsed[0].slug}`);
             return;
           }
         } catch {}
