@@ -381,3 +381,25 @@ export function canImportProducts(role: UserRole): boolean {
   return role === "owner" || role === "admin";
 }
 
+/**
+ * Règle stricte Prompt 14-B : Suppression et gestion de la corbeille des produits.
+ * - Propriétaire (owner) : corbeille, restauration, archivage, lot, suppression définitive.
+ * - Co-admin (admin) : corbeille, restauration, archivage, lot. Suppression définitive STRICTEMENT interdite (false).
+ * - Manager, closer et autres : aucune action de suppression ni d'archivage (false).
+ */
+export function canTrashProduct(role: UserRole): boolean {
+  return role === "owner" || role === "admin";
+}
+
+export function canArchiveProduct(role: UserRole): boolean {
+  return role === "owner" || role === "admin";
+}
+
+export function canHardDeleteProduct(role: UserRole): boolean {
+  return role === "owner";
+}
+
+export function canBatchManageProducts(role: UserRole): boolean {
+  return role === "owner" || role === "admin";
+}
+

@@ -218,6 +218,8 @@ export interface Product {
   template?: string;
   receiptContent?: any;
   importBatchId?: string;
+  deletedAt?: string | null;
+  archivedAt?: string | null;
   createdAt: string;
 }
 

@@ -106,6 +106,7 @@ CREATE TABLE IF NOT EXISTS products (
     badges_config JSONB DEFAULT '{}'::jsonb,
     seo_title VARCHAR(255),
     seo_description TEXT,
+    deleted_at TIMESTAMPTZ DEFAULT NULL,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -256,6 +257,54 @@ CREATE TABLE IF NOT EXISTS purchase_order_events (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Table Prérequise pour les politiques RLS multi-rôles
+CREATE TABLE IF NOT EXISTS public.team_members (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    store_id UUID NOT NULL,
+    user_id UUID,
+    name TEXT NOT NULL,
+    email TEXT,
+    phone TEXT NOT NULL,
+    role VARCHAR(50) NOT NULL DEFAULT 'closer',
+    country VARCHAR(10),
+    active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Helper function pour vérifier les droits admin / propriétaire
+CREATE OR REPLACE FUNCTION public.is_store_admin(p_store_id UUID DEFAULT NULL)
+RETURNS BOOLEAN AS $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM public.team_members
+        WHERE user_id = auth.uid()
+        AND role IN ('owner', 'admin')
+        AND active = true
+        AND (p_store_id IS NULL OR store_id = p_store_id)
+    ) THEN
+        RETURN true;
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM public.merchant_accounts
+        WHERE id = auth.uid()
+        AND role IN ('owner', 'admin')
+    ) THEN
+        RETURN true;
+    END IF;
+
+    IF p_store_id IS NOT NULL AND EXISTS (
+        SELECT 1 FROM public.shops s
+        JOIN public.merchant_accounts m ON m.email = s.owner_email
+        WHERE s.id = p_store_id AND m.id = auth.uid()
+    ) THEN
+        RETURN true;
+    END IF;
+
+    RETURN false;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
 -- ==============================================================================
 -- 17. POLITIQUES DE SÉCURITÉ ROW LEVEL SECURITY (RLS)
 -- ==============================================================================
@@ -273,70 +322,197 @@ ALTER TABLE purchase_order_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE purchase_order_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reorder_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE collections ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_options ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_media ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_collections ENABLE ROW LEVEL SECURITY;
 
 -- Politiques pour les Fournisseurs et Achats : PROPRIÉTAIRE ET ADMIN UNIQUEMENT
--- Les closeuses, livreurs et agences n'ont strictement AUCUN accès (0 ligne visible)
 CREATE POLICY "suppliers_owner_admin_full" ON suppliers
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM team_members
-            WHERE user_id = auth.uid()
-            AND role IN ('owner', 'admin')
-            AND active = true
-        )
-    );
+    FOR ALL USING (public.is_store_admin(store_id));
 
 CREATE POLICY "purchase_orders_owner_admin_full" ON purchase_orders
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM team_members
-            WHERE user_id = auth.uid()
-            AND role IN ('owner', 'admin')
-            AND active = true
-        )
-    );
+    FOR ALL USING (public.is_store_admin(store_id));
 
 CREATE POLICY "purchase_order_items_owner_admin_full" ON purchase_order_items
     FOR ALL USING (
         EXISTS (
-            SELECT 1 FROM team_members
-            WHERE user_id = auth.uid()
-            AND role IN ('owner', 'admin')
-            AND active = true
+            SELECT 1 FROM purchase_orders po
+            WHERE po.id = purchase_order_items.purchase_order_id
+            AND public.is_store_admin(po.store_id)
+        )
+    );
+
+CREATE POLICY "purchase_order_events_owner_admin_full" ON purchase_order_events
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM purchase_orders po
+            WHERE po.id = purchase_order_events.purchase_order_id
+            AND public.is_store_admin(po.store_id)
         )
     );
 
 CREATE POLICY "reorder_settings_owner_admin_full" ON reorder_settings
     FOR ALL USING (
         EXISTS (
-            SELECT 1 FROM team_members
-            WHERE user_id = auth.uid()
-            AND role IN ('owner', 'admin')
-            AND active = true
+            SELECT 1 FROM products p
+            WHERE p.id = reorder_settings.product_id
+            AND public.is_store_admin(p.store_id)
         )
     );
 
 -- Politiques Produits :
--- Propriétaire & Admin : Accès complet
 CREATE POLICY "products_owner_admin_full" ON products
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM team_members
-            WHERE user_id = auth.uid()
-            AND role IN ('owner', 'admin')
-            AND active = true
-        )
-    );
+    FOR ALL USING (public.is_store_admin(store_id));
 
--- Closeuse : Lecture catalogue actif uniquement
 CREATE POLICY "products_closer_view" ON products
     FOR SELECT USING (
         status = 'active'
+        AND deleted_at IS NULL
         AND EXISTS (
             SELECT 1 FROM team_members
             WHERE user_id = auth.uid()
             AND role = 'closer'
             AND active = true
+        )
+    );
+
+CREATE POLICY "products_public_view" ON products
+    FOR SELECT USING (
+        status = 'active'
+        AND deleted_at IS NULL
+    );
+
+-- Politiques Variantes :
+CREATE POLICY "variants_owner_admin_full" ON variants
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM products p
+            WHERE p.id = variants.product_id
+            AND public.is_store_admin(p.store_id)
+        )
+    );
+
+CREATE POLICY "variants_public_view" ON variants
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM products p
+            WHERE p.id = variants.product_id
+            AND p.status = 'active'
+            AND p.deleted_at IS NULL
+        )
+    );
+
+-- Politiques Lieux de Stockage :
+CREATE POLICY "locations_owner_admin_full" ON locations
+    FOR ALL USING (public.is_store_admin(store_id));
+
+CREATE POLICY "locations_public_view" ON locations
+    FOR SELECT USING (active = true);
+
+-- Politiques Stock :
+CREATE POLICY "stock_levels_owner_admin_full" ON stock_levels
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM products p
+            WHERE p.id = stock_levels.product_id
+            AND public.is_store_admin(p.store_id)
+        )
+    );
+
+CREATE POLICY "stock_levels_closer_view" ON stock_levels
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM team_members
+            WHERE user_id = auth.uid()
+            AND role = 'closer'
+            AND active = true
+        )
+    );
+
+-- Politiques Mouvements de Stock :
+CREATE POLICY "stock_movements_owner_admin_full" ON stock_movements
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM products p
+            WHERE p.id = stock_movements.product_id
+            AND public.is_store_admin(p.store_id)
+        )
+    );
+
+-- Politiques Produits Fournisseurs :
+CREATE POLICY "supplier_products_owner_admin_full" ON supplier_products
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM suppliers s
+            WHERE s.id = supplier_products.supplier_id
+            AND public.is_store_admin(s.store_id)
+        )
+    );
+
+-- Politiques Collections :
+CREATE POLICY "collections_owner_admin_full" ON collections
+    FOR ALL USING (public.is_store_admin(store_id));
+
+CREATE POLICY "collections_public_view" ON collections
+    FOR SELECT USING (published = true);
+
+-- Politiques Options de Produits :
+CREATE POLICY "product_options_owner_admin_full" ON product_options
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM products p
+            WHERE p.id = product_options.product_id
+            AND public.is_store_admin(p.store_id)
+        )
+    );
+
+CREATE POLICY "product_options_public_view" ON product_options
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM products p
+            WHERE p.id = product_options.product_id
+            AND p.status = 'active'
+            AND p.deleted_at IS NULL
+        )
+    );
+
+-- Politiques Médias Produits :
+CREATE POLICY "product_media_owner_admin_full" ON product_media
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM products p
+            WHERE p.id = product_media.product_id
+            AND public.is_store_admin(p.store_id)
+        )
+    );
+
+CREATE POLICY "product_media_public_view" ON product_media
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM products p
+            WHERE p.id = product_media.product_id
+            AND p.status = 'active'
+            AND p.deleted_at IS NULL
+        )
+    );
+
+-- Politiques Product Collections :
+CREATE POLICY "product_collections_owner_admin_full" ON product_collections
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM products p
+            WHERE p.id = product_collections.product_id
+            AND public.is_store_admin(p.store_id)
+        )
+    );
+
+CREATE POLICY "product_collections_public_view" ON product_collections
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM products p
+            WHERE p.id = product_collections.product_id
+            AND p.status = 'active'
+            AND p.deleted_at IS NULL
         )
     );
 
@@ -357,30 +533,8 @@ SELECT
     sl.available_stock
 FROM products p
 LEFT JOIN stock_levels sl ON p.id = sl.product_id
-WHERE p.status = 'active';
-
--- Politiques Stock :
--- Propriétaire & Admin : Accès complet
-CREATE POLICY "stock_levels_owner_admin_full" ON stock_levels
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM team_members
-            WHERE user_id = auth.uid()
-            AND role IN ('owner', 'admin')
-            AND active = true
-        )
-    );
-
--- Closeuse : Lecture du stock disponible uniquement
-CREATE POLICY "stock_levels_closer_view" ON stock_levels
-    FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM team_members
-            WHERE user_id = auth.uid()
-            AND role = 'closer'
-            AND active = true
-        )
-    );
+WHERE p.status = 'active'
+AND p.deleted_at IS NULL;
 
 -- ==============================================================================
 -- 18. DÉCLENCHEUR MÉTIER : MISE À JOUR DU COÛT MOYEN PONDÉRÉ (PUMP)
@@ -456,8 +610,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS trg_po_receipt ON purchase_orders;
-CREATE TRIGGER trg_po_receipt
+CREATE OR REPLACE TRIGGER trg_po_receipt
 AFTER UPDATE ON purchase_orders
 FOR EACH ROW
 EXECUTE FUNCTION process_purchase_order_receipt();

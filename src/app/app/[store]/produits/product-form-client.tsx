@@ -44,6 +44,8 @@ import { formatFcfa } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/components/layout/app-shell";
 import { ProductsNavTabs } from "@/components/products/products-nav-tabs";
+import { canTrashProduct } from "@/config/permissions";
+import { softDeleteProduct } from "@/lib/products-store";
 
 interface ProductFormClientProps {
   storeSlug: string;
@@ -416,6 +418,21 @@ export function ProductFormClient({
     setTimeout(() => {
       router.push(`/app/${storeSlug}/produits`);
     }, 800);
+  };
+
+  const handleDeleteProduct = () => {
+    if (!initialProduct) return;
+    if (!canTrashProduct(activeRole)) {
+      alert("Action non autorisée pour votre rôle.");
+      return;
+    }
+    const confirmed = window.confirm(
+      `Êtes-vous sûr de vouloir déplacer « ${name || "ce produit"} » dans la corbeille ? Il sera immédiatement masqué de votre vitrine.`
+    );
+    if (!confirmed) return;
+
+    softDeleteProduct(storeSlug, initialProduct.id, activeRole);
+    router.push(`/app/${storeSlug}/produits`);
   };
 
   return (
@@ -1523,6 +1540,43 @@ export function ProductFormClient({
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* ZONE DANGEREUSE : SUPPRESSION DU PRODUIT (Prompt 14-B) */}
+      {/* ======================================================== */}
+      {initialProduct && canTrashProduct(activeRole) && (
+        <div
+          id="danger-zone-delete"
+          className="rounded-[24px] border border-rose-200 bg-rose-50/70 p-6 shadow-2xs space-y-4"
+        >
+          <div className="flex items-start gap-3">
+            <div className="p-2.5 rounded-2xl bg-rose-100 text-rose-700 shrink-0">
+              <Trash2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-rose-950">Zone dangereuse</h3>
+              <p className="text-xs text-rose-800/90 mt-0.5 leading-relaxed">
+                Déplacer ce produit dans la corbeille. Il sera immédiatement masqué de votre vitrine en ligne, du catalogue et des recherches publiques. Il restera conservé 30 jours avant purge définitive.
+              </p>
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-rose-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <span className="text-xs font-semibold text-rose-900">
+              Vous pourrez restaurer ce produit à tout moment depuis l'onglet « Corbeille » de la liste des produits.
+            </span>
+            <button
+              type="button"
+              id="btn-delete-product"
+              onClick={handleDeleteProduct}
+              className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer shrink-0"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Supprimer ce produit</span>
+            </button>
           </div>
         </div>
       )}
