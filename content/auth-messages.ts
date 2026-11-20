@@ -10,6 +10,9 @@ export const AUTH_MESSAGES = {
   unauthorized: "Veuillez vous connecter pour accéder à cet espace.",
   account_suspended: "Votre compte a été suspendu ou retiré de l'équipe.",
   password_changed: "Votre mot de passe a été modifié, reconnectez-vous.",
+  signup_closed: "Les inscriptions publiques sont fermées. L'accès à la plateforme se fait uniquement sur invitation.",
+  invalid_credentials: "Identifiants incorrects.",
+  two_factor_required: "Un code de validation 2FA à 6 chiffres est requis pour sécuriser votre accès.",
 } as const;
 
 export type AuthMessageKey = keyof typeof AUTH_MESSAGES;

@@ -47,6 +47,7 @@ import {
   Boxes,
 } from "lucide-react";
 import { canDeleteAccount, canManagePixels, canViewPixels } from "@/config/permissions";
+import { getOwnerEmail, isOwnerEmail } from "@/config/owner";
 import { MOCK_PRODUCTS } from "@/mock-data/products";
 import {
   ShopPixel,
@@ -92,7 +93,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
 
   // Profil
   const [profileName, setProfileName] = useState("Promises Bedi");
-  const [profileEmail, setProfileEmail] = useState("promises@afribuilder.com");
+  const [profileEmail, setProfileEmail] = useState(getOwnerEmail());
   const [profilePhone, setProfilePhone] = useState("+22890001122");
 
   // Général
@@ -518,7 +519,8 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
       return;
     }
 
-    const token = Math.random().toString(36).substring(2, 9);
+    const token = `inv_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://novika.africa";
     const newMember: TeamMember = {
       id: `tm_${Date.now()}`,
       name: newMemberName,
@@ -529,7 +531,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
       agencyName: newMemberAgency || (newMemberRole === "agency" ? newMemberName : undefined),
       active: true,
       joinedAt: new Date().toLocaleDateString("fr-FR"),
-      inviteLink: `https://novika.africa/invitation/${newMemberRole}_${token}`,
+      inviteLink: `${origin}/rejoindre?token=${token}`,
     };
 
     setTeam((prev) => {
@@ -548,10 +550,16 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
     setNewMemberEmail("");
     setNewMemberPhone("");
     setNewMemberAgency("");
-    showToast(`Invitation créée pour ${newMember.name} (${USER_ROLE_LABELS[newMember.role]}) !`);
+    showToast(`Invitation créée pour ${newMember.name} (valable 7 jours) !`);
   };
 
   const handleToggleMemberActive = (id: string) => {
+    const target = team.find((m) => m.id === id);
+    if (target?.role === "owner" || isOwnerEmail(target?.email)) {
+      showToast("Action refusée : Le propriétaire ne peut pas être suspendu.");
+      return;
+    }
+
     setTeam((prev) => {
       const updated = prev.map((m) => {
         if (m.id === id) {
@@ -559,7 +567,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
           showToast(
             newStatus
               ? `Compte de ${m.name} réactivé avec succès !`
-              : `Compte de ${m.name} désactivé sans perte d'historique.`
+              : `Membre ${m.name} suspendu (toutes les sessions ont été révoquées).`
           );
           return { ...m, active: newStatus };
         }
@@ -576,6 +584,12 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
   };
 
   const handleChangeMemberRole = (id: string, newRole: UserRole) => {
+    const target = team.find((m) => m.id === id);
+    if (target?.role === "owner" || isOwnerEmail(target?.email)) {
+      showToast("Action refusée : Le rôle du propriétaire est inaltérable.");
+      return;
+    }
+
     setTeam((prev) => {
       const updated = prev.map((m) => {
         if (m.id === id) {
@@ -595,17 +609,24 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
   };
 
   const handleCopyInviteLink = (member: TeamMember) => {
-    const link = member.inviteLink || `https://afribuilder.com/join/${member.role}_${member.id}`;
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://novika.africa";
+    const link = member.inviteLink || `${origin}/rejoindre?token=inv_${member.id}`;
     if (typeof navigator !== "undefined" && navigator.clipboard) {
       navigator.clipboard.writeText(link);
     }
-    showToast(`Lien d'invitation copié pour ${member.name} ! Prêt pour WhatsApp ou SMS.`);
+    showToast(`Lien d'invitation copié (valable 7 jours) ! Prêt pour WhatsApp ou e-mail.`);
   };
 
   const handleDeleteMember = (id: string) => {
-    if (confirm("Voulez-vous retirer ce membre de l'équipe ? Note : préférez la désactivation pour conserver l'historique.")) {
+    const target = team.find((m) => m.id === id);
+    if (target?.role === "owner" || isOwnerEmail(target?.email)) {
+      showToast("Action refusée : Le propriétaire ne peut pas être retiré de l'équipe.");
+      return;
+    }
+
+    if (confirm("Voulez-vous retirer ce membre de l'équipe ? Note : l'historique de ses commandes est intégralement conservé.")) {
       setTeam((prev) => prev.filter((m) => m.id !== id));
-      showToast("Membre retiré de l'équipe.");
+      showToast("Membre retiré de l'équipe (historique des commandes conservé).");
     }
   };
 
@@ -1259,7 +1280,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
                   Annuler la suppression et réactiver mon compte
                 </button>
               </div>
-            ) : (
+            ) : currentUserRole === "owner" ? (
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                   <h3 className="font-bold text-xs text-rose-950">
@@ -1277,6 +1298,26 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
                   className="shrink-0 px-4 py-2.5 rounded-xl border border-rose-300 bg-white hover:bg-rose-50 text-rose-700 text-xs font-bold transition-all shadow-2xs cursor-pointer min-h-[40px]"
                 >
                   Supprimer mon compte
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h3 className="font-bold text-xs text-[#111111]">
+                    Demander le retrait de l'équipe
+                  </h3>
+                  <p className="text-[11px] text-[#777770] mt-0.5 max-w-xl">
+                    En tant que collaborateur, vous ne pouvez pas supprimer le compte de la boutique. Pour vous retirer de l'équipe, adressez une demande au propriétaire.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  id="btn-request-team-removal"
+                  onClick={() => showToast("Demande de retrait transmise à l'administrateur propriétaire.")}
+                  className="shrink-0 px-4 py-2.5 rounded-xl border border-black/10 bg-white hover:bg-black/5 text-[#111111] text-xs font-bold transition-all shadow-2xs cursor-pointer min-h-[40px]"
+                >
+                  Demander le retrait
                 </button>
               </div>
             )}

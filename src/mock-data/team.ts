@@ -1,16 +1,17 @@
 import { TeamMember } from "@/server/data/types";
+import { getOwnerEmail } from "@/config/owner";
 
 export const MOCK_TEAM: TeamMember[] = [
   {
     id: "tm_01",
-    name: "Promises Bedi",
-    email: "promises@afribuilder.com",
+    name: "Promises Bedi (Propriétaire)",
+    email: getOwnerEmail(),
     phone: "+22890001122",
     role: "owner",
     country: "TG",
-    active: false, // Compte propriétaire initial désactivé selon demande utilisateur
+    active: true,
     joinedAt: "01/01/2026",
-    inviteLink: "https://afribuilder.com/join/store_owner_pb77",
+    inviteLink: "https://novika.africa/rejoindre?token=owner_primary",
   },
   {
     id: "tm_02",

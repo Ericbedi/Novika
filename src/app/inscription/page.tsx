@@ -1,11 +1,5 @@
-import { Metadata } from "next";
-import { SignupClient } from "./signup-client";
-
-export const metadata: Metadata = {
-  title: "Créer mon compte vendeur | AfriBuilder",
-  description: "Rejoignez la plateforme e-commerce tout-en-un pour vendre en paiement à la livraison en Afrique.",
-};
+import { redirect } from "next/navigation";
 
 export default function SignupPage() {
-  return <SignupClient />;
+  redirect("/connexion?message=signup_closed");
 }

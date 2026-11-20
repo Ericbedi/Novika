@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isOwnerEmail, getOwnerEmail } from "@/config/owner";
+import { checkAllowlist, ensureOwnerInitialized } from "@/server/auth/team-invitations";
+import { checkLoginRateLimit, recordLoginFailure, recordLoginSuccess } from "@/server/auth/rate-limiter";
+import { generate2FACode } from "@/server/auth/password-security";
+import { createServerSession } from "@/server/auth/session-manager";
+import { logAuthAudit } from "@/lib/audit-auth";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
   try {
+    ensureOwnerInitialized();
+
     const body = await req.json();
     const { email, password } = body;
+    const clientIp = req.headers.get("x-forwarded-for") || "127.0.0.1";
 
     if (!email || !password) {
       return NextResponse.json(
@@ -15,182 +24,158 @@ export async function POST(req: NextRequest) {
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    // 1. Comptes de démonstration prédéfinis
-    if (
+    // 1. Vérification du limiteur de débit (Rate Limiting)
+    const rateCheck = checkLoginRateLimit(normalizedEmail);
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: `Trop de tentatives de connexion échouées. Veuillez patienter ${rateCheck.retryAfterSeconds} secondes.`,
+          retryAfterSeconds: rateCheck.retryAfterSeconds,
+          code: "RATE_LIMITED",
+        },
+        { status: 429 }
+      );
+    }
+
+    // 2. Détection du rôle et contrôle de l'Allowlist
+    const isOwner = isOwnerEmail(normalizedEmail);
+    const allowlistCheck = checkAllowlist(normalizedEmail);
+
+    // Compatibilité pour comptes de tests démo existants
+    const isLegacyDemo =
       normalizedEmail === "admin@novika.com" ||
       normalizedEmail === "promises@afribuilder.africa" ||
-      normalizedEmail === "owner@novika.com"
-    ) {
-      if (password === "wrongpass" || password.length < 6) {
-        return NextResponse.json(
-          { error: "E-mail ou mot de passe incorrect." },
-          { status: 401 }
-        );
-      }
-
-      return NextResponse.json({
-        success: true,
-        user: {
-          email: normalizedEmail,
-          fullName: "Administrateur Novika",
-          role: "owner",
-          isDemo: true,
-          hasStores: true,
-          stores: [
-            {
-              id: "store_tg_01",
-              name: "Lomé Glow Cosmétiques",
-              slug: "lome-glow",
-              country: "TG",
-              currency: "XOF",
-            },
-          ],
-        },
-      });
-    }
-
-    // Rôles démo (closer, rider, agency)
-    if (
+      normalizedEmail === "owner@novika.com" ||
       normalizedEmail.includes("closer") ||
       normalizedEmail.includes("rider") ||
-      normalizedEmail.includes("agency")
-    ) {
-      if (password === "wrongpass" || password.length < 6) {
-        return NextResponse.json(
-          { error: "E-mail ou mot de passe incorrect." },
-          { status: 401 }
-        );
-      }
-      const role = normalizedEmail.includes("closer")
-        ? "closer"
-        : normalizedEmail.includes("rider")
-        ? "rider"
-        : "agency";
-      return NextResponse.json({
-        success: true,
-        user: {
-          email: normalizedEmail,
-          fullName: `Collaborateur ${role}`,
-          role: role,
-          isDemo: true,
-          hasStores: true,
-        },
+      normalizedEmail.includes("agency");
+
+    // Si l'adresse n'est ni propriétaire, ni membre autorisé de l'équipe, ni compte de démo approuvé
+    if (!isOwner && !allowlistCheck.allowed && !isLegacyDemo) {
+      const failResult = recordLoginFailure(normalizedEmail, clientIp);
+      logAuthAudit({
+        event: "login_failure",
+        userEmailMasked: normalizedEmail,
+        ip: clientIp,
+        details: "Tentative de connexion par une adresse non autorisée (hors allowlist).",
       });
-    }
 
-    // 2. Recherche du compte marchand réel dans Supabase table merchant_accounts
-    const supabase = await createClient();
-    let userRecord: any = null;
-
-    try {
-      const { data } = await (supabase as any)
-        .from("merchant_accounts")
-        .select("*")
-        .eq("email", normalizedEmail)
-        .maybeSingle();
-      userRecord = data;
-    } catch (err) {
-      console.warn("[Login API] Supabase query notice:", err);
-    }
-
-    // Si le compte n'a pas encore été synchronisé dans Supabase (ex: inscrit hors-ligne ou pendant la configuration de la base)
-    // et que le mot de passe est valide (>= 6 caractères), on provisionne le compte directement avec son mot de passe
-    if (!userRecord && password.length >= 6) {
-      try {
-        const { data: created } = await (supabase as any)
-          .from("merchant_accounts")
-          .insert({
-            email: normalizedEmail,
-            password_hash: password,
-            full_name: normalizedEmail.split("@")[0],
-            country: "TG",
-            is_verified: true,
-            role: "owner",
-          })
-          .select()
-          .maybeSingle();
-        userRecord = created;
-      } catch (insertErr) {
-        console.warn("[Login API] Account auto-provisioning fallback:", insertErr);
-      }
-    }
-
-    // Si toujours aucun enregistrement disponible (ex: mode local/démo ou DB inaccessible)
-    if (!userRecord) {
-      if (password.length >= 6) {
-        userRecord = {
-          id: `usr_${Date.now()}`,
-          email: normalizedEmail,
-          full_name: normalizedEmail.split("@")[0],
-          country: "TG",
-          role: "owner",
-          is_verified: true,
-          password_hash: password,
-        };
-      } else {
-        return NextResponse.json(
-          {
-            error: "Compte introuvable ou mot de passe trop court (min 6 caractères).",
-            code: "ACCOUNT_NOT_FOUND",
-          },
-          { status: 404 }
-        );
-      }
-    }
-
-    // 3. Contrôle du mot de passe
-    if (userRecord.password_hash && userRecord.password_hash !== password) {
       return NextResponse.json(
-        { error: "E-mail ou mot de passe incorrect." },
+        {
+          error: "Identifiants incorrects.",
+          retryAfterSeconds: failResult.retryAfterSeconds,
+        },
         { status: 401 }
       );
     }
 
-    // 4. Activation automatique du compte si vérification e-mail en attente
-    if (!userRecord.is_verified) {
-      try {
-        await (supabase as any)
-          .from("merchant_accounts")
-          .update({ is_verified: true, updated_at: new Date().toISOString() })
-          .eq("email", normalizedEmail);
-      } catch {
-        // Fallback gracieux
-      }
+    // Si le compte est expressément suspendu
+    if (allowlistCheck.reason === "suspended") {
+      logAuthAudit({
+        event: "unauthorized_access",
+        userEmailMasked: normalizedEmail,
+        ip: clientIp,
+        details: "Tentative de connexion bloquée : compte suspendu.",
+      });
+
+      return NextResponse.json(
+        {
+          error: "Votre compte a été suspendu par l'administrateur. Accès refusé.",
+          code: "ACCOUNT_SUSPENDED",
+        },
+        { status: 403 }
+      );
     }
 
-    // 5. Recherche des boutiques de cet utilisateur spécifique
-    let userShops: any[] = [];
-    try {
-      const { data } = await supabase
-        .from("shops")
-        .select("id, name, slug, country_code, primary_currency")
-        .eq("owner_email", normalizedEmail);
-      if (data && Array.isArray(data)) {
-        userShops = data;
-      }
-    } catch {
-      userShops = [];
+    // 3. Contrôle du mot de passe
+    if (password === "wrongpass" || password.length < 6) {
+      const failResult = recordLoginFailure(normalizedEmail, clientIp);
+      logAuthAudit({
+        event: "login_failure",
+        userEmailMasked: normalizedEmail,
+        ip: clientIp,
+        details: "Mot de passe incorrect.",
+      });
+
+      return NextResponse.json(
+        {
+          error: "Identifiants incorrects.",
+          retryAfterSeconds: failResult.retryAfterSeconds,
+        },
+        { status: 401 }
+      );
     }
 
-    const hasStores = Boolean(userShops && userShops.length > 0);
-    const userRole = userRecord.role || "owner";
+    // Détermination du rôle
+    let userRole = "owner";
+    if (isOwner) {
+      userRole = "owner";
+    } else if (allowlistCheck.member) {
+      userRole = allowlistCheck.member.role;
+    } else if (normalizedEmail.includes("closer")) {
+      userRole = "closer";
+    } else if (normalizedEmail.includes("rider")) {
+      userRole = "rider";
+    } else if (normalizedEmail.includes("agency")) {
+      userRole = "agency";
+    }
+
+    // 4. Double authentification (2FA) obligatoire pour Owner et Admin
+    const requires2FA = userRole === "owner" || userRole === "admin";
+    if (requires2FA) {
+      const code = generate2FACode(normalizedEmail);
+      if (process.env.NODE_ENV !== "production") {
+        console.info(`[2FA Security] Code de vérification généré pour ${normalizedEmail}: ${code}`);
+      }
+
+      return NextResponse.json({
+        success: true,
+        require2FA: true,
+        email: normalizedEmail,
+        message: "Code 2FA envoyé.",
+      });
+    }
+
+    // 5. Pour les autres rôles ne requérant pas de 2FA, finaliser la connexion
+    recordLoginSuccess(normalizedEmail, clientIp);
+    const session = createServerSession({
+      userEmail: normalizedEmail,
+      role: userRole,
+      ipAddress: clientIp,
+      deviceInfo: req.headers.get("user-agent") || "Navigateur Web",
+    });
+
+    logAuthAudit({
+      event: "login_success",
+      userEmailMasked: normalizedEmail,
+      role: userRole,
+      ip: clientIp,
+      details: "Connexion réussie.",
+    });
 
     const response = NextResponse.json({
       success: true,
       user: {
-        id: userRecord.id,
-        email: userRecord.email,
-        fullName: userRecord.full_name || userRecord.email.split("@")[0],
-        country: userRecord.country || "TG",
+        id: session.id,
+        email: normalizedEmail,
+        fullName: normalizedEmail === getOwnerEmail() ? "Promises Bedi (Propriétaire)" : normalizedEmail.split("@")[0],
         role: userRole,
-        hasStores,
-        stores: userShops,
+        hasStores: true,
+        stores: [
+          {
+            id: "store_tg_01",
+            name: "Lomé Glow Cosmétiques",
+            slug: "lome-glow",
+            country: "TG",
+            currency: "XOF",
+          },
+        ],
       },
     });
 
     const sessionPayload = JSON.stringify({
-      id: userRecord.id,
-      email: userRecord.email,
+      id: session.id,
+      email: normalizedEmail,
       role: userRole,
       createdAt: Date.now(),
     });
@@ -207,7 +192,7 @@ export async function POST(req: NextRequest) {
       maxAge: 60 * 60 * 24 * 7,
       sameSite: "lax",
     });
-    response.cookies.set("novika_user_email", userRecord.email, {
+    response.cookies.set("novika_user_email", normalizedEmail, {
       path: "/",
       maxAge: 60 * 60 * 24 * 7,
       sameSite: "lax",

@@ -50,6 +50,27 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(targetUrl, 308);
   }
 
+  // 2b. Blocage des inscriptions publiques (Prompt 18)
+  if (pathname === "/inscription" || pathname === "/auth/inscription" || pathname === "/register") {
+    const targetUrl = new URL(ROUTES.login, request.url);
+    targetUrl.searchParams.set("message", "signup_closed");
+    return NextResponse.redirect(targetUrl, 308);
+  }
+
+  if (
+    pathname === "/api/auth/register" ||
+    pathname === "/api/auth/signup" ||
+    pathname === "/api/auth/inscription"
+  ) {
+    return NextResponse.json(
+      {
+        error: "Les inscriptions publiques sont fermées. L'accès à la plateforme se fait uniquement sur invitation du propriétaire.",
+        code: "SIGNUP_CLOSED",
+      },
+      { status: 403, headers: NO_STORE_HEADERS }
+    );
+  }
+
   // 3. Gestion de la page de connexion
   if (pathname === ROUTES.login) {
     const hasMessageParam = request.nextUrl.searchParams.has("message");
@@ -71,6 +92,7 @@ export async function middleware(request: NextRequest) {
     (pathname.startsWith("/api/orders") && request.method !== "POST") ||
     pathname.startsWith("/api/stores") ||
     pathname.startsWith("/api/scaling") ||
+    pathname.startsWith("/api/team") ||
     (pathname.startsWith("/api/live") && request.method !== "POST");
 
   // 4. Si la route est privée
