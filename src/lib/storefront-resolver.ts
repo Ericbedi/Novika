@@ -1,8 +1,8 @@
 import { Store, Product } from "@/server/data/types";
 import { StorefrontData, CustomerReview, PageSection, ThemeConfig } from "@/server/data/storefront-types";
 import { MOCK_STORES } from "@/mock-data/stores";
-import { MOCK_STOREFRONT_LOME, THEME_PRESETS } from "@/mock-data/storefront-data";
-import { MOCK_PRODUCTS } from "@/mock-data/products";
+import { MOCK_STOREFRONT_LOME, MOCK_STOREFRONT_KELIO, THEME_PRESETS } from "@/mock-data/storefront-data";
+import { MOCK_PRODUCTS, KELIO_PRODUCTS } from "@/mock-data/products";
 
 export interface ResolvedStorefront {
   store: Store;
@@ -56,9 +56,13 @@ export function resolveStorefrontData(storeSlug: string): ResolvedStorefront {
       } catch {}
     } else if (isFounderDemo) {
       products = MOCK_PRODUCTS;
+    } else if (storeSlug === "kelio") {
+      products = KELIO_PRODUCTS;
     }
   } else if (isFounderDemo) {
     products = MOCK_PRODUCTS;
+  } else if (storeSlug === "kelio") {
+    products = KELIO_PRODUCTS;
   }
 
   const activeProducts = products.filter(
@@ -74,15 +78,19 @@ export function resolveStorefrontData(storeSlug: string): ResolvedStorefront {
       try {
         storefront = JSON.parse(savedStorefront);
       } catch {
-        storefront = createEmptyStorefront(storeSlug, store.name);
+        storefront = storeSlug === "kelio" ? MOCK_STOREFRONT_KELIO : createEmptyStorefront(storeSlug, store.name);
       }
     } else if (isFounderDemo) {
       storefront = MOCK_STOREFRONT_LOME;
+    } else if (storeSlug === "kelio") {
+      storefront = MOCK_STOREFRONT_KELIO;
     } else {
       storefront = createEmptyStorefront(storeSlug, store.name);
     }
   } else if (isFounderDemo) {
     storefront = MOCK_STOREFRONT_LOME;
+  } else if (storeSlug === "kelio") {
+    storefront = MOCK_STOREFRONT_KELIO;
   } else {
     storefront = createEmptyStorefront(storeSlug, store.name);
   }

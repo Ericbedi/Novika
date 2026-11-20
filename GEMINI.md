@@ -429,6 +429,19 @@ Deux buckets publics ont été provisionnés avec limitation de taille et filtra
   - Bouton « Synchroniser vers la base » ajouté dans l'administration (`products-list-client.tsx`) avec modale de rapport transparent (total analysé, insérés, déjà existants, erreurs).
 * **Tests** : 4 tests unitaires dans `src/lib/prompt-17o-supabase-sync.test.ts`, 351 tests globaux Vitest réussis à 100%.
 
+### Prompt 18 & 2FA Email : Résolution du Blocage 2FA, Envoi d'E-mail et Vitrine Publique
+* **Diagnostic & Causes résolues** :
+  1. *Absence d'envoi d'e-mail 2FA* : `login/route.ts` générait le code en mémoire sans aucun service d'envoi d'e-mail (faisait seulement `console.info` et renvoyait un faux statut `Code 2FA envoyé`).
+  2. *Message « Vous êtes déconnecté » sur l'écran 2FA* : Le conteneur du message n'était pas masqué lorsque `is2faRequired` passait à `true`.
+  3. *Vitrine publique inaccessible & Erreur d'incident `ERR-9AN3N5`* : Sur SSR ou en navigation anonyme, `storefront-resolver.ts` initialisait les produits à `[]` pour `kelio` et marquait `isPublished: false`, activant `StorePreparationScreen` et causant des désynchronisations d'hydratation / crashs `ERR-9AN3N5`.
+* **Actions et Implémentation** :
+  - *Service d'e-mails unifié* (`src/server/email/email-service.ts`) : Support de Resend (API REST) et SMTP (Gmail / standard via `nodemailer`).
+  - *Affichage en dev & Bypass local* : Affichage console très visible du code 2FA en développement et support du flag `.env` `DISABLE_2FA=true` pour désactiver la 2FA en local.
+  - *Bouton « Renvoyer le code » (délai 60s)* : Intégré sur l'écran 2FA (`login-client.tsx`) avec compte à rebours interactif et route dédiée `/api/auth/resend-2fa`.
+  - *Nettoyage de l'écran 2FA* : Le message « Vous êtes déconnecté » est désormais masqué dès que l'étape 2FA s'affiche.
+  - *Vitrine publique* : `MOCK_STOREFRONT_KELIO` configuré avec le produit actif `Accompagnez votre équilibre glycémique`, statut publié par défaut et accès anonyme garanti sans redirection.
+* **Tests** : 5 nouveaux tests unitaires dans `prompt-18-2fa-email.test.ts`, 357 tests globaux Vitest réussis à 100%.
+
 
 
 

@@ -25,11 +25,11 @@ describe("Prompt 08 : Résolution de la Vitrine & Étanchéité des Données", (
     expect(formatStoreSlugToName("mon-super-store")).toBe("Mon Super Store");
   });
 
-  it("2. Une boutique non configurée (ex: kelio) démarre en mode préparation avec 0 produits et 0 avis inventés", () => {
-    const data = resolveStorefrontData("kelio");
+  it("2. Une boutique non configurée (ex: boutique-sans-produits) démarre en mode préparation avec 0 produits et 0 avis inventés", () => {
+    const data = resolveStorefrontData("boutique-sans-produits");
 
-    expect(data.store.name).toBe("Kelio");
-    expect(data.store.slug).toBe("kelio");
+    expect(data.store.name).toBe("Boutique Sans Produits");
+    expect(data.store.slug).toBe("boutique-sans-produits");
     expect(data.isPreparationMode).toBe(true);
     expect(data.activeProducts.length).toBe(0);
     expect(data.storefront.reviews.length).toBe(0);
@@ -38,6 +38,16 @@ describe("Prompt 08 : Résolution de la Vitrine & Étanchéité des Données", (
     expect(data.deliveredOrdersCount).toBe(0);
     expect(data.storefront.contact.phone).toBe("");
     expect(data.storefront.contact.whatsappNumber).toBe("");
+  });
+
+  it("2b. Une boutique configurée avec produits réels (ex: kelio) est publiée et accessible", () => {
+    const data = resolveStorefrontData("kelio");
+
+    expect(data.store.name).toBe("Kelio");
+    expect(data.store.slug).toBe("kelio");
+    expect(data.isPreparationMode).toBe(false);
+    expect(data.activeProducts.length).toBeGreaterThanOrEqual(1);
+    expect(data.storefront.isPublished).toBe(true);
   });
 
   it("3. Une vitrine vide ne contient AUCUNE chaîne de texte de démonstration interdite", () => {

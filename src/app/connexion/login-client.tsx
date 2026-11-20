@@ -12,6 +12,7 @@ import {
   Clock,
   CheckCircle2,
   ShieldCheck,
+  RefreshCw,
 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { getAuthMessage } from "@/content";
@@ -35,6 +36,20 @@ export function LoginClient() {
   const [is2faRequired, setIs2faRequired] = useState(false);
   const [twoFactorCode, setTwoFactorCode] = useState("");
   const [temp2faEmail, setTemp2faEmail] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(60);
+  const [isResending, setIsResending] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState<string | null>(null);
+
+  // Compte à rebours 60s pour le bouton "Renvoyer le code"
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (is2faRequired && resendCooldown > 0) {
+      interval = setInterval(() => {
+        setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [is2faRequired, resendCooldown]);
 
   // Sécurité & Limitation de débit
   const [lockoutSeconds, setLockoutSeconds] = useState(0);
@@ -108,6 +123,9 @@ export function LoginClient() {
       if (data.require2FA) {
         setIs2faRequired(true);
         setTemp2faEmail(data.email || email.trim().toLowerCase());
+        setResendCooldown(60);
+        setResendSuccess(null);
+        setError(null);
         setIsLoading(false);
         return;
       }
@@ -117,6 +135,33 @@ export function LoginClient() {
     } catch {
       setError("Une erreur de communication est survenue. Veuillez réessayer.");
       setIsLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    if (resendCooldown > 0 || isResending) return;
+    setIsResending(true);
+    setError(null);
+    setResendSuccess(null);
+
+    try {
+      const res = await fetch("/api/auth/resend-2fa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: temp2faEmail }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setError(data.error || "Impossible d'envoyer un nouveau code 2FA.");
+      } else {
+        setResendSuccess("Un nouveau code a été envoyé par e-mail.");
+        setResendCooldown(60);
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Erreur de connexion";
+      setError(msg);
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -182,8 +227,8 @@ export function LoginClient() {
           </p>
         </div>
 
-        {/* Message d'état de session / déconnexion */}
-        {statusMessage && (
+        {/* Message d'état de session / déconnexion (masqué sur l'écran 2FA pour éviter d'afficher "déconnecté" en vert) */}
+        {statusMessage && !is2faRequired && (
           <div
             id="auth-session-status-message"
             className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center gap-2.5"
@@ -299,6 +344,13 @@ export function LoginClient() {
               />
             </div>
 
+            {resendSuccess && (
+              <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 font-medium flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                <span>{resendSuccess}</span>
+              </div>
+            )}
+
             {error && (
               <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-800 font-medium flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
@@ -314,19 +366,58 @@ export function LoginClient() {
               {isLoading ? "Validation du code..." : "Confirmer l'accès"}
             </button>
 
+            {/* Bouton Renvoyer le code avec délai 60s */}
+            <div className="flex items-center justify-center pt-1">
+              <button
+                type="button"
+                id="btn-resend-2fa"
+                onClick={handleResendCode}
+                disabled={resendCooldown > 0 || isResending}
+                className="text-xs font-semibold text-[#111111] hover:underline disabled:text-[#888880] disabled:no-underline transition-colors cursor-pointer disabled:cursor-not-allowed flex items-center gap-1.5"
+              >
+                <RefreshCw className={`h-3 w-3 ${isResending ? "animate-spin" : ""}`} />
+                <span>
+                  {resendCooldown > 0
+                    ? `Renvoyer le code (${resendCooldown}s)`
+                    : "Renvoyer le code"}
+                </span>
+              </button>
+            </div>
+
             <button
               type="button"
               onClick={() => {
                 setIs2faRequired(false);
                 setTwoFactorCode("");
                 setError(null);
+                setResendSuccess(null);
               }}
-              className="w-full text-center text-xs text-[#777770] hover:text-[#111111] transition-colors"
+              className="w-full text-center text-xs text-[#777770] hover:text-[#111111] transition-colors pt-2"
             >
               Retour à la saisie du mot de passe
             </button>
           </form>
         )}
+
+        {/* Accès direct à la vitrine publique */}
+        <div className="pt-3 border-t border-black/[0.06] text-center">
+          <p className="text-[11px] text-[#777770]">
+            Accéder à la vitrine publique :{" "}
+            <a
+              href="/boutique/kelio"
+              className="text-[#111111] font-bold hover:underline"
+            >
+              Kelio
+            </a>
+            {" · "}
+            <a
+              href="/boutique/lome-glow"
+              className="text-[#111111] font-bold hover:underline"
+            >
+              Lomé Glow
+            </a>
+          </p>
+        </div>
       </div>
 
       {/* Mention sobre et discrète en bas */}

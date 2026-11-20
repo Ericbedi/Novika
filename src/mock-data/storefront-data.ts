@@ -649,3 +649,95 @@ export function canPublishStorefront(
     missingRequirements,
   };
 }
+
+export const MOCK_STOREFRONT_KELIO: StorefrontData = {
+  storeId: "b7e5c920-410a-4a2f-98f1-85e8d3810001",
+  storeSlug: "kelio",
+  subdomain: "kelio",
+  isPublished: true,
+  lastDraftUpdatedAt: "2026-02-01T15:00:00Z",
+  activeTheme: THEME_PRESETS.novika,
+  draftTheme: THEME_PRESETS.novika,
+  announcementBar: {
+    isEnabled: true,
+    text: "📦 Livraison express partout au Togo · Paiement sécurisé en espèces à la livraison",
+  },
+  header: {
+    logoPosition: "left",
+    logoHeight: 36,
+    showSearch: true,
+    showCountryPicker: true,
+  },
+  sections: [
+    {
+      id: "sec_hero",
+      type: "hero",
+      title: "Bannière Principale",
+      isVisible: true,
+      order: 1,
+      content: {
+        headline: "Accompagnez votre vitalité et votre équilibre naturel",
+        subheadline:
+          "Formules ciblées et compléments d'exception pour soutenir votre santé au quotidien. Commandez facilement et payez en espèces à la livraison au Togo.",
+        ctaText: "Découvrir le catalogue",
+        ctaUrl: "/boutique/kelio/catalogue",
+        imageUrl: "/products/serum-eclat.png",
+        badgeText: "🌿 Formule Naturelle & Contrôlée",
+      },
+    },
+    {
+      id: "sec_benefits",
+      type: "benefits",
+      title: "Garanties de Confiance",
+      isVisible: true,
+      order: 2,
+      content: {
+        items: [
+          {
+            icon: "ShieldCheck",
+            title: "Paiement à la Livraison",
+            description: "Payez en toute sérénité en espèces au livreur après réception de votre commande.",
+          },
+          {
+            icon: "Truck",
+            title: "Livraison Partout au Togo",
+            description: "Expédition rapide à Lomé et dans toutes les préfectures sous 24h à 48h.",
+          },
+          {
+            icon: "MessageCircle",
+            title: "Conseillers WhatsApp Dédiés",
+            description: "Notre équipe est à votre écoute pour vous conseiller et suivre votre colis.",
+          },
+        ],
+      },
+    },
+    {
+      id: "sec_featured_products",
+      type: "featured_products",
+      title: "Nos Produits Vedettes",
+      isVisible: true,
+      order: 3,
+      content: {
+        title: "Notre Sélection",
+        maxProducts: 4,
+        showDiscountBadge: true,
+      },
+    },
+  ],
+  contact: {
+    phone: "+22890000000",
+    whatsappNumber: "+22890000000",
+    email: "contact@kelio.com",
+    address: "Boulevard du 13 Janvier",
+    city: "Lomé",
+    country: "Togo",
+  },
+  reviews: [],
+  onboarding: {
+    hasProducts: true,
+    hasConfiguredPayment: true,
+    hasConfiguredDelivery: true,
+    hasCustomDomain: false,
+    hasCompletedTutorial: true,
+  },
+};

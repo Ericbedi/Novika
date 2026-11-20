@@ -3,6 +3,7 @@ import { isOwnerEmail, getOwnerEmail } from "@/config/owner";
 import { checkAllowlist, ensureOwnerInitialized } from "@/server/auth/team-invitations";
 import { checkLoginRateLimit, recordLoginFailure, recordLoginSuccess } from "@/server/auth/rate-limiter";
 import { generate2FACode } from "@/server/auth/password-security";
+import { send2FAEmail } from "@/server/email/email-service";
 import { createServerSession } from "@/server/auth/session-manager";
 import { logAuthAudit } from "@/lib/audit-auth";
 import { createClient } from "@/lib/supabase/server";
@@ -121,11 +122,32 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Double authentification (2FA) obligatoire pour Owner et Admin
-    const requires2FA = userRole === "owner" || userRole === "admin";
+    // Possibilité de désactiver la 2FA en local via DISABLE_2FA=true (Prompt 18 / 2FA fix)
+    const isLocal2faDisabled = process.env.DISABLE_2FA === "true";
+    const requires2FA = (userRole === "owner" || userRole === "admin") && !isLocal2faDisabled;
+
     if (requires2FA) {
       const code = generate2FACode(normalizedEmail);
-      if (process.env.NODE_ENV !== "production") {
-        console.info(`[2FA Security] Code de vérification généré pour ${normalizedEmail}: ${code}`);
+
+      // Envoi effectif de l'e-mail (Resend, SMTP Gmail ou dev console)
+      const emailRes = await send2FAEmail(normalizedEmail, code);
+
+      if (!emailRes.success) {
+        logAuthAudit({
+          event: "login_failure",
+          userEmailMasked: normalizedEmail,
+          role: userRole,
+          ip: clientIp,
+          details: `Échec d'envoi de l'e-mail 2FA: ${emailRes.error}`,
+        });
+
+        return NextResponse.json(
+          {
+            error: emailRes.error || "Impossible d'envoyer l'e-mail avec le code 2FA. Vérifiez la configuration du service d'e-mail.",
+            code: emailRes.code || "EMAIL_SEND_FAILED",
+          },
+          { status: 500 }
+        );
       }
 
       return NextResponse.json({
@@ -133,7 +155,12 @@ export async function POST(req: NextRequest) {
         require2FA: true,
         email: normalizedEmail,
         message: "Code 2FA envoyé.",
+        devCodePrinted: emailRes.devCodePrinted,
       });
+    }
+
+    if (isLocal2faDisabled && (userRole === "owner" || userRole === "admin")) {
+      console.info(`[2FA Security] 2FA contournée pour ${normalizedEmail} (DISABLE_2FA=true configuré en local).`);
     }
 
     // 5. Pour les autres rôles ne requérant pas de 2FA, finaliser la connexion
