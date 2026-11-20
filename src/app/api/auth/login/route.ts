@@ -121,10 +121,10 @@ export async function POST(req: NextRequest) {
       userRole = "agency";
     }
 
-    // 4. Double authentification (2FA) obligatoire pour Owner et Admin
-    // Possibilité de désactiver la 2FA en local via DISABLE_2FA=true (Prompt 18 / 2FA fix)
-    const isLocal2faDisabled = process.env.DISABLE_2FA === "true";
-    const requires2FA = (userRole === "owner" || userRole === "admin") && !isLocal2faDisabled;
+    // 4. Double authentification (2FA) pour Owner et Admin
+    // DÉSACTIVÉE PAR DÉFAUT : S'active UNIQUEMENT si ENABLE_2FA=true dans l'environnement
+    const is2faEnabled = process.env.ENABLE_2FA === "true";
+    const requires2FA = (userRole === "owner" || userRole === "admin") && is2faEnabled;
 
     if (requires2FA) {
       const code = generate2FACode(normalizedEmail);
@@ -157,10 +157,6 @@ export async function POST(req: NextRequest) {
         message: "Code 2FA envoyé.",
         devCodePrinted: emailRes.devCodePrinted,
       });
-    }
-
-    if (isLocal2faDisabled && (userRole === "owner" || userRole === "admin")) {
-      console.info(`[2FA Security] 2FA contournée pour ${normalizedEmail} (DISABLE_2FA=true configuré en local).`);
     }
 
     // 5. Pour les autres rôles ne requérant pas de 2FA, finaliser la connexion

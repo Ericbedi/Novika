@@ -3,6 +3,8 @@ import { generate2FACode, verify2FACode } from "@/server/auth/password-security"
 import { send2FAEmail } from "@/server/email/email-service";
 import { resolveStorefrontData } from "@/lib/storefront-resolver";
 import { getShopProducts } from "@/lib/products-store";
+import { POST as loginPostHandler } from "@/app/api/auth/login/route";
+import { NextRequest } from "next/server";
 
 describe("Prompt 18 & 2FA Email : Double Authentification & Résolution Vitrine", () => {
   const originalEnv = { ...process.env };
@@ -80,5 +82,54 @@ describe("Prompt 18 & 2FA Email : Double Authentification & Résolution Vitrine"
     expect(resolved.isPreparationMode).toBe(true);
     expect(resolved.activeProducts.length).toBe(0);
     expect(resolved.storefront.reviews.length).toBe(0);
+  });
+
+  it("6. Quand ENABLE_2FA=false, le propriétaire se connecte directement sans étape 2FA", async () => {
+    process.env.ENABLE_2FA = "false";
+
+    const req = new NextRequest("http://localhost:3000/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: "promisesbedi@gmail.com",
+        password: "ValidPassword123!",
+      }),
+    });
+
+    const res = await loginPostHandler(req);
+    const data = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(data.success).toBe(true);
+    expect(data.require2FA).toBeUndefined();
+    expect(data.user).toBeDefined();
+    expect(data.user.email).toBe("promisesbedi@gmail.com");
+    expect(data.user.role).toBe("owner");
+
+    // Cookies de session créés
+    const setCookie = res.headers.get("set-cookie") || "";
+    expect(setCookie).toContain("novika_session");
+  });
+
+  it("7. Quand ENABLE_2FA=true, la double authentification 2FA est exigée", async () => {
+    process.env.ENABLE_2FA = "true";
+    process.env.NODE_ENV = "development";
+
+    const req = new NextRequest("http://localhost:3000/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: "promisesbedi@gmail.com",
+        password: "ValidPassword123!",
+      }),
+    });
+
+    const res = await loginPostHandler(req);
+    const data = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(data.success).toBe(true);
+    expect(data.require2FA).toBe(true);
+    expect(data.email).toBe("promisesbedi@gmail.com");
   });
 });
