@@ -5,9 +5,9 @@ import {
   Bold,
   Italic,
   Underline,
-  Heading1,
   Heading2,
   Heading3,
+  Heading4,
   List,
   ListOrdered,
   AlignLeft,
@@ -20,33 +20,40 @@ import {
   Code,
   Sparkles,
   RemoveFormatting,
-  Palette,
   Eye,
-  Indent,
-  Outdent,
   Plus,
   Minus,
+  CheckCircle,
+  AlertTriangle,
+  Wand2,
 } from "lucide-react";
-import { sanitizeHtml, cleanHtmlToPlainText } from "@/lib/html-sanitizer";
+import {
+  sanitizeProductDescription,
+  formatAiStructuredDescription,
+  HtmlSanitizeReport,
+} from "@/lib/server-html-sanitizer";
+import { ProductDescription } from "./product-description";
 import { cn } from "@/lib/utils";
 
 interface RichDescriptionEditorProps {
   value: string;
   onChange: (value: string) => void;
+  productTitle?: string;
   onOpenAiGenerator?: () => void;
 }
 
 export function RichDescriptionEditor({
   value,
   onChange,
+  productTitle = "Nouveau produit",
   onOpenAiGenerator,
 }: RichDescriptionEditorProps) {
-  const [mode, setMode] = useState<"visual" | "html">("visual");
-  const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const [mode, setMode] = useState<"visual" | "html" | "preview">("visual");
   const [tableMenuOpen, setTableMenuOpen] = useState(false);
+  const [cleanFeedback, setCleanFeedback] = useState<string | null>(null);
   const editorRef = useRef<HTMLDivElement>(null);
 
-  // Synchronisation initiale du contenu dans l'éditeur visuel
+  // Synchronisation du contenu dans l'éditeur visuel
   useEffect(() => {
     if (editorRef.current && mode === "visual") {
       if (editorRef.current.innerHTML !== value) {
@@ -58,8 +65,8 @@ export function RichDescriptionEditor({
   const handleInput = () => {
     if (editorRef.current) {
       const html = editorRef.current.innerHTML;
-      const sanitized = sanitizeHtml(html).cleanHtml;
-      onChange(sanitized);
+      const report = sanitizeProductDescription(html, { productTitle });
+      onChange(report.cleanedHtml);
     }
   };
 
@@ -69,7 +76,7 @@ export function RichDescriptionEditor({
     handleInput();
   };
 
-  const handleInsertHeading = (tag: "h1" | "h2" | "h3" | "p") => {
+  const handleInsertHeading = (tag: "h2" | "h3" | "h4" | "p") => {
     if (mode !== "visual") return;
     document.execCommand("formatBlock", false, `<${tag}>`);
     handleInput();
@@ -78,8 +85,7 @@ export function RichDescriptionEditor({
   const handleInsertLink = () => {
     const url = prompt("Entrez l'URL du lien (ex: https://...) :");
     if (url && url.trim()) {
-      const openInNewTab = confirm("Ouvrir ce lien dans un nouvel onglet ?");
-      const targetAttr = openInNewTab ? ' target="_blank" rel="noopener noreferrer"' : "";
+      const targetAttr = ' target="_blank" rel="noopener noreferrer nofollow"';
       if (mode === "visual") {
         const selection = window.getSelection();
         const selectedText = selection?.toString()?.trim() || url.trim();
@@ -125,7 +131,7 @@ export function RichDescriptionEditor({
     }
 
     if (embedUrl) {
-      const iframeHtml = `<div class="aspect-video w-full my-3"><iframe src="${embedUrl}" width="100%" height="315" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div><p><br></p>`;
+      const iframeHtml = `<div class="aspect-video w-full my-4"><iframe src="${embedUrl}" width="100%" height="315" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div><p><br></p>`;
       if (mode === "visual") {
         document.execCommand("insertHTML", false, iframeHtml);
         handleInput();
@@ -139,21 +145,21 @@ export function RichDescriptionEditor({
 
   const handleInsertTable = () => {
     const tableHtml = `
-      <table class="w-full my-3 border border-stone-300 text-xs text-left">
+      <table class="w-full my-4 border border-[#E6E0D4] text-xs text-left">
         <thead>
-          <tr class="bg-stone-100 border-b border-stone-300 font-bold">
-            <th class="p-2 border-r border-stone-300">Caractéristique</th>
-            <th class="p-2">Détails</th>
+          <tr class="bg-[#FAF8F5] border-b border-[#E6E0D4] font-bold">
+            <th class="p-2.5 border-r border-[#E6E0D4]">Caractéristique</th>
+            <th class="p-2.5">Détails</th>
           </tr>
         </thead>
         <tbody>
-          <tr class="border-b border-stone-200">
-            <td class="p-2 border-r border-stone-200 font-medium">Origine</td>
-            <td class="p-2">Naturelle / Biologique</td>
+          <tr class="border-b border-[#E6E0D4]/70">
+            <td class="p-2.5 border-r border-[#E6E0D4]/70 font-medium">Origine</td>
+            <td class="p-2.5">Naturelle / Biologique</td>
           </tr>
           <tr>
-            <td class="p-2 border-r border-stone-200 font-medium">Contenance</td>
-            <td class="p-2">Flacon 100 ml</td>
+            <td class="p-2.5 border-r border-[#E6E0D4]/70 font-medium">Contenance</td>
+            <td class="p-2.5">Flacon 100 ml</td>
           </tr>
         </tbody>
       </table>
@@ -177,11 +183,11 @@ export function RichDescriptionEditor({
     }
     const tbody = table.querySelector("tbody") || table;
     const row = document.createElement("tr");
-    row.className = "border-b border-stone-200";
+    row.className = "border-b border-[#E6E0D4]/70";
     const colCount = table.querySelector("tr")?.children.length || 2;
     for (let i = 0; i < colCount; i++) {
       const cell = document.createElement("td");
-      cell.className = "p-2 border-r border-stone-200 text-xs";
+      cell.className = "p-2.5 border-r border-[#E6E0D4]/70 text-xs";
       cell.innerHTML = "Nouvelle cellule";
       row.appendChild(cell);
     }
@@ -212,14 +218,14 @@ export function RichDescriptionEditor({
     const theadRow = table.querySelector("thead tr");
     if (theadRow) {
       const th = document.createElement("th");
-      th.className = "p-2 border-r border-stone-300 font-bold text-xs";
+      th.className = "p-2.5 border-r border-[#E6E0D4] font-bold text-xs uppercase";
       th.innerHTML = "Colonne";
       theadRow.appendChild(th);
     }
     const bodyRows = table.querySelectorAll("tbody tr");
     bodyRows.forEach((r) => {
       const td = document.createElement("td");
-      td.className = "p-2 border-r border-stone-200 text-xs";
+      td.className = "p-2.5 border-r border-[#E6E0D4]/70 text-xs";
       td.innerHTML = "-";
       r.appendChild(td);
     });
@@ -241,33 +247,49 @@ export function RichDescriptionEditor({
     setTableMenuOpen(false);
   };
 
-  const handleClearFormat = () => {
-    if (confirm("Voulez-vous réinitialiser le formatage pour revenir à un texte brut épuré ?")) {
-      const plain = cleanHtmlToPlainText(value);
-      const paragraphs = plain
-        .split("\n\n")
-        .filter(Boolean)
-        .map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`)
-        .join("\n");
-      onChange(paragraphs);
+  // Bouton "Nettoyer la mise en forme" (Prompt 17-F, 5)
+  const handleCleanFormatting = () => {
+    const report: HtmlSanitizeReport = sanitizeProductDescription(value, {
+      productTitle,
+    });
+    onChange(report.cleanedHtml);
+
+    if (report.hasChanges) {
+      setCleanFeedback(
+        report.status === "sanitized"
+          ? "Éléments non conformes ou scripts neutralisés avec succès."
+          : "Styles superflus retirés et mise en forme Novika appliquée."
+      );
+    } else {
+      setCleanFeedback("Description déjà parfaitement conforme.");
     }
+    setTimeout(() => setCleanFeedback(null), 3500);
   };
 
-  const colors = [
-    { name: "Noir", code: "#111111" },
-    { name: "Gris", code: "#4A4A4A" },
-    { name: "Émeraude", code: "#047857" },
-    { name: "Bleu", code: "#1D4ED8" },
-    { name: "Ambre", code: "#B45309" },
-    { name: "Rouge", code: "#B91C1C" },
-    { name: "Violet", code: "#6D28D9" },
-  ];
+  // Bouton "Améliorer avec l'IA" (Prompt 17-F, 5)
+  const handleAiImprove = () => {
+    const formatted = formatAiStructuredDescription({
+      title: productTitle,
+      rawTextOrHtml: value,
+    });
+    onChange(formatted);
+    setCleanFeedback("Fiche restructurée par l'IA en sections clés (Accroche, Bénéfices, Mode d'emploi).");
+    setTimeout(() => setCleanFeedback(null), 4000);
+  };
 
   return (
     <div className="border border-[#E6E0D4] rounded-2xl overflow-hidden bg-white shadow-2xs">
+      {/* Barre de notification / Feedback rapide */}
+      {cleanFeedback && (
+        <div className="px-3.5 py-1.5 bg-emerald-50 border-b border-emerald-200 text-xs font-bold text-emerald-800 flex items-center gap-2 animate-in fade-in duration-150">
+          <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+          <span>{cleanFeedback}</span>
+        </div>
+      )}
+
       {/* Barre d'outils complète */}
       <div className="flex flex-wrap items-center gap-1 p-2 bg-[#FAF8F5] border-b border-[#E6E0D4] text-xs">
-        {/* Titres et Paragraphes */}
+        {/* Titres et Paragraphes (H1 interdit pour le SEO, seul le titre du produit est H1) */}
         <div className="flex items-center gap-0.5 border-r border-[#E6E0D4] pr-1.5 mr-1">
           <button
             type="button"
@@ -279,17 +301,9 @@ export function RichDescriptionEditor({
           </button>
           <button
             type="button"
-            onClick={() => handleInsertHeading("h1")}
-            className="px-2 py-1 rounded-lg text-xs font-bold hover:bg-[#EFECE6] text-[#111111]"
-            title="Titre H1"
-          >
-            H1
-          </button>
-          <button
-            type="button"
             onClick={() => handleInsertHeading("h2")}
             className="px-2 py-1 rounded-lg text-xs font-bold hover:bg-[#EFECE6] text-[#111111]"
-            title="Titre H2"
+            title="Titre H2 (Section principale)"
           >
             H2
           </button>
@@ -297,9 +311,17 @@ export function RichDescriptionEditor({
             type="button"
             onClick={() => handleInsertHeading("h3")}
             className="px-2 py-1 rounded-lg text-xs font-bold hover:bg-[#EFECE6] text-[#111111]"
-            title="Titre H3"
+            title="Sous-titre H3"
           >
             H3
+          </button>
+          <button
+            type="button"
+            onClick={() => handleInsertHeading("h4")}
+            className="px-2 py-1 rounded-lg text-xs font-bold hover:bg-[#EFECE6] text-[#111111]"
+            title="Sous-titre H4"
+          >
+            H4
           </button>
         </div>
 
@@ -329,35 +351,26 @@ export function RichDescriptionEditor({
           >
             <Underline className="w-3.5 h-3.5" />
           </button>
+        </div>
 
-          {/* Nuancier de couleur */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setColorPickerOpen(!colorPickerOpen)}
-              className="p-1.5 rounded-lg hover:bg-[#EFECE6] text-[#4A4A4A]"
-              title="Couleur du texte"
-            >
-              <Palette className="w-3.5 h-3.5" />
-            </button>
-            {colorPickerOpen && (
-              <div className="absolute left-0 mt-1 p-2 rounded-xl bg-white border border-[#E6E0D4] shadow-xl z-20 flex items-center gap-1.5">
-                {colors.map((c) => (
-                  <button
-                    key={c.code}
-                    type="button"
-                    onClick={() => {
-                      execCmd("foreColor", c.code);
-                      setColorPickerOpen(false);
-                    }}
-                    style={{ backgroundColor: c.code }}
-                    className="w-5 h-5 rounded-full border border-black/10 hover:scale-110 transition-transform"
-                    title={c.name}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+        {/* Listes */}
+        <div className="flex items-center gap-0.5 border-r border-[#E6E0D4] pr-1.5 mr-1">
+          <button
+            type="button"
+            onClick={() => execCmd("insertUnorderedList")}
+            className="p-1.5 rounded-lg hover:bg-[#EFECE6] text-[#4A4A4A]"
+            title="Liste à puces"
+          >
+            <List className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => execCmd("insertOrderedList")}
+            className="p-1.5 rounded-lg hover:bg-[#EFECE6] text-[#4A4A4A]"
+            title="Liste numérotée"
+          >
+            <ListOrdered className="w-3.5 h-3.5" />
+          </button>
         </div>
 
         {/* Alignement */}
@@ -388,49 +401,13 @@ export function RichDescriptionEditor({
           </button>
         </div>
 
-        {/* Listes & Retraits */}
-        <div className="flex items-center gap-0.5 border-r border-[#E6E0D4] pr-1.5 mr-1">
-          <button
-            type="button"
-            onClick={() => execCmd("insertUnorderedList")}
-            className="p-1.5 rounded-lg hover:bg-[#EFECE6] text-[#4A4A4A]"
-            title="Liste à puces"
-          >
-            <List className="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => execCmd("insertOrderedList")}
-            className="p-1.5 rounded-lg hover:bg-[#EFECE6] text-[#4A4A4A]"
-            title="Liste numérotée"
-          >
-            <ListOrdered className="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => execCmd("indent")}
-            className="p-1.5 rounded-lg hover:bg-[#EFECE6] text-[#4A4A4A]"
-            title="Augmenter le retrait"
-          >
-            <Indent className="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => execCmd("outdent")}
-            className="p-1.5 rounded-lg hover:bg-[#EFECE6] text-[#4A4A4A]"
-            title="Diminuer le retrait"
-          >
-            <Outdent className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {/* Médias & Liens & Tableaux */}
+        {/* Médias & Liens */}
         <div className="flex items-center gap-0.5 border-r border-[#E6E0D4] pr-1.5 mr-1">
           <button
             type="button"
             onClick={handleInsertLink}
             className="p-1.5 rounded-lg hover:bg-[#EFECE6] text-[#4A4A4A]"
-            title="Insérer un lien (avec option nouvel onglet)"
+            title="Insérer un lien sécurisé"
           >
             <LinkIcon className="w-3.5 h-3.5" />
           </button>
@@ -438,7 +415,7 @@ export function RichDescriptionEditor({
             type="button"
             onClick={handleInsertImage}
             className="p-1.5 rounded-lg hover:bg-[#EFECE6] text-[#4A4A4A]"
-            title="Insérer une image par URL"
+            title="Insérer une image"
           >
             <ImageIcon className="w-3.5 h-3.5" />
           </button>
@@ -451,7 +428,7 @@ export function RichDescriptionEditor({
             <Video className="w-3.5 h-3.5" />
           </button>
 
-          {/* Menu Tableau (Insérer, Lignes, Colonnes) */}
+          {/* Menu Tableau */}
           <div className="relative">
             <button
               type="button"
@@ -462,7 +439,7 @@ export function RichDescriptionEditor({
               <Table className="w-3.5 h-3.5" />
             </button>
             {tableMenuOpen && (
-              <div className="absolute left-0 mt-1 p-2 rounded-xl bg-white border border-[#E6E0D4] shadow-xl z-20 w-44 space-y-1">
+              <div className="absolute left-0 mt-1 p-2 rounded-xl bg-white border border-[#E6E0D4] shadow-xl z-20 w-48 space-y-1">
                 <button
                   type="button"
                   onClick={handleInsertTable}
@@ -508,76 +485,121 @@ export function RichDescriptionEditor({
           </div>
         </div>
 
-        {/* Effacer le format */}
+        {/* Bouton "Nettoyer la mise en forme" (Prompt 17-F, 5) */}
         <button
           type="button"
-          onClick={handleClearFormat}
-          className="p-1.5 rounded-lg hover:bg-[#EFECE6] text-[#4A4A4A]"
-          title="Effacer le formatage"
+          id="btn-clean-formatting"
+          onClick={handleCleanFormatting}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-[#E6E0D4] hover:bg-white text-xs font-bold text-[#4A4A4A] hover:text-[#111111] transition-colors"
+          title="Nettoyer les styles superflus et vérifier la conformité"
         >
-          <RemoveFormatting className="w-3.5 h-3.5" />
+          <RemoveFormatting className="w-3.5 h-3.5 text-[#7A7A7A]" />
+          <span>Nettoyer</span>
         </button>
 
-        {/* Bouton IA */}
+        {/* Bouton "Améliorer avec l'IA" (Prompt 17-F, 5) */}
+        <button
+          type="button"
+          id="btn-ai-improve"
+          onClick={handleAiImprove}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-900 text-xs font-bold transition-colors"
+          title="Restructurer la fiche en sections claires avec l'IA (Accroche, Bénéfices, Mode d'emploi)"
+        >
+          <Wand2 className="w-3.5 h-3.5 text-purple-600" />
+          <span>Améliorer avec l'IA</span>
+        </button>
+
+        {/* Bouton Générateur IA complet si branché */}
         {onOpenAiGenerator && (
           <button
             type="button"
             onClick={onOpenAiGenerator}
-            className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold transition-colors shadow-2xs"
-            title="Ouvrir le générateur de fiche produit IA"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#111111] hover:bg-black text-white text-xs font-bold transition-colors"
+            title="Ouvrir l'assistant complet de rédaction IA"
           >
-            <Sparkles className="w-3.5 h-3.5 text-purple-200" />
-            <span>Générer avec l'IA</span>
+            <Sparkles className="w-3 h-3 text-amber-300" />
+            <span>Rédiger avec IA</span>
           </button>
         )}
 
-        {/* Bascule Mode Code HTML / Visuel */}
-        <button
-          type="button"
-          onClick={() => {
-            if (mode === "visual") {
-              setMode("html");
-            } else {
-              setMode("visual");
-            }
-          }}
-          className={cn(
-            "p-1.5 rounded-lg transition-colors ml-1",
-            mode === "html" ? "bg-[#111111] text-white" : "hover:bg-[#EFECE6] text-[#4A4A4A]"
-          )}
-          title={mode === "html" ? "Basculer en mode visuel (WYSIWYG)" : "Basculer en mode code HTML"}
-        >
-          {mode === "html" ? <Eye className="w-3.5 h-3.5" /> : <Code className="w-3.5 h-3.5" />}
-        </button>
+        {/* Sélecteur de mode : Visuel / Code HTML / Aperçu Vitrine */}
+        <div className="ml-auto flex items-center gap-1 bg-[#EFECE6] p-0.5 rounded-xl text-xs font-bold">
+          <button
+            type="button"
+            onClick={() => setMode("visual")}
+            className={cn(
+              "px-2.5 py-1 rounded-lg transition-colors",
+              mode === "visual" ? "bg-white text-[#111111] shadow-2xs" : "text-[#7A7A7A] hover:text-black"
+            )}
+          >
+            Visuel
+          </button>
+          <button
+            type="button"
+            id="btn-mode-html"
+            onClick={() => setMode("html")}
+            className={cn(
+              "px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1",
+              mode === "html" ? "bg-white text-[#111111] shadow-2xs" : "text-[#7A7A7A] hover:text-black"
+            )}
+          >
+            <Code className="w-3 h-3" />
+            <span>Code HTML</span>
+          </button>
+          <button
+            type="button"
+            id="btn-mode-preview"
+            onClick={() => setMode("preview")}
+            className={cn(
+              "px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1",
+              mode === "preview" ? "bg-white text-[#111111] shadow-2xs" : "text-[#7A7A7A] hover:text-black"
+            )}
+          >
+            <Eye className="w-3 h-3" />
+            <span>Aperçu Vitrine</span>
+          </button>
+        </div>
       </div>
 
-      {/* Zone d'édition */}
-      {mode === "visual" ? (
+      {/* Zone de contenu selon le mode */}
+      {mode === "visual" && (
         <div
           ref={editorRef}
           contentEditable
           onInput={handleInput}
           onBlur={handleInput}
-          className="p-4 min-h-[220px] max-h-[500px] overflow-y-auto text-sm text-[#111111] focus:outline-none prose prose-sm max-w-none prose-headings:font-bold prose-headings:text-[#111111] prose-a:text-blue-600 prose-img:rounded-xl"
+          className="p-4 min-h-[220px] max-h-[500px] overflow-y-auto text-sm text-[#111111] focus:outline-none"
           data-testid="rich-description-content-editable"
         />
-      ) : (
+      )}
+
+      {mode === "html" && (
         <div className="p-3 bg-stone-900 text-emerald-400 font-mono text-xs">
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-stone-800 text-[11px] text-stone-400">
-            <span>Mode Code HTML restreint (scripts et iframes tiers bloqués)</span>
-            <span className="text-emerald-500 font-semibold">HTML assaini</span>
+            <span>Mode Code HTML strict (seules les balises autorisées sont conservées)</span>
+            <span className="text-emerald-500 font-semibold">Nettoyage automatique</span>
           </div>
           <textarea
             rows={10}
             value={value}
             onChange={(e) => {
-              const sanitized = sanitizeHtml(e.target.value).cleanHtml;
-              onChange(sanitized);
+              const report = sanitizeProductDescription(e.target.value, { productTitle });
+              onChange(report.cleanedHtml);
             }}
             className="w-full bg-transparent text-emerald-300 focus:outline-none font-mono text-xs leading-relaxed"
             placeholder="<p>Écrivez votre code HTML ici...</p>"
             data-testid="rich-description-html-textarea"
           />
+        </div>
+      )}
+
+      {mode === "preview" && (
+        <div className="p-6 bg-white min-h-[220px] max-h-[500px] overflow-y-auto">
+          <div className="pb-3 mb-4 border-b border-[#E6E0D4] flex items-center justify-between text-xs text-[#7A7A7A]">
+            <span>Rendu exact tel qu'affiché sur la boutique client</span>
+            <span className="font-bold text-emerald-700">Composant ProductDescription actif</span>
+          </div>
+          <ProductDescription html={value} productTitle={productTitle} isStorefront={true} />
         </div>
       )}
     </div>

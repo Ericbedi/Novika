@@ -26,16 +26,21 @@ interface ThemeSectionEditorModalProps {
   onDelete?: (sectionId: string) => void;
 }
 
-export function ThemeSectionEditorModal({
+interface ThemeSectionEditorContentProps {
+  section: ThemeSection;
+  palettes: ThemeColorPalette[];
+  onClose: () => void;
+  onSave: (updatedSection: ThemeSection) => void;
+  onDelete?: (sectionId: string) => void;
+}
+
+function ThemeSectionEditorContent({
   section,
-  isOpen,
   palettes = [],
   onClose,
   onSave,
   onDelete,
-}: ThemeSectionEditorModalProps) {
-  if (!isOpen || !section) return null;
-
+}: ThemeSectionEditorContentProps) {
   const [settings, setSettings] = useState<Record<string, any>>(section.settings || {});
   const [isVisible, setIsVisible] = useState(section.isVisible);
   const [paletteId, setPaletteId] = useState<ThemePaletteId>(section.paletteId || "palette-1");
@@ -545,4 +550,9 @@ export function ThemeSectionEditorModal({
       </div>
     </div>
   );
+}
+
+export function ThemeSectionEditorModal(props: ThemeSectionEditorModalProps) {
+  if (!props.isOpen || !props.section) return null;
+  return <ThemeSectionEditorContent {...props} section={props.section} />;
 }

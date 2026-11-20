@@ -23,7 +23,7 @@ import { ProductGallery } from "./ProductGallery";
 import { ScarcityStockBadge } from "./ScarcityStockBadge";
 import { StickyMobileCta } from "./StickyMobileCta";
 import { StandardOrderForm } from "@/components/storefront/standard-order-form";
-import { sanitizeHtml } from "@/lib/html-sanitizer";
+import { ProductDescription } from "@/components/products/product-description";
 import { formatFcfa } from "@/lib/money";
 import { ProductPageTemplateType } from "@/lib/theme-engine/types";
 import { cn } from "@/lib/utils";
@@ -118,8 +118,6 @@ export function NovikaProductPage({
       setTimeout(() => setCopiedLink(false), 2500);
     }
   };
-
-  const sanitizedDescription = sanitizeHtml(product.description || "");
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-12 pb-24 sm:pb-12">
@@ -380,15 +378,16 @@ export function NovikaProductPage({
             />
           </div>
 
-          {/* Description nettoyée et caractéristiques */}
-          {sanitizedDescription && (
+          {/* Description nettoyée et caractéristiques (Prompt 17-F, Composant unique ProductDescription) */}
+          {Boolean(product.description) && (
             <div className="pt-6 border-t border-black/[0.08] space-y-3">
               <h3 className="text-sm font-black text-[#111111] uppercase tracking-wider">
                 Description du produit
               </h3>
-              <div
-                className="prose prose-sm max-w-none text-xs sm:text-sm text-[#444440] leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: sanitizedDescription }}
+              <ProductDescription
+                html={product.description || ""}
+                productTitle={product.title || product.name}
+                isStorefront={true}
               />
             </div>
           )}

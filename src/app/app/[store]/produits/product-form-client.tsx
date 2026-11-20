@@ -91,7 +91,8 @@ import {
 } from "@/config/permissions";
 import { softDeleteProduct, getShopProductsRaw, saveShopProductsList } from "@/lib/products-store";
 import { RichDescriptionEditor } from "@/components/products/rich-description-editor";
-import { sanitizeHtml } from "@/lib/html-sanitizer";
+import { sanitizeProductDescription } from "@/lib/server-html-sanitizer";
+import { DescriptionComparisonModal } from "@/components/products/description-comparison-modal";
 import { metaPixelsStore, ShopPixel } from "@/lib/meta-pixels";
 
 interface ProductFormClientProps {
@@ -146,6 +147,7 @@ export function ProductFormClient({
   const [editingAltItem, setEditingAltItem] = useState<{ id: string; alt: string } | null>(null);
   const [mediaErrorMessage, setMediaErrorMessage] = useState<string | null>(null);
   const [isMediaLibraryModalOpen, setIsMediaLibraryModalOpen] = useState(false);
+  const [isComparisonModalOpen, setIsComparisonModalOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -828,7 +830,8 @@ export function ProductFormClient({
     const productSlug =
       seoSlug.trim() || cleanName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
-    const sanitizedDesc = sanitizeHtml(description).cleanHtml;
+    const sanitizeReport = sanitizeProductDescription(description, { productTitle: cleanName });
+    const sanitizedDesc = sanitizeReport.cleanedHtml;
 
     const currentImages =
       mediaItems.length > 0
@@ -841,6 +844,9 @@ export function ProductFormClient({
       title: cleanName,
       slug: productSlug,
       description: sanitizedDesc,
+      originalRawDescription: initialProduct?.originalRawDescription || (isEditing ? initialProduct?.description : description),
+      importedAt: initialProduct?.importedAt || (isEditing ? undefined : new Date().toISOString()),
+      sanitizationReport: sanitizeReport,
       category,
       collection: selectedCollection,
       collections: [selectedCollection],
@@ -1075,11 +1081,23 @@ export function ProductFormClient({
                   Bénéfices du produit, conseils d'utilisation et réassurance pour le paiement à la livraison.
                 </p>
               </div>
+
+              {Boolean(initialProduct?.originalRawDescription || initialProduct?.sanitizationReport) && (
+                <button
+                  type="button"
+                  id="btn-open-comparison-modal"
+                  onClick={() => setIsComparisonModalOpen(true)}
+                  className="px-3 py-1.5 rounded-xl border border-[#E6E0D4] hover:bg-[#FAF8F5] text-xs font-bold text-[#111111] transition-colors"
+                >
+                  Voir avant / après (Source 30j)
+                </button>
+              )}
             </div>
 
             <RichDescriptionEditor
               value={description}
               onChange={(val) => setDescription(val)}
+              productTitle={name || "Nouveau produit"}
               onOpenAiGenerator={() => {
                 router.push(`/app/${storeSlug}/produits/nouveau-ia`);
               }}
@@ -2884,6 +2902,18 @@ export function ProductFormClient({
             </button>
           </div>
         </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODALE : COMPARATEUR AVANT / APRÈS (Prompt 17-F) */}
+      {/* ======================================================== */}
+      {isComparisonModalOpen && initialProduct && (
+        <DescriptionComparisonModal
+          isOpen={isComparisonModalOpen}
+          onClose={() => setIsComparisonModalOpen(false)}
+          product={initialProduct}
+          onEditInForm={() => setIsComparisonModalOpen(false)}
+        />
       )}
     </div>
   );

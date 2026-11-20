@@ -135,6 +135,15 @@ export const MOCK_PRODUCTS: Product[] = [
       lowStockThreshold: 10,
       hasQuantityPacks: true,
     },
+    originalRawDescription: `<div style="font-family: Arial; font-size: 14px; color: #333;"><h1 style="color: red;">Sérum Visage Anti-Taches & Éclat Niacinamide</h1><p style="font-weight: bold; text-align: center;">Sérum concentré à 10% de Niacinamide et Zinc.</p><div class="shopify-custom-columns" style="display: flex;"><div style="width: 50%;">Élimine l'hyperpigmentation</div><div style="width: 50%;">Unifie le teint en 14 jours</div></div><script>console.log('tracker-shopify');</script></div>`,
+    importedAt: "2026-11-10T08:00:00.000Z",
+    sanitizationReport: {
+      status: "sanitized",
+      statusLabel: "Éléments retirés par sécurité",
+      removedSecurityElements: ["Balise <script> exécutable"],
+      simplifiedStyles: ["Styles inline convertis ou retirés", "Classes CSS du thème source retirées"],
+      hasChanges: true,
+    },
     createdAt: "14/10/2026",
   },
   {

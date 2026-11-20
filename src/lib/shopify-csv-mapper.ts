@@ -16,7 +16,8 @@
  */
 
 import { Product, ProductVariant, UserRole } from "@/server/data/types";
-import { sanitizeHtml, cleanHtmlToPlainText } from "./html-sanitizer";
+import { cleanHtmlToPlainText } from "./html-sanitizer";
+import { sanitizeProductDescription, HtmlSanitizeReport } from "./server-html-sanitizer";
 
 export type CsvFormatType = "shopify" | "novika" | "generic" | "unknown";
 export type DuplicateStrategy = "skip" | "update" | "copy";
@@ -26,6 +27,8 @@ export interface MappedProductDraft {
   title: string;
   descriptionHtml: string;
   descriptionPlain: string;
+  rawBodyHtml?: string;
+  sanitizationReport?: HtmlSanitizeReport;
   brand: string;
   category: string;
   productType: string;
@@ -384,14 +387,20 @@ export function mapShopifyCsvRows(
       warnings.push("Titre manquant dans le fichier : un nom temporaire a été généré.");
     }
 
-    // Assainissement du HTML de description
-    const sanitizeResult = sanitizeHtml(bodyHtmlRaw);
-    if (sanitizeResult.removedElementsCount > 0) {
-      warnings.push(
-        `Description HTML nettoyée (${sanitizeResult.removedElementsCount} balise(s) ou attribut(s) non conformes retirés).`
-      );
+    // Assainissement strict du HTML de description (Prompt 17-F)
+    const sanitizeResult = sanitizeProductDescription(bodyHtmlRaw, { productTitle: title });
+    if (sanitizeResult.hasChanges) {
+      if (sanitizeResult.status === "sanitized") {
+        warnings.push(
+          `Sécurité : Éléments potentiellement dangereux neutralisés (${sanitizeResult.removedSecurityElements.join(", ")}).`
+        );
+      } else if (sanitizeResult.status === "simplified") {
+        warnings.push(
+          `Mise en forme simplifiée : Styles inline ou classes de l'ancien thème retirés.`
+        );
+      }
     }
-    const descriptionPlain = cleanHtmlToPlainText(sanitizeResult.cleanHtml);
+    const descriptionPlain = cleanHtmlToPlainText(sanitizeResult.cleanedHtml);
 
     // Tags
     const tags = tagsRaw
@@ -576,8 +585,10 @@ export function mapShopifyCsvRows(
     products.push({
       handle,
       title,
-      descriptionHtml: sanitizeResult.cleanHtml,
+      descriptionHtml: sanitizeResult.cleanedHtml,
       descriptionPlain,
+      rawBodyHtml: bodyHtmlRaw,
+      sanitizationReport: sanitizeResult,
       brand: vendor || "Novika",
       category: category || productType || "Général",
       productType: productType || "Standard",
@@ -658,7 +669,10 @@ export function convertDraftToProduct(
     name: draft.title,
     title: draft.title,
     slug: effectiveSlug,
-    description: draft.descriptionPlain || "Produit importé par fichier CSV.",
+    description: draft.descriptionHtml || draft.descriptionPlain || "Produit importé par fichier CSV.",
+    originalRawDescription: draft.rawBodyHtml,
+    importedAt: new Date().toISOString(),
+    sanitizationReport: draft.sanitizationReport,
     category: draft.category,
     collection: draft.tags.length > 0 ? draft.tags[0] : "Import CSV",
     collections: draft.tags,

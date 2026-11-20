@@ -275,6 +275,15 @@ export interface Product {
   inventoryLocation?: string;
   auditTrail?: ProductAuditEntry[];
   importBatchId?: string;
+  originalRawDescription?: string; // Prompt 17-F : Description d'origine conservée 30 jours
+  importedAt?: string; // Date d'importation initiale
+  sanitizationReport?: {
+    status: "clean" | "simplified" | "sanitized";
+    statusLabel: string;
+    removedSecurityElements: string[];
+    simplifiedStyles: string[];
+    hasChanges: boolean;
+  };
   deletedAt?: string | null;
   archivedAt?: string | null;
   createdAt: string;
