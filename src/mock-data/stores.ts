@@ -45,6 +45,17 @@ export const MOCK_STORES: Store[] = [
     whatsappNumber: "+2290190123456",
     role: "owner",
   },
+  {
+    id: "b7e5c920-410a-4a2f-98f1-85e8d3810001",
+    name: "Kelio",
+    slug: "kelio",
+    country: "TG",
+    countryName: "Togo",
+    flag: "🇹🇬",
+    currency: "XOF",
+    whatsappNumber: "+22890000000",
+    role: "owner",
+  },
 ];
 
 export const CURRENT_USER = {

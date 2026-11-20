@@ -1,5 +1,5 @@
 import { Product, UserRole, Order } from "@/server/data/types";
-import { MOCK_PRODUCTS } from "@/mock-data/products";
+import { MOCK_PRODUCTS, KELIO_PRODUCTS } from "@/mock-data/products";
 import { MOCK_ORDERS } from "@/mock-data/orders";
 import {
   canTrashProduct,
@@ -229,6 +229,8 @@ export function getShopProductsRaw(shopSlug: string): Product[] {
       list = memoryStoreProducts.get(shopSlug)!;
     } else if (shopSlug === "lome-glow") {
       list = MOCK_PRODUCTS;
+    } else if (shopSlug === "kelio") {
+      list = KELIO_PRODUCTS;
     }
   }
 

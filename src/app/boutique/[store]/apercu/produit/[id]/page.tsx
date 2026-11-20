@@ -85,11 +85,9 @@ export default function ProductPreviewPage({
   return (
     <div className="min-h-screen bg-[#FAF8F5]">
       {/* Balise méta noindex injectée */}
-      <head>
-        <meta name="robots" content="noindex, nofollow" />
-        <meta name="referrer" content="no-referrer" />
-        <title>{`Aperçu privé : ${product.name} — AfriBuilder`}</title>
-      </head>
+      <meta name="robots" content="noindex, nofollow" />
+      <meta name="referrer" content="no-referrer" />
+      <title>{`Aperçu privé : ${product.name} — AfriBuilder`}</title>
 
       {/* Bandeau d'aperçu privé obligatoire */}
       <div

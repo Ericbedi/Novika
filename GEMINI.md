@@ -399,4 +399,18 @@ Deux buckets publics ont été provisionnés avec limitation de taille et filtra
   - Cibles tactiles `>= 44px` respectant la norme Apple Human Interface Guidelines.
 * **Tests** : 9 tests unitaires (`prompt-17m-preview-device.test.ts`), 5 tests Playwright E2E (`prompt-17m-preview-devices.spec.ts`).
 
+### Prompt 17-N : Affichage Vitrine Publique Catalogue & Fiche Produit Kelio (Rôle Anonyme)
+* **Résolution Catalogue & Fiche Produit** :
+  - `/boutique/kelio/catalogue` affiche tous les produits actifs et publiés (badge `1 produit disponible`, carte avec prix 18 500 FCFA).
+  - `/boutique/kelio/produits/accompagnez-votre-equilibre-glycemique` affiche la fiche produit complète avec le bloc bénéfices, variantes (Flacon 60 gélules - 18 500 FCFA) et formulaire de commande Cash on Delivery.
+* **Résolution RLS & Base de données** :
+  - Politiques `stock_levels_public_view` sur `stock_levels` et `quantity_offers_public_view` sur `quantity_offers` pour permettre la lecture par le rôle `anon`.
+  - Vue `product_availability` avec `LEFT JOIN` pour éviter toute élimination par jointure interne.
+  - Ajout de la colonne `published_to_storefront` dans la table `products`.
+* **Éradication des erreurs d'hydratation (Code Incident `ERR-9AN3N5`)** :
+  - Suppression des balises `<head>` imbriquées dans des balises `<div>` dans `produits/[id]/page.tsx`, `layout.tsx` et `apercu/produit/[id]/page.tsx`.
+  - Utilisation de balises directes `<title>` et `<meta>` compatibles avec React 19 et Next.js 15.
+* **Tests** : 6 tests unitaires dans `prompt-17n-kelio-storefront.test.ts`, 347 tests globaux Vitest au vert, captures d'écran Playwright en versions desktop et mobile iPhone 15 Pro Max.
+
+
 

@@ -142,13 +142,11 @@ export default function StorefrontLayout({
       }}
     >
       {/* Réglage d'indexation « Visible sur Google » (Prompt 21-b) : noindex par défaut */}
-      <head>
-        {storefront.seo?.visibleOnGoogle ? (
-          <meta name="robots" content="index, follow" />
-        ) : (
-          <meta name="robots" content="noindex, nofollow" />
-        )}
-      </head>
+      {storefront.seo?.visibleOnGoogle ? (
+        <meta name="robots" content="index, follow" />
+      ) : (
+        <meta name="robots" content="noindex, nofollow" />
+      )}
 
       {/* Bouclier Anti-Espion & Anti-Extensions Chrome (Empêche le scan et le vol de catalogue) */}
       <StorefrontAntiSpyShield storeSlug={storeSlug} />

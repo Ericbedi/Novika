@@ -146,6 +146,25 @@ function seedInitialStores() {
       createdAt: "2026-02-01T14:00:00Z",
       updatedAt: "2026-02-01T14:00:00Z",
     },
+    {
+      id: "b7e5c920-410a-4a2f-98f1-85e8d3810001",
+      name: "Kelio",
+      slug: "kelio",
+      description: "Boutique officielle Kelio - Santé et équilibre naturel au Togo.",
+      country: "TG",
+      countryName: "Togo",
+      flag: "🇹🇬",
+      currency: "XOF",
+      whatsappNumber: "+22890000000",
+      contactEmail: "contact@kelio.com",
+      role: "owner",
+      status: "active",
+      orderCount: 0,
+      productCount: 1,
+      version: 1,
+      createdAt: "2026-02-01T15:00:00Z",
+      updatedAt: "2026-02-01T15:00:00Z",
+    },
   ];
 
   for (const s of initialStores) {

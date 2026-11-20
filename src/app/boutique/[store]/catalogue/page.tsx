@@ -22,6 +22,7 @@ import { Lock } from "lucide-react";
 import { ProductImage } from "@/components/ui/ProductImage";
 import { isProductVisibleOnStorefront } from "@/lib/stock-settings-store";
 import { getProductPublicUrl } from "@/lib/storefront-urls";
+import { getShopProducts } from "@/lib/products-store";
 
 export default function CataloguePage({
   params,
@@ -39,12 +40,12 @@ export default function CataloguePage({
       const saved = localStorage.getItem(`novika_store_products_${storeSlug}`);
       if (saved) {
         try {
-          return JSON.parse(saved);
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
         } catch {}
       }
-      if (!isFounderDemo) return [];
     }
-    return isFounderDemo ? MOCK_PRODUCTS : [];
+    return getShopProducts(storeSlug);
   });
 
   const [hideCatalog, setHideCatalog] = useState(false);
@@ -54,8 +55,17 @@ export default function CataloguePage({
       const savedProds = localStorage.getItem(`novika_store_products_${storeSlug}`);
       if (savedProds) {
         try {
-          setProductsList(JSON.parse(savedProds));
-        } catch {}
+          const parsed = JSON.parse(savedProds);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setProductsList(parsed);
+          } else {
+            setProductsList(getShopProducts(storeSlug));
+          }
+        } catch {
+          setProductsList(getShopProducts(storeSlug));
+        }
+      } else {
+        setProductsList(getShopProducts(storeSlug));
       }
       const savedSettings = localStorage.getItem(`novika_storefront_settings_${storeSlug}`);
       if (savedSettings) {
@@ -64,8 +74,10 @@ export default function CataloguePage({
           setHideCatalog(Boolean(parsed.hideCatalog));
         } catch {}
       }
+    } else {
+      setProductsList(getShopProducts(storeSlug));
     }
-  }, [storeSlug, isFounderDemo]);
+  }, [storeSlug]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCollection, setSelectedCollection] = useState<string>("all");

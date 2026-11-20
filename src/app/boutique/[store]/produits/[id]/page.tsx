@@ -132,10 +132,8 @@ export default function ProductCanonicalDetailPage({
 
     return (
       <div className="min-h-[70vh] flex items-center justify-center py-16 px-4">
-        <head>
-          <title>{`Page introuvable · ${store.name}`}</title>
-          <meta name="robots" content="noindex, nofollow" />
-        </head>
+        <title>{`Page introuvable · ${store.name}`}</title>
+        <meta name="robots" content="noindex, nofollow" />
 
         <div className="max-w-md w-full mx-auto text-center space-y-6 bg-white p-8 sm:p-10 rounded-3xl border border-[#E6E0D4] shadow-xs">
           {/* Logo ou Identité de la boutique */}
@@ -218,10 +216,8 @@ export default function ProductCanonicalDetailPage({
   if (isLoaded && productData.isUnpublished && !isPreview) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center py-16 px-4">
-        <head>
-          <title>{`Produit indisponible · ${store.name}`}</title>
-          <meta name="robots" content="noindex, nofollow" />
-        </head>
+        <title>{`Produit indisponible · ${store.name}`}</title>
+        <meta name="robots" content="noindex, nofollow" />
 
         <div className="max-w-md w-full mx-auto text-center space-y-6 bg-white p-8 sm:p-10 rounded-3xl border border-[#E6E0D4] shadow-xs">
           {/* Logo Boutique */}
@@ -321,9 +317,7 @@ export default function ProductCanonicalDetailPage({
 
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-20 space-y-12">
-        <head>
-          <meta name="robots" content="noindex, nofollow" />
-        </head>
+        <meta name="robots" content="noindex, nofollow" />
 
         <div className="max-w-xl mx-auto text-center space-y-5 p-8 rounded-3xl bg-[#FAF8F5] border border-black/[0.08] shadow-2xs">
           <div className="w-16 h-16 mx-auto rounded-2xl bg-amber-100/80 border border-amber-200 text-amber-800 flex items-center justify-center">
@@ -457,9 +451,7 @@ export default function ProductCanonicalDetailPage({
 
       {/* Balise SEO noindex si en mode preview */}
       {isPreview && (
-        <head>
-          <meta name="robots" content="noindex, nofollow" />
-        </head>
+        <meta name="robots" content="noindex, nofollow" />
       )}
 
       {/* Données structurées JSON-LD Schema.org Product */}

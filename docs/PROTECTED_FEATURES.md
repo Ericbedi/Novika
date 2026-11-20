@@ -224,6 +224,29 @@ Dernière mise à jour : 2026-11-20
   - `src/lib/prompt-17m-preview-device.test.ts` (9 tests unitaires)
   - `tests/prompt-17m-preview-devices.spec.ts` (5 tests Playwright E2E)
 
+### 13. Prompt 17-N : Affichage Vitrine Publique Catalogue & Fiche Produit Kelio (Rôle Anonyme)
+- **Objectif** : Résoudre l'affichage du catalogue (`/boutique/kelio/catalogue`) et de la fiche produit (`/boutique/kelio/produits/accompagnez-votre-equilibre-glycemique`) pour un visiteur anonyme (rôle `anon`) sans régression sur l'existant.
+- **Diagnostics & Causes résolues** :
+  1. *RLS Supabase `anon`* : Création de la politique de lecture publique `stock_levels_public_view` sur `stock_levels`, `quantity_offers_public_view` sur `quantity_offers`, et vue publique `product_availability` avec `LEFT JOIN` (évite qu'une jointure interne élimine des produits sans variante ou stock renseigné).
+  2. *Publication vitrine* : Ajout de la colonne `published_to_storefront BOOLEAN NOT NULL DEFAULT true` dans la table `products`.
+  3. *Résolution boutique & produits* : Enregistrement de la boutique `kelio` dans `MOCK_STORES` et `store-repository.ts`, et de son produit phare `Accompagnez votre équilibre glycémique` dans `KELIO_PRODUCTS` et `products-store.ts`.
+  4. *Hydration Error & Crash Incident `ERR-9AN3N5`* : Remplacement des balises invalides `<head>` imbriquées dans des balises `<div>` par des balises directes `<title>` et `<meta>` compatibles React 19 et Next.js 15 dans `produits/[id]/page.tsx`, `layout.tsx` et `apercu/produit/[id]/page.tsx`.
+- **Fichiers clés** :
+  - `src/mock-data/products.ts` (`KELIO_PRODUCTS`)
+  - `src/mock-data/stores.ts` (enregistrement boutique `kelio`)
+  - `src/server/data/store-repository.ts` (`seedInitialStores`)
+  - `src/lib/products-store.ts` (`getShopProductsRaw`)
+  - `src/app/boutique/[store]/catalogue/page.tsx`
+  - `src/app/boutique/[store]/produits/[id]/page.tsx`
+  - `src/app/boutique/[store]/layout.tsx`
+  - `src/app/boutique/[store]/apercu/produit/[id]/page.tsx`
+  - Migration Supabase : `prompt_17n_public_storefront_rls_and_views`
+- **Tests** :
+  - `src/lib/prompt-17n-kelio-storefront.test.ts` (6 tests unitaires au vert)
+  - Suite globale Vitest : 31 fichiers, 347 tests passés au vert
+  - Vérification E2E Playwright : capture d'écran catalogue, fiche produit desktop et mobile iPhone 15 Pro Max
+
+
 
 
 
