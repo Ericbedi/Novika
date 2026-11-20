@@ -18,6 +18,7 @@ import { getShopProducts } from "@/lib/products-store";
 import { getShopBlogPosts } from "@/lib/blog-store";
 import { ProductImage } from "@/components/ui/ProductImage";
 import { formatFcfa } from "@/lib/money";
+import { isProductVisibleOnStorefront } from "@/lib/stock-settings-store";
 
 export default function SearchPage({
   params,
@@ -30,8 +31,8 @@ export default function SearchPage({
   const [query, setQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "products" | "blog" | "pages">("all");
 
-  const products = getShopProducts(storeSlug).filter(
-    (p) => p.productStatus === "active" && !p.hiddenFromCatalog
+  const products = getShopProducts(storeSlug).filter((p) =>
+    isProductVisibleOnStorefront(p, storeSlug)
   );
   const blogPosts = getShopBlogPosts(storeSlug).filter((p) => p.status === "published");
 

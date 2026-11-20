@@ -20,7 +20,10 @@ import {
   RotateCcw,
   Sparkles,
   Receipt as ReceiptIcon,
+  MessageCircle,
+  AlertTriangle,
 } from "lucide-react";
+import { generatePendingStockWhatsAppUrl } from "@/lib/stock-settings-store";
 import { Order, OrderStatus, ORDER_STATUSES, ORDER_STATUS_LABELS } from "@/server/data/types";
 import { MOCK_ORDERS } from "@/mock-data/orders";
 import { MOCK_RECEIPTS_DATA } from "@/mock-data/receipts";
@@ -108,6 +111,7 @@ export function OrdersListClient({ storeSlug }: OrdersListClientProps) {
     const res: Record<string, number> = {
       all: orders.length,
       pending: 0,
+      pending_stock: 0,
       unreachable: 0,
       scheduled: 0,
       postponed: 0,
@@ -116,6 +120,7 @@ export function OrdersListClient({ storeSlug }: OrdersListClientProps) {
     };
     orders.forEach((o) => {
       if (o.status === "pending") res.pending++;
+      else if (o.status === "pending_stock") res.pending_stock++;
       else if (o.status === "unreachable") res.unreachable++;
       else if (o.status === "scheduled") res.scheduled++;
       else if (o.status === "postponed") res.postponed++;
@@ -272,6 +277,7 @@ export function OrdersListClient({ storeSlug }: OrdersListClientProps) {
   const tabs = [
     { key: "all" as const, label: "Toutes", count: counts.all },
     { key: "pending" as const, label: "À traiter", count: counts.pending, color: "bg-blue-50 text-blue-700" },
+    { key: "pending_stock" as const, label: "En attente de stock", count: counts.pending_stock, color: "bg-amber-100 text-amber-900 border border-amber-300" },
     { key: "unreachable" as const, label: "Injoignables / Je vous reviens", count: counts.unreachable, color: "bg-orange-50 text-orange-700" },
     { key: "scheduled" as const, label: "Programmées", count: counts.scheduled, color: "bg-purple-50 text-purple-700" },
     { key: "postponed" as const, label: "Reportées", count: counts.postponed, color: "bg-yellow-50 text-yellow-800" },
@@ -390,6 +396,26 @@ export function OrdersListClient({ storeSlug }: OrdersListClientProps) {
               >
                 <ReceiptIcon className="w-3 h-3" />
               </Link>
+            )}
+
+            {/* Action 1-clic WhatsApp pour les commandes en attente de stock (Prompt 16-b) */}
+            {order.status === "pending_stock" && (
+              <a
+                href={generatePendingStockWhatsAppUrl({
+                  customerPhone: order.customerPhone,
+                  customerName: order.customerName,
+                  orderNumber: order.orderNumber,
+                  productName: (order as any).productName || "votre commande",
+                  storeName: "Novika",
+                })}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="p-1.5 rounded-lg text-white bg-[#25D366] hover:bg-[#20ba5a] transition-all shadow-2xs"
+                title="Message WhatsApp client (En attente de stock)"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+              </a>
             )}
 
             {/* Menu rapide de changement de statut */}

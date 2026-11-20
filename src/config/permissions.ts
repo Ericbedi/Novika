@@ -219,6 +219,15 @@ export function canEditStore(role: UserRole): boolean {
   return role === "owner" || role === "admin";
 }
 
+/**
+ * Règle Prompt 16-b : Réglages de stock de la boutique (Réglages -> Stock)
+ * - Admin propriétaire (owner) et Co-admin (admin) : modification et sauvegarde.
+ * - Manager, closeuse, livreur, agence : accès refusé en modification.
+ */
+export function canManageStockSettings(role: UserRole): boolean {
+  return role === "owner" || role === "admin";
+}
+
 export function canChangeStoreSlug(role: UserRole): boolean {
   return role === "owner";
 }

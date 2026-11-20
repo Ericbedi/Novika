@@ -8,12 +8,14 @@ interface StickyMobileCtaProps {
   price: number;
   productTitle: string;
   targetFormId?: string;
+  isOutOfStock?: boolean;
 }
 
 export function StickyMobileCta({
   price,
   productTitle,
   targetFormId = "cod-order-form",
+  isOutOfStock = false,
 }: StickyMobileCtaProps) {
   const handleScrollToForm = () => {
     const el = document.getElementById(targetFormId);
@@ -37,14 +39,24 @@ export function StickyMobileCta({
           </span>
         </div>
 
-        <button
-          type="button"
-          onClick={handleScrollToForm}
-          className="min-h-[44px] px-5 py-2.5 rounded-2xl bg-[#C2410C] text-white text-xs font-black shadow-md flex items-center justify-center gap-1.5 shrink-0 active:scale-95 transition-transform"
-        >
-          <span>Commander · {formatFcfa(price)}</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </button>
+        {isOutOfStock ? (
+          <button
+            type="button"
+            disabled
+            className="min-h-[44px] px-5 py-2.5 rounded-2xl bg-gray-200 text-gray-500 text-xs font-black shrink-0 cursor-not-allowed"
+          >
+            <span>Rupture de stock</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleScrollToForm}
+            className="min-h-[44px] px-5 py-2.5 rounded-2xl bg-[#C2410C] text-white text-xs font-black shadow-md flex items-center justify-center gap-1.5 shrink-0 active:scale-95 transition-transform cursor-pointer"
+          >
+            <span>Commander · {formatFcfa(price)}</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
     </div>
   );

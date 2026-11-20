@@ -14,6 +14,7 @@ export const ORDER_STATUSES = [
   "rejected_invalid_number", // Rejetée - numéro invalide
   "lost_unreachable", // Perdue - injoignable (cadence épuisée)
   "cancelled", // Annulée (avant expédition)
+  "pending_stock", // En attente de stock (Prompt 16-b)
 ] as const;
 
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
@@ -30,6 +31,7 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   rejected_invalid_number: "Rejetée – numéro invalide",
   lost_unreachable: "Perdue – injoignable",
   cancelled: "Annulée",
+  pending_stock: "En attente de stock",
 };
 
 export type UserRole = "owner" | "admin" | "manager" | "closer" | "rider" | "courier" | "agency";
@@ -163,6 +165,20 @@ export type ProductStatus = "active" | "draft" | "archived";
 export type StockStatus = "in_stock" | "low_stock" | "out_of_stock";
 export type AbcClass = "A" | "B" | "C";
 
+// Prompt 16-b : Réglages de stock par boutique et par produit
+export type OutOfStockVisibilityOption = "show_badge" | "hide";
+export type StockReservationTimingOption = "on_order_received" | "on_closer_confirmation";
+export type OutOfStockProductOverride = "store_default" | "always_show" | "always_hide";
+
+export interface StoreStockSettings {
+  storeSlug: string;
+  outOfStockVisibility: OutOfStockVisibilityOption;
+  reservationTiming: StockReservationTimingOption;
+  reservationTimeoutHours: number;
+  updatedAt?: string;
+  updatedBy?: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -177,6 +193,7 @@ export interface Product {
   images: string[];
   mediaItems?: ProductMediaItem[];
   videoUrl?: string;
+  outOfStockVisibilityOverride?: OutOfStockProductOverride;
   salePrice: number;
   price?: number;
   compareAtPrice?: number;

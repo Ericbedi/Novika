@@ -20,6 +20,7 @@ import { formatFcfa } from "@/lib/money";
 import { Product } from "@/server/data/types";
 import { Lock } from "lucide-react";
 import { ProductImage } from "@/components/ui/ProductImage";
+import { isProductVisibleOnStorefront } from "@/lib/stock-settings-store";
 
 export default function CataloguePage({
   params,
@@ -76,10 +77,10 @@ export default function CataloguePage({
     return ["all", ...list];
   }, [productsList]);
 
-  // Filtrage et Tri des produits (exclut les produits masqués)
+  // Filtrage et Tri des produits (exclut les produits masqués selon la politique de stock)
   const filteredProducts = useMemo(() => {
     return productsList
-      .filter((p) => (p.productStatus === "active" || (!p.productStatus && p.stock > 0)) && !p.hiddenFromCatalog)
+      .filter((p) => isProductVisibleOnStorefront(p, storeSlug))
       .filter((p) => {
         const matchesSearch =
           searchQuery === "" ||

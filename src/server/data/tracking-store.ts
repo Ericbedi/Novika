@@ -21,6 +21,11 @@ import {
   TRACKING_STATUS_CONFIG,
   OrderStatusAuditEntry,
 } from "./tracking-types";
+import {
+  reserveStockForOrder,
+  fulfillDeliveredOrderStock,
+  releaseReservedStock,
+} from "@/lib/stock-settings-store";
 
 // Magasin en mémoire partagé (simulant la base de données PostgreSQL / Supabase)
 const TRACKING_ORDERS_STORE: Map<string, TrackingInternalOrder> = new Map();
@@ -223,6 +228,60 @@ export function updateOrderStatusWithAudit(params: {
   const now = new Date();
   const dateFormatted = now.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
   const timeFormatted = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+
+  // 4. Logique de Stock & Réservation (Prompt 16-b)
+  const storeSlug = order.storeSlug || "lome-glow";
+  const orderProductId = order.productId || order.items?.[0]?.productId || "prod_1";
+  const orderQty = order.items?.reduce((s, it) => s + (it.quantity || 1), 0) || 1;
+
+  if (targetStatus === "confirmed") {
+    // Vérification et réservation ferme lors de la confirmation par la closeuse
+    const reserveRes = reserveStockForOrder({
+      storeSlug,
+      productId: orderProductId,
+      quantity: orderQty,
+      orderNumber: order.orderNumber,
+      isCloserConfirmation: true,
+    });
+
+    if (!reserveRes.success && reserveRes.orderStatus === "pending_stock") {
+      order.status = "pending_stock";
+      order.updatedAt = now.toISOString();
+
+      const pendingStockHistoryItem = {
+        id: `hist_${Date.now()}`,
+        status: "pending_stock" as TrackingStatus,
+        label: TRACKING_STATUS_CONFIG["pending_stock"].label,
+        date: dateFormatted,
+        time: timeFormatted,
+        note: "Stock insuffisant : confirmation closeuse refusée. Commande basculée en attente de stock prioritaire.",
+      };
+      order.history.unshift(pendingStockHistoryItem);
+
+      return {
+        success: false,
+        error: "Stock insuffisant : la dernière unité a été prise par une autre commande. La commande a été basculée en statut 'En attente de stock'.",
+        order: order as any,
+      };
+    }
+  } else if (targetStatus === "delivered") {
+    // Commande livrée : décrémente stock physique et solde la réservation
+    fulfillDeliveredOrderStock({
+      storeSlug,
+      productId: orderProductId,
+      quantity: orderQty,
+      orderNumber: order.orderNumber,
+    });
+  } else if (targetStatus === "cancelled" || targetStatus === "rejected") {
+    // Commande annulée ou rejetée : libération du stock réservé
+    releaseReservedStock({
+      storeSlug,
+      productId: orderProductId,
+      quantity: orderQty,
+      orderNumber: order.orderNumber,
+      reason: reason || "Annulation / Rejet",
+    });
+  }
 
   order.status = targetStatus;
   order.updatedAt = now.toISOString();

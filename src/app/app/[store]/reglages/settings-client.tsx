@@ -44,6 +44,7 @@ import {
   Edit2,
   AlertCircle,
   HelpCircle,
+  Boxes,
 } from "lucide-react";
 import { canDeleteAccount, canManagePixels, canViewPixels } from "@/config/permissions";
 import { MOCK_PRODUCTS } from "@/mock-data/products";

@@ -24,6 +24,7 @@ export const TRACKING_SPECIAL_STATUSES = [
   "postponed",
   "cancelled",
   "returned",
+  "pending_stock",
 ] as const;
 
 export const ALL_TRACKING_STATUSES = [
@@ -111,6 +112,13 @@ export const TRACKING_STATUS_CONFIG: Record<
     shortLabel: "Retournée",
     description: "Le colis n'a pas pu être remis et a été retourné à la boutique.",
     badgeVariant: "destructive",
+    isSpecial: true,
+  },
+  pending_stock: {
+    label: "En attente de stock",
+    shortLabel: "Attente stock",
+    description: "Votre commande est enregistrée et sera expédiée dès notre réapprovisionnement.",
+    badgeVariant: "warning",
     isSpecial: true,
   },
 };

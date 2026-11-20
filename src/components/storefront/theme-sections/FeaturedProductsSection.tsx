@@ -9,6 +9,7 @@ import { Product } from "@/server/data/types";
 import { formatFcfa } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { ProductImage } from "@/components/ui/ProductImage";
+import { isProductVisibleOnStorefront } from "@/lib/stock-settings-store";
 
 interface FeaturedProductsSectionProps {
   settings: FeaturedProductsSettings;
@@ -38,8 +39,8 @@ export function FeaturedProductsSection({
     showLowStockBadge = true,
   } = settings;
 
-  // Filtrer les produits actifs
-  let displayProducts = products.filter((p) => p.productStatus === "active");
+  // Filtrer les produits visibles selon la politique de stock
+  let displayProducts = products.filter((p) => isProductVisibleOnStorefront(p, storeSlug));
   if (productIds.length > 0) {
     displayProducts = displayProducts.filter((p) => productIds.includes(p.id));
   }

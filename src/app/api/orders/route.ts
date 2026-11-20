@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { reserveStockForOrder } from "@/lib/stock-settings-store";
 
 export async function GET(req: NextRequest) {
   try {
@@ -99,6 +100,29 @@ export async function POST(req: NextRequest) {
         { error: "Champs obligatoires manquants (numéro, nom, téléphone, ville)." },
         { status: 400 }
       );
+    }
+
+    // Vérification et réservation de stock selon la politique de la boutique (Prompt 16-b)
+    const targetProductId = productId || (Array.isArray(items) && items[0]?.productId) || null;
+    if (targetProductId) {
+      const orderQty = Number(quantity) || (Array.isArray(items) && items[0]?.quantity) || 1;
+      const stockRes = reserveStockForOrder({
+        storeSlug,
+        productId: targetProductId,
+        quantity: orderQty,
+        orderNumber,
+        isCloserConfirmation: false,
+      });
+
+      if (!stockRes.success && stockRes.orderStatus === "rejected_out_of_stock") {
+        return NextResponse.json(
+          {
+            error: stockRes.error || "Ce produit est actuellement épuisé.",
+            code: "OUT_OF_STOCK",
+          },
+          { status: 409 }
+        );
+      }
     }
 
     const supabase = await createClient();

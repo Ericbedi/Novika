@@ -49,6 +49,7 @@ interface StandardOrderFormProps {
   themePalette?: ProductThemePalette;
   storeSlug: string;
   formId?: string;
+  isOutOfStock?: boolean;
   onOrderSuccess?: (order: OrderFormRecalculatedOrder) => void;
 }
 
@@ -62,8 +63,14 @@ export function StandardOrderForm({
   themePalette,
   storeSlug,
   formId = "standard-cod-order-form",
+  isOutOfStock,
   onOrderSuccess,
 }: StandardOrderFormProps) {
+  const effectiveOutOfStock =
+    isOutOfStock ??
+    ((product.availableStock !== undefined
+      ? product.availableStock
+      : (product.stock ?? 0)) <= 0);
   const rawId = useId();
   const [idempotencyKey, setIdempotencyKey] = useState("");
 
@@ -238,6 +245,11 @@ export function StandardOrderForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+
+    if (effectiveOutOfStock) {
+      setErrorMessage("Ce produit est actuellement en rupture de stock. Les commandes sont temporairement désactivées.");
+      return;
+    }
 
     if (isNotServed) {
       setErrorMessage("Désolé, la livraison est actuellement indisponible dans cette ville.");
@@ -663,6 +675,21 @@ export function StandardOrderForm({
         </div>
       )}
 
+      {/* Bannière Rupture de stock si épuisé (Prompt 16-b) */}
+      {effectiveOutOfStock && (
+        <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 flex items-start gap-3 shadow-2xs">
+          <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <h4 className="text-xs font-black uppercase tracking-wider text-rose-950">
+              Rupture de stock
+            </h4>
+            <p className="text-xs text-rose-800 leading-relaxed">
+              Ce produit est actuellement en rupture de stock. Les commandes sont temporairement désactivées jusqu'au réapprovisionnement.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Formulaire de coordonnées */}
       <form onSubmit={handleSubmit} onFocusCapture={notifyInitiateCheckout} className="space-y-4">
         {/* Champ anti-robot Honeypot invisible */}
@@ -1006,9 +1033,9 @@ export function StandardOrderForm({
         {/* Bouton Principal de commande */}
         <button
           type="submit"
-          disabled={isSubmitting || isNotServed}
+          disabled={isSubmitting || isNotServed || effectiveOutOfStock}
           style={{
-            backgroundColor: isNotServed ? "#888880" : primaryColor,
+            backgroundColor: effectiveOutOfStock || isNotServed ? "#888880" : primaryColor,
             color: contrastTextColor,
           }}
           className="w-full min-h-[52px] py-3.5 px-6 rounded-2xl font-black text-sm tracking-wide shadow-xl flex items-center justify-center gap-2 hover:opacity-95 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1018,6 +1045,8 @@ export function StandardOrderForm({
               <span className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
               Validation en cours...
             </span>
+          ) : effectiveOutOfStock ? (
+            <span>Rupture de stock — Commandes désactivées</span>
           ) : isNotServed ? (
             <span>Livraison indisponible dans cette ville</span>
           ) : (

@@ -50,6 +50,13 @@ import { PhoneActions } from "@/components/app/phone-actions";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { useApp } from "@/components/layout/app-shell";
 import { cn } from "@/lib/utils";
+import {
+  reserveStockForOrder,
+  fulfillDeliveredOrderStock,
+  releaseReservedStock,
+  generatePendingStockWhatsAppUrl,
+} from "@/lib/stock-settings-store";
+import { notificationSound } from "@/lib/notification-sound";
 
 interface OrderDetailClientProps {
   storeSlug: string;
@@ -86,6 +93,7 @@ export function OrderDetailClient({ storeSlug, orderNumber }: OrderDetailClientP
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [pendingStockAlertOpen, setPendingStockAlertOpen] = useState(false);
 
   // K2 : Preuve de livraison
   const [deliveryProofType, setDeliveryProofType] = useState<"code" | "photo" | "none">("code");
@@ -228,6 +236,55 @@ export function OrderDetailClient({ storeSlug, orderNumber }: OrderDetailClientP
       reasonText = `Programmée pour : ${scheduledDateInput}`;
     }
 
+    // Gestion de la réservation de stock (Prompt 16-b)
+    const targetProdId = order.items?.[0]?.productId || order.items?.[0]?.id || "prod_1";
+    const qty = order.items?.reduce((s, it) => s + (it.quantity || 1), 0) || 1;
+
+    if (selectedNewStatus === "confirmed") {
+      const stockRes = reserveStockForOrder({
+        storeSlug,
+        productId: targetProdId,
+        quantity: qty,
+        orderNumber: order.orderNumber,
+        isCloserConfirmation: true,
+      });
+
+      if (!stockRes.success && stockRes.orderStatus === "pending_stock") {
+        notificationSound(); // Alerte sonore pour la closeuse
+        setOrder((prev) => ({
+          ...prev,
+          status: "pending_stock",
+          updatedAt: "À l'instant",
+        }));
+        const pendingEntry: StatusHistoryEntry = {
+          status: "pending_stock",
+          changedAt: "À l'instant",
+          changedBy: changedByName,
+          reason: "Stock insuffisant : confirmation closeuse refusée. Commande passée en attente de stock prioritaire.",
+        };
+        setHistory((prev) => [pendingEntry, ...prev]);
+        setIsStatusModalOpen(false);
+        setPendingStockAlertOpen(true);
+        showToast("Stock insuffisant : commande basculée en attente de stock !");
+        return;
+      }
+    } else if (selectedNewStatus === "delivered") {
+      fulfillDeliveredOrderStock({
+        storeSlug,
+        productId: targetProdId,
+        quantity: qty,
+        orderNumber: order.orderNumber,
+      });
+    } else if (selectedNewStatus === "cancelled" || selectedNewStatus === "rejected") {
+      releaseReservedStock({
+        storeSlug,
+        productId: targetProdId,
+        quantity: qty,
+        orderNumber: order.orderNumber,
+        reason: reasonText,
+      });
+    }
+
     setOrder((prev) => ({
       ...prev,
       status: selectedNewStatus,
@@ -337,6 +394,48 @@ export function OrderDetailClient({ storeSlug, orderNumber }: OrderDetailClientP
           </button>
         </div>
       </div>
+
+      {/* Bannière Commande en attente de stock (Prompt 16-b) */}
+      {order.status === "pending_stock" && (
+        <div className="p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm animate-in fade-in">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+            <div className="space-y-0.5">
+              <h3 className="text-xs font-black uppercase tracking-wider text-amber-900">
+                Commande en attente de stock prioritaire
+              </h3>
+              <p className="text-xs text-amber-800 leading-relaxed">
+                Le stock disponible était insuffisant au moment de la confirmation. Vous pouvez contacter le client sur WhatsApp en 1 clic pour lui proposer une alternative ou maintenir sa commande prioritaire.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <a
+              href={generatePendingStockWhatsAppUrl({
+                customerPhone: order.customerPhone,
+                customerName: order.customerName,
+                orderNumber: order.orderNumber,
+                productName: order.items?.[0]?.name || "votre produit",
+                storeName: "Novika",
+              })}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="btn-whatsapp-pending-stock"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#25D366] hover:bg-[#20ba5a] text-white text-xs font-black shadow-xs transition-all"
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
+              <span>WhatsApp client en 1 clic</span>
+            </a>
+            <Link
+              href={`/app/${storeSlug}/produits/achats`}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-black/[0.1] text-xs font-bold text-[#111111] hover:bg-[#FAF8F5]"
+            >
+              Alerte réappro
+            </Link>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Colonne Gauche (8 cols) : Produits, Finances & Historique */}
@@ -1187,6 +1286,60 @@ export function OrderDetailClient({ storeSlug, orderNumber }: OrderDetailClientP
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>Confirmer et ouvrir WhatsApp</span>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODALE ALERTE RUPTURE CLOSEUSE : EN ATTENTE DE STOCK (Prompt 16-b) */}
+      {pendingStockAlertOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-700">
+              <AlertTriangle className="w-6 h-6 animate-pulse" />
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-base font-black text-[#111111]">
+                Stock insuffisant — Confirmation impossible
+              </h3>
+              <p className="text-xs text-[#555550] leading-relaxed">
+                Le stock disponible pour cette référence vient d'être attribué à une autre commande confirmée. La commande #{order.orderNumber} a été basculée en <strong>« En attente de stock »</strong>.
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-[#FAF8F5] border border-black/[0.06] text-xs space-y-2">
+              <p className="font-bold text-[#111111]">Actions recommandées :</p>
+              <ul className="list-disc pl-4 space-y-1 text-[#666660] text-[11px]">
+                <li>Contactez immédiatement le client pour lui proposer un produit similaire ou un délai d'attente prioritaire.</li>
+                <li>Une alerte réapprovisionnement a été enregistrée pour les gestionnaires de stock.</li>
+              </ul>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setPendingStockAlertOpen(false)}
+                className="w-full sm:w-auto px-4 py-2 rounded-xl border border-black/[0.1] bg-white text-xs font-bold text-[#666660] hover:bg-black/[0.04]"
+              >
+                Fermer
+              </button>
+              <a
+                href={generatePendingStockWhatsAppUrl({
+                  customerPhone: order.customerPhone,
+                  customerName: order.customerName,
+                  orderNumber: order.orderNumber,
+                  productName: order.items?.[0]?.name || "votre commande",
+                  storeName: "Novika",
+                })}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setPendingStockAlertOpen(false)}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#25D366] hover:bg-[#20ba5a] text-white text-xs font-black shadow-xs"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span>Message WhatsApp client</span>
+              </a>
             </div>
           </div>
         </div>

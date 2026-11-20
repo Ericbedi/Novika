@@ -48,6 +48,7 @@ import {
   QuantityOffer,
   ProductStatus,
   ProductMediaItem,
+  OutOfStockProductOverride,
 } from "@/server/data/types";
 import {
   MAX_PRODUCT_IMAGES,
@@ -372,6 +373,10 @@ export function ProductFormClient({
   const [lowStockThreshold, setLowStockThreshold] = useState<number>(
     initialProduct?.lowStockThreshold ?? 10
   );
+  const [outOfStockVisibilityOverride, setOutOfStockVisibilityOverride] =
+    useState<OutOfStockProductOverride>(
+      initialProduct?.outOfStockVisibilityOverride || "store_default"
+    );
 
   // Physical product & shipping
   const [isPhysical, setIsPhysical] = useState<boolean>(initialProduct?.isPhysical ?? true);
@@ -661,6 +666,7 @@ export function ProductFormClient({
       status: productStatus,
       productStatus,
       hiddenFromCatalog,
+      outOfStockVisibilityOverride,
       stockStatus: numStock === 0 ? "out_of_stock" : numStock <= numLowStock ? "low_stock" : "in_stock",
       supplierId,
       variants,
@@ -1597,6 +1603,34 @@ export function ProductFormClient({
                   </div>
                 </div>
               )}
+
+              {/* Surcharge visibilité rupture (Prompt 16-b) */}
+              <div className="pt-3 border-t border-black/[0.06]">
+                <label className="block text-xs font-bold text-[#111111] mb-1">
+                  Comportement en cas de rupture sur la vitrine (Surcharge produit)
+                </label>
+                <select
+                  value={outOfStockVisibilityOverride}
+                  onChange={(e) =>
+                    setOutOfStockVisibilityOverride(e.target.value as OutOfStockProductOverride)
+                  }
+                  data-testid="select-out-of-stock-override"
+                  className="w-full sm:w-2/3 px-3 py-2 text-xs font-semibold rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
+                >
+                  <option value="store_default">
+                    Suivre le réglage de la boutique (Par défaut)
+                  </option>
+                  <option value="always_show">
+                    Toujours afficher (avec mention Rupture)
+                  </option>
+                  <option value="always_hide">
+                    Toujours masquer de la vitrine en cas de rupture
+                  </option>
+                </select>
+                <p className="text-[10px] text-[#888880] mt-1">
+                  Permet de déroger exceptionnellement à la règle générale de la boutique pour cet article.
+                </p>
+              </div>
             </div>
           </div>
 

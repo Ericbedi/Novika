@@ -14,12 +14,15 @@ interface ScarcityStockBadgeProps {
  * AUCUN compte à rebours fictif, AUCUN inventaire inventé.
  */
 export function ScarcityStockBadge({ realStock }: ScarcityStockBadgeProps) {
-  // Si le produit est épuisé
+  // Si le produit est épuisé (Prompt 16-b)
   if (realStock <= 0) {
     return (
-      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs font-black">
+      <div
+        data-testid="badge-out-of-stock"
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs font-black shadow-2xs"
+      >
         <AlertTriangle className="w-3.5 h-3.5" />
-        <span>Rupture temporaire de stock</span>
+        <span>Rupture de stock</span>
       </div>
     );
   }

@@ -13,6 +13,7 @@ import {
   Truck,
   Users,
   Wallet,
+  AlertTriangle,
 } from "lucide-react";
 import { PageHeader } from "@/components/app/page-header";
 import { CorridorsStatusBar } from "@/components/dashboard/corridors-status-bar";
@@ -171,6 +172,37 @@ export function DashboardClient({ storeSlug }: { storeSlug: string }) {
             goal={MOCK_GOALS[0]}
             basePath={`/app/${storeSlug}`}
           />
+        </ScrollReveal>
+      )}
+
+      {/* Alerte et compteur "Commandes en attente de stock" (Prompt 16-b) */}
+      {orders.filter((o) => o.status === "pending_stock").length > 0 && (
+        <ScrollReveal delay={130}>
+          <Link
+            href={`/app/${storeSlug}/commandes?statut=pending_stock`}
+            className="flex items-center justify-between p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 hover:border-amber-400 text-amber-950 shadow-sm transition-all group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs font-black uppercase tracking-wider text-amber-950 flex items-center gap-2">
+                  <span>Alerte Réappro · Commandes en attente de stock</span>
+                  <span className="px-2 py-0.5 rounded-full bg-amber-200/80 text-amber-900 text-[10px] font-bold">
+                    Action requise
+                  </span>
+                </p>
+                <p className="text-xs text-amber-800 mt-0.5">
+                  {orders.filter((o) => o.status === "pending_stock").length} commande(s) COD bloquée(s) par manque de stock physique. Cliquez pour traiter ou lancer un réapprovisionnement.
+                </p>
+              </div>
+            </div>
+
+            <span className="px-3 py-1 rounded-full bg-amber-600 text-white text-xs font-black shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+              {orders.filter((o) => o.status === "pending_stock").length} en attente
+            </span>
+          </Link>
         </ScrollReveal>
       )}
 

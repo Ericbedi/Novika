@@ -94,11 +94,14 @@ export function NovikaProductPage({
 
   // Stock réel
   const realStock =
-    product.stockCount !== undefined
+    product.availableStock !== undefined
+      ? product.availableStock
+      : product.stockCount !== undefined
       ? product.stockCount
       : product.stock !== undefined
       ? product.stock
-      : 12;
+      : 0;
+  const isOutOfStock = realStock <= 0;
 
   // Avis réels de commandes livrées
   const deliveredReviews = reviews.filter((r) => r.verifiedPurchase);
@@ -224,26 +227,35 @@ export function NovikaProductPage({
                 Options disponibles ({product.variants.length}) :
               </label>
               <div className="flex flex-wrap gap-2">
-                {product.variants.map((variant) => (
-                  <button
-                    key={variant.id}
-                    type="button"
-                    onClick={() => setSelectedVariantId(variant.id)}
-                    className={cn(
-                      "px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer min-h-[44px]",
-                      selectedVariantId === variant.id
-                        ? "bg-[#111111] text-white border-[#111111] shadow-xs"
-                        : "bg-white text-[#222220] border-black/[0.1] hover:border-black/30"
-                    )}
-                  >
-                    <span>{variant.title || variant.name}</span>
-                    {variant.price && (
-                      <span className="ml-1.5 opacity-70 text-[10px]">
-                        ({formatFcfa(variant.price)})
-                      </span>
-                    )}
-                  </button>
-                ))}
+                {product.variants.map((variant) => {
+                  const isVariantOutOfStock = isOutOfStock || (variant.stock !== undefined && variant.stock <= 0);
+                  return (
+                    <button
+                      key={variant.id}
+                      type="button"
+                      disabled={isVariantOutOfStock}
+                      onClick={() => !isVariantOutOfStock && setSelectedVariantId(variant.id)}
+                      className={cn(
+                        "px-3.5 py-2 rounded-xl text-xs font-bold border transition-all min-h-[44px]",
+                        isVariantOutOfStock
+                          ? "opacity-50 line-through cursor-not-allowed bg-black/[0.04] text-gray-400 border-dashed border-gray-300"
+                          : selectedVariantId === variant.id
+                          ? "bg-[#111111] text-white border-[#111111] shadow-xs cursor-pointer"
+                          : "bg-white text-[#222220] border-black/[0.1] hover:border-black/30 cursor-pointer"
+                      )}
+                    >
+                      <span>{variant.title || variant.name}</span>
+                      {variant.price && (
+                        <span className="ml-1.5 opacity-70 text-[10px]">
+                          ({formatFcfa(variant.price)})
+                        </span>
+                      )}
+                      {isVariantOutOfStock && (
+                        <span className="ml-1 text-[9px] font-normal not-italic">(Épuisé)</span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -310,15 +322,23 @@ export function NovikaProductPage({
             </div>
           )}
 
-          {/* Action rapide : Ajouter au panier & Acheter maintenant (Prompt 12-b Phase 3) */}
+          {/* Action rapide : Ajouter au panier & Acheter maintenant (Prompt 12-b Phase 3 / Prompt 16-b) */}
           <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
             <button
               type="button"
               onClick={handleAddToCart}
+              disabled={isOutOfStock}
               data-testid="btn-add-to-cart"
-              className="w-full sm:flex-1 min-h-[46px] px-4 py-2.5 rounded-2xl border-2 border-[#111111] bg-white hover:bg-[#FAF8F5] text-[#111111] text-xs font-black flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer active:scale-98"
+              className={cn(
+                "w-full sm:flex-1 min-h-[46px] px-4 py-2.5 rounded-2xl border-2 text-xs font-black flex items-center justify-center gap-2 shadow-2xs transition-all",
+                isOutOfStock
+                  ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : "border-[#111111] bg-white hover:bg-[#FAF8F5] text-[#111111] cursor-pointer active:scale-98"
+              )}
             >
-              {addedToCartAnim ? (
+              {isOutOfStock ? (
+                <span>Rupture de stock</span>
+              ) : addedToCartAnim ? (
                 <>
                   <Check className="w-4 h-4 text-emerald-600" />
                   <span className="text-emerald-700">Ajouté au panier !</span>
@@ -331,12 +351,22 @@ export function NovikaProductPage({
               )}
             </button>
 
-            <a
-              href="#cod-order-form"
-              className="w-full sm:flex-1 min-h-[46px] px-4 py-2.5 rounded-2xl bg-[#C2410C] hover:bg-[#a83609] text-white text-xs font-black flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer text-center"
-            >
-              <span>Acheter maintenant</span>
-            </a>
+            {isOutOfStock ? (
+              <button
+                type="button"
+                disabled
+                className="w-full sm:flex-1 min-h-[46px] px-4 py-2.5 rounded-2xl bg-gray-200 text-gray-500 text-xs font-black flex items-center justify-center gap-2 cursor-not-allowed"
+              >
+                <span>Rupture de stock</span>
+              </button>
+            ) : (
+              <a
+                href="#cod-order-form"
+                className="w-full sm:flex-1 min-h-[46px] px-4 py-2.5 rounded-2xl bg-[#C2410C] hover:bg-[#a83609] text-white text-xs font-black flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer text-center"
+              >
+                <span>Acheter maintenant</span>
+              </a>
+            )}
           </div>
 
           {/* Formulaire de Commande COD Intégré (Prompt 05-F) */}
@@ -346,6 +376,7 @@ export function NovikaProductPage({
               settings={settings}
               quantityOffers={quantityOffers}
               storeSlug={storeSlug}
+              isOutOfStock={isOutOfStock}
             />
           </div>
 
@@ -457,6 +488,7 @@ export function NovikaProductPage({
         price={effectivePrice}
         productTitle={product.title || product.name}
         targetFormId="cod-order-form"
+        isOutOfStock={isOutOfStock}
       />
     </div>
   );

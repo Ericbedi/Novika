@@ -110,7 +110,7 @@ export function purgeExpiredTrash(shopSlug: string, maxDays: number = 30): numbe
 /**
  * Récupération brute de tous les produits stockés (y compris corbeille).
  */
-function getShopProductsRaw(shopSlug: string): Product[] {
+export function getShopProductsRaw(shopSlug: string): Product[] {
   if (typeof window !== "undefined") {
     try {
       const saved = localStorage.getItem(getShopStorageKey(shopSlug));
@@ -139,7 +139,7 @@ function getShopProductsRaw(shopSlug: string): Product[] {
 /**
  * Sauvegarde la liste complète des produits d'une boutique.
  */
-function saveShopProductsList(shopSlug: string, products: Product[]): void {
+export function saveShopProductsList(shopSlug: string, products: Product[]): void {
   memoryStoreProducts.set(shopSlug, products);
   if (typeof window !== "undefined") {
     try {

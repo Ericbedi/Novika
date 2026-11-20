@@ -9,6 +9,7 @@ import { ProductImage } from "@/components/ui/ProductImage";
 import { formatFcfa } from "@/lib/money";
 import { Star, ShieldCheck, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isProductVisibleOnStorefront } from "@/lib/stock-settings-store";
 
 interface FeaturedProductSectionProps {
   settings: FeaturedProductSettings;
@@ -32,7 +33,7 @@ export function FeaturedProductSection({
   const product = products.find(
     (p) => p.id === settings.productId || p.slug === settings.productId
   );
-  if (!product) return null;
+  if (!product || !isProductVisibleOnStorefront(product, storeSlug)) return null;
 
   const radiusClass =
     cardRadius === "none"
