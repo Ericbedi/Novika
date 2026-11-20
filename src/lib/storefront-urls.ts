@@ -83,7 +83,7 @@ export function getActivePrimaryDomain(shopSlug: string): string | null {
     // Si aucun marqué isPrimary mais un est actif
     const anyActive = domains.find((d) => d.status === "active");
     if (anyActive) return anyActive.domain;
-  } catch {}
+  } catch { }
   return null;
 }
 
@@ -103,7 +103,7 @@ export function getProductPublicUrl(
 ): string {
   const shopSlug = typeof shop === "string" ? shop : shop.slug;
   const shortCode = product.shortCode || product.short_code;
-  
+
   // Choix de l'identifiant dans l'URL
   const identifier = options.shortLink && shortCode
     ? shortCode

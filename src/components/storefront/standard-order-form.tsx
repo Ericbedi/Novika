@@ -437,14 +437,14 @@ export function StandardOrderForm({
                     placeholder="N° de transaction SMS (Ex: TXN-98421)"
                     value={proofTxnRef}
                     onChange={(e) => setProofTxnRef(e.target.value)}
-                    className="px-3 py-2 rounded-xl border border-black/10 bg-white font-mono text-xs"
+                    className="px-3 py-2 rounded-xl border border-black/10 bg-white font-mono text-base sm:text-xs"
                   />
                   <input
                     type="tel"
                     placeholder="Numéro expéditeur (optionnel)"
                     value={proofSenderPhone}
                     onChange={(e) => setProofSenderPhone(e.target.value)}
-                    className="px-3 py-2 rounded-xl border border-black/10 bg-white font-mono text-xs"
+                    className="px-3 py-2 rounded-xl border border-black/10 bg-white font-mono text-base sm:text-xs"
                   />
                 </div>
                 <button
@@ -716,7 +716,7 @@ export function StandardOrderForm({
             value={customerName}
             onChange={(e) => setCustomerName(e.target.value)}
             placeholder="Ex: Awa Traoré"
-            className="w-full min-h-[44px] px-3.5 py-2.5 text-xs rounded-xl border border-black/[0.1] bg-white text-[#111111] placeholder:text-[#888880] focus:outline-none focus:ring-2 focus:ring-black/[0.15]"
+            className="w-full min-h-[44px] px-3.5 py-2.5 text-base sm:text-xs rounded-xl border border-black/[0.1] bg-white text-[#111111] placeholder:text-[#888880] focus:outline-none focus:ring-2 focus:ring-black/[0.15]"
           />
         </div>
 
@@ -754,7 +754,7 @@ export function StandardOrderForm({
               value={phoneLocal}
               onChange={(e) => setPhoneLocal(e.target.value)}
               placeholder="Ex: 07 48 29 11 02"
-              className="flex-1 min-w-0 h-[44px] px-3 text-xs sm:text-sm font-mono text-[#111111] placeholder:text-[#888880] focus:outline-none bg-transparent"
+              className="flex-1 min-w-0 h-[44px] px-3 text-base sm:text-sm font-mono text-[#111111] placeholder:text-[#888880] focus:outline-none bg-transparent"
             />
           </div>
 
@@ -801,7 +801,7 @@ export function StandardOrderForm({
                     value={alternateWhatsApp}
                     onChange={(e) => setAlternateWhatsApp(e.target.value)}
                     placeholder="Ex: +228 90 12 34 56"
-                    className="flex-1 min-h-[40px] px-3 text-xs font-mono rounded-xl border border-black/[0.1] bg-white text-[#111111] placeholder:text-[#888880] focus:outline-none"
+                    className="flex-1 min-h-[40px] px-3 text-base sm:text-xs font-mono rounded-xl border border-black/[0.1] bg-white text-[#111111] placeholder:text-[#888880] focus:outline-none"
                   />
                   <button
                     type="button"
@@ -833,7 +833,7 @@ export function StandardOrderForm({
               value={city}
               onChange={(e) => setCity(e.target.value)}
               placeholder="Ex. Lomé, Agoè, Kara, Abidjan..."
-              className="w-full min-h-[44px] px-3.5 py-2.5 text-xs rounded-xl border border-black/[0.1] bg-white text-[#111111] placeholder:text-[#888880] focus:outline-none focus:ring-2 focus:ring-black/[0.15]"
+              className="w-full min-h-[44px] px-3.5 py-2.5 text-base sm:text-xs rounded-xl border border-black/[0.1] bg-white text-[#111111] placeholder:text-[#888880] focus:outline-none focus:ring-2 focus:ring-black/[0.15]"
             />
             {isCheckingZone && (
               <span className="absolute right-3 top-3 text-[10px] text-[#888880]">
@@ -930,7 +930,7 @@ export function StandardOrderForm({
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             placeholder="Ex: Près de la Pharmacie de la Paix, maison clôturée..."
-            className="w-full min-h-[44px] px-3.5 py-2.5 text-xs rounded-xl border border-black/[0.1] bg-white text-[#111111] placeholder:text-[#888880] focus:outline-none focus:ring-2 focus:ring-black/[0.15]"
+            className="w-full min-h-[44px] px-3.5 py-2.5 text-base sm:text-xs rounded-xl border border-black/[0.1] bg-white text-[#111111] placeholder:text-[#888880] focus:outline-none focus:ring-2 focus:ring-black/[0.15]"
           />
         </div>
 
@@ -945,7 +945,7 @@ export function StandardOrderForm({
               value={deliveryPrecision}
               onChange={(e) => setDeliveryPrecision(e.target.value)}
               placeholder="Ex: Appeler avant de venir, livrer après 14h..."
-              className="w-full min-h-[40px] px-3 py-2 text-xs rounded-xl border border-black/[0.08] bg-white text-[#111111] placeholder:text-[#888880] focus:outline-none"
+              className="w-full min-h-[40px] px-3 py-2 text-base sm:text-xs rounded-xl border border-black/[0.08] bg-white text-[#111111] placeholder:text-[#888880] focus:outline-none"
             />
           </div>
         )}

@@ -376,3 +376,27 @@ Deux buckets publics ont été provisionnés avec limitation de taille et filtra
 * **Générateur IA (`/api/products/ai/generate-benefits`)** : Génère 3 à 5 bénéfices concrets sans promesses médicales ni chiffres inventés.
 * **Bouton unique rupture de stock** : Rendu d'un bouton unique pleine largeur si le stock suivi est épuisé (`<= 0`).
 
+### Prompt 17-M : Aperçu mobile iPhone 15 Pro Max par défaut & Multi-appareils
+* **Sélecteur d'appareil complet** :
+  - **iPhone 15 Pro Max** (430 × 932 px) **PAR DÉFAUT**.
+  - **iPhone 13** (390 × 844 px).
+  - **Android petit écran** (360 × 800 px).
+  - **Tablette** (768 × 1024 px).
+  - **Ordinateur** (1280 × 800 px / 100% responsive).
+* **Mémorisation locale** : Choix d'appareil et orientation mémorisés par utilisateur dans `localStorage` (`novika_preview_device_settings`), conservés à la réouverture avec repli résilient en mémoire.
+* **Cadres réalistes (DeviceFrame)** :
+  - Dynamic Island animée pour iPhone 15 Pro Max.
+  - Encoche (Notch) pour iPhone 13.
+  - Poinçon de caméra pour Android.
+  - Bascule Portrait / Paysage et bouton d'ouverture popup aux dimensions exactes.
+* **Intégrations** :
+  - Éditeur de thème (`storefront-client.tsx`) : barre `PreviewDeviceSelector` + `DeviceFrame`.
+  - « Afficher en tant que client » (`products-list-client.tsx`) : modale plein écran `ClientPreviewModal` avec iframe vitrine.
+* **Vitrine & Ergonomie mobile** :
+  - Zones sûres gérées avec `env(safe-area-inset-top)` et `env(safe-area-inset-bottom)` sur `layout.tsx`, `globals.css` et la barre mobile fixe `StickyMobileCta`.
+  - Zéro défilement horizontal garanti sur 360, 390 et 430 px.
+  - Champs de formulaire à `font-size: 16px` sur mobile pour éliminer le zoom automatique intempestif iOS Safari (`text-base sm:text-xs`).
+  - Cibles tactiles `>= 44px` respectant la norme Apple Human Interface Guidelines.
+* **Tests** : 9 tests unitaires (`prompt-17m-preview-device.test.ts`), 5 tests Playwright E2E (`prompt-17m-preview-devices.spec.ts`).
+
+

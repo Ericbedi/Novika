@@ -321,3 +321,40 @@
   animation-iteration-count: 1 !important;
   transition-duration: 0.01ms !important;
 }
+
+/* ======================================================== */
+/* Prompt 17-M : Zones Sûres iPhone & Ergonomie Tactile */
+/* ======================================================== */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.safe-area-pb {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+}
+.safe-area-margin-bottom {
+  margin-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Évite le zoom automatique iOS Safari sur focus des champs (taille >= 16px sur mobile) */
+@media screen and (max-width: 767px) {
+  input[type="text"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="email"],
+  input[type="search"],
+  input[type="password"],
+  select,
+  textarea {
+    font-size: 16px !important;
+    line-height: 1.4 !important;
+  }
+}
+
+/* Boutons tactiles minimum 44px conformes Apple HIG */
+.touch-target-min {
+  min-height: 44px;
+  min-width: 44px;
+}

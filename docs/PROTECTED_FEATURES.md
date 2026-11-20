@@ -183,5 +183,47 @@ Dernière mise à jour : 2026-11-20
   - `src/lib/prompt-17l-benefits.test.ts` (9 tests unitaires)
   - `tests/prompt-17l-benefits.spec.ts` (4 tests Playwright E2E)
 
+---
+
+## 12. Aperçu mobile iPhone 15 Pro Max par défaut & Multi-appareils dans l'éditeur (Prompt 17-M)
+- **Description** :
+  - **Sélecteur d'appareil complet** :
+    - « iPhone 15 Pro Max » (430 × 932 px) **PAR DÉFAUT**.
+    - « iPhone 13 » (390 × 844 px).
+    - « Android petit écran » (360 × 800 px).
+    - « Tablette » (768 × 1024 px).
+    - « Ordinateur » (1280 × 800 px / 100% responsive).
+  - **Mémorisation par utilisateur** : Périphérique et orientation mémorisés dans le `localStorage` sous la clé `novika_preview_device_settings`, conservés à la réouverture avec repli résilient en mémoire si indisponible.
+  - **Cadres réalistes (DeviceFrame)** :
+    - Rendu fidèle avec Dynamic Island animée pour iPhone 15 Pro Max (`[data-testid="device-dynamic-island"]`).
+    - Encoche réaliste (Notch) pour iPhone 13 (`[data-testid="device-notch"]`).
+    - Poinçon de caméra (Punch hole) pour Android petit écran (`[data-testid="device-punch-hole"]`).
+    - Cadre épuré pour Tablette (`[data-testid="device-tablet-camera"]`) et barre de navigateur macOS pour Ordinateur (`[data-testid="device-desktop-browser-bar"]`).
+    - Bascule d'orientation Portrait / Paysage (`[data-testid="btn-toggle-orientation"]`) avec inversion dynamique des dimensions.
+    - Bouton « Ouvrir dans un nouvel onglet à cette taille » (`[data-testid="btn-open-preview-window"]`) ouvrant une popup JavaScript aux dimensions exactes du périphérique.
+  - **Intégration transverse** :
+    - **Éditeur de thème** (`storefront-client.tsx`) : barre `PreviewDeviceSelector` et prévisualisation encapsulée dans `DeviceFrame`.
+    - **Afficher en tant que client** (`products-list-client.tsx`) : bouton `[data-testid="btn-view-as-customer"]` ouvrant la modale plein écran `ClientPreviewModal` avec iframe vitrine, sélecteur d'appareil et bascule d'orientation.
+  - **Zones sûres & Ergonomie tactile sur la vitrine** :
+    - Prise en compte de `env(safe-area-inset-top)` et `env(safe-area-inset-bottom)` dans `layout.tsx` (`viewportFit: "cover"`), `globals.css` et la barre mobile fixe `StickyMobileCta.tsx`.
+    - Zéro défilement horizontal garanti sur les 3 largeurs clés (360 px, 390 px, 430 px).
+    - Taille de police des champs de formulaire `>= 16px` sur mobile pour éliminer le zoom automatique intempestif d'iOS Safari (`text-base sm:text-xs`).
+    - Hauteur minimale des boutons d'action tactile `>= 44px` (norme tactile Apple Human Interface Guidelines).
+- **Fichiers clés** :
+  - `src/lib/preview-device.ts` (modèles de périphériques, calcul des dimensions, persistence et utilitaires de popup)
+  - `src/components/preview/PreviewDeviceSelector.tsx`
+  - `src/components/preview/DeviceFrame.tsx`
+  - `src/components/preview/ClientPreviewModal.tsx`
+  - `src/app/app/[store]/boutique-en-ligne/storefront-client.tsx`
+  - `src/app/app/[store]/produits/products-list-client.tsx`
+  - `src/components/storefront/product/StickyMobileCta.tsx`
+  - `src/components/storefront/product/NovikaProductPage.tsx`
+  - `src/components/storefront/standard-order-form.tsx`
+  - `src/app/globals.css` & `src/app/layout.tsx`
+- **Tests** :
+  - `src/lib/prompt-17m-preview-device.test.ts` (9 tests unitaires)
+  - `tests/prompt-17m-preview-devices.spec.ts` (5 tests Playwright E2E)
+
+
 
 

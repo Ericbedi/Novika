@@ -24,6 +24,7 @@ import {
   Eye,
   EyeOff,
   ExternalLink,
+  Smartphone,
   Copy,
   FileSpreadsheet,
   Upload,
@@ -86,6 +87,7 @@ import {
   ProductDashboardIndicators,
 } from "@/lib/product-indicators";
 import { getProductPublicUrl } from "@/lib/storefront-urls";
+import { ClientPreviewModal } from "@/components/preview/ClientPreviewModal";
 
 interface ProductsListClientProps {
   storeSlug: string;
@@ -107,6 +109,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
   const canArchive = canArchiveProduct(activeRole);
   const canHardDelete = canHardDeleteProduct(activeRole);
   const canBatch = canBatchManageProducts(activeRole);
+  const [isClientPreviewOpen, setIsClientPreviewOpen] = useState(false);
 
   // État des produits & commandes
   const [products, setProducts] = useState<Product[]>(() => {
@@ -838,17 +841,18 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {/* Bouton : Afficher en tant que client */}
-            <a
-              href={`/boutique/${storeSlug}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#E6E0D4] bg-white text-xs font-semibold text-[#111111] hover:bg-[#F3EFE6] transition-colors shadow-2xs"
-              title="Ouvrir la vitrine publique dans un nouvel onglet"
+            {/* Bouton : Afficher en tant que client (Prompt 17-M : sélecteur d'appareil iPhone 15 Pro Max par défaut) */}
+            <button
+              type="button"
+              id="btn-view-as-customer"
+              data-testid="btn-view-as-customer"
+              onClick={() => setIsClientPreviewOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#E6E0D4] bg-white text-xs font-semibold text-[#111111] hover:bg-[#F3EFE6] transition-colors shadow-2xs cursor-pointer"
+              title="Aperçu mobile iPhone 15 Pro Max et multi-appareils"
             >
-              <ExternalLink className="w-3.5 h-3.5 text-[#666660]" />
+              <Smartphone className="w-3.5 h-3.5 text-[#666660]" />
               <span>Afficher en tant que client</span>
-            </a>
+            </button>
 
             {/* Bouton : Importer (CSV) */}
             {canImport && (
@@ -2381,6 +2385,15 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
           setProducts(getShopProductsRaw(storeSlug));
           showToast(`${count} produit(s) importé(s) avec succès !`);
         }}
+      />
+
+      {/* Modale d'aperçu client iPhone 15 Pro Max par défaut (Prompt 17-M) */}
+      <ClientPreviewModal
+        isOpen={isClientPreviewOpen}
+        onClose={() => setIsClientPreviewOpen(false)}
+        storeSlug={storeSlug}
+        initialPath={`/boutique/${storeSlug}`}
+        modalTitle="Afficher en tant que client"
       />
     </div>
   );

@@ -27,7 +27,7 @@ export function StickyMobileCta({
   return (
     <div
       id="sticky-mobile-cta"
-      className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-black/[0.08] p-3 shadow-2xl block sm:hidden"
+      className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-black/[0.08] p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] shadow-2xl block sm:hidden"
     >
       <div className="flex items-center justify-between gap-3 max-w-md mx-auto">
         <div className="flex flex-col min-w-0">

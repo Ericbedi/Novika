@@ -88,9 +88,9 @@ export default function ProductCanonicalDetailPage({
         document.cookie.includes("novika_active_role=admin");
       setIsAdminUser(
         activeRole === "owner" ||
-          activeRole === "admin" ||
-          activeRole === "manager" ||
-          hasCookieRole
+        activeRole === "admin" ||
+        activeRole === "manager" ||
+        hasCookieRole
       );
     } catch {
       setIsAdminUser(false);
@@ -417,19 +417,19 @@ export default function ProductCanonicalDetailPage({
   const productOffers: QuantityOffer[] =
     product.showQuantityOffers && Array.isArray(product.quantityOffers) && product.quantityOffers.length > 0
       ? product.quantityOffers.map((qo) => ({
-          id: qo.id,
-          productId: product.id,
-          quantity: qo.quantity,
-          label: qo.quantity === 1 ? "1 Unité" : `${qo.quantity} Unités`,
-          unitPrice: qo.unitPrice || Math.round(qo.totalPrice / (qo.quantity || 1)),
-          totalPrice: qo.totalPrice,
-          badge: qo.badgeText || (qo as any).badge,
-          savingsAmount:
-            productPrice * qo.quantity > qo.totalPrice
-              ? productPrice * qo.quantity - qo.totalPrice
-              : 0,
-          isPopular: Boolean(qo.badgeText?.toLowerCase().includes("populaire")),
-        }))
+        id: qo.id,
+        productId: product.id,
+        quantity: qo.quantity,
+        label: qo.quantity === 1 ? "1 Unité" : `${qo.quantity} Unités`,
+        unitPrice: qo.unitPrice || Math.round(qo.totalPrice / (qo.quantity || 1)),
+        totalPrice: qo.totalPrice,
+        badge: qo.badgeText || (qo as any).badge,
+        savingsAmount:
+          productPrice * qo.quantity > qo.totalPrice
+            ? productPrice * qo.quantity - qo.totalPrice
+            : 0,
+        isPopular: Boolean(qo.badgeText?.toLowerCase().includes("populaire")),
+      }))
       : [];
 
   return (

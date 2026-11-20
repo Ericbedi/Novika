@@ -58,6 +58,20 @@ import {
 } from "@/config/countries";
 import { canChangeStoreCountry, canEditStore } from "@/config/permissions";
 import { cn } from "@/lib/utils";
+import {
+  PreviewDeviceId,
+  PreviewOrientation,
+  PREVIEW_DEVICES,
+  getStoredPreviewDevice,
+  setStoredPreviewDevice,
+  getStoredPreviewOrientation,
+  setStoredPreviewOrientation,
+  getEffectiveDimensions,
+  openInNewWindowAtSize,
+} from "@/lib/preview-device";
+import { PreviewDeviceSelector } from "@/components/preview/PreviewDeviceSelector";
+import { DeviceFrame } from "@/components/preview/DeviceFrame";
+import { ClientPreviewModal } from "@/components/preview/ClientPreviewModal";
 
 interface StorefrontClientProps {
   storeSlug: string;
@@ -123,8 +137,25 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
   const [storefront, setStorefront] = useState<StorefrontData>(MOCK_STOREFRONT_LOME);
   const [draftTheme, setDraftTheme] = useState<ThemeConfig>(storefront.draftTheme);
   const [sections, setSections] = useState<PageSection[]>(storefront.sections);
-  const [previewDevice, setPreviewDevice] = useState<"desktop" | "mobile">("desktop");
+  const [previewDevice, setPreviewDevice] = useState<PreviewDeviceId>("iphone-15-pro-max");
+  const [previewOrientation, setPreviewOrientation] = useState<PreviewOrientation>("portrait");
   const [previewPage, setPreviewPage] = useState<"home" | "catalog" | "contact">("home");
+
+  useEffect(() => {
+    setPreviewDevice(getStoredPreviewDevice());
+    setPreviewOrientation(getStoredPreviewOrientation());
+  }, []);
+
+  const handleSelectDevice = (dev: PreviewDeviceId) => {
+    setPreviewDevice(dev);
+    setStoredPreviewDevice(dev);
+  };
+
+  const handleToggleOrientation = () => {
+    const next: PreviewOrientation = previewOrientation === "portrait" ? "landscape" : "portrait";
+    setPreviewOrientation(next);
+    setStoredPreviewOrientation(next);
+  };
 
   // Modales
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
@@ -515,39 +546,28 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
           </div>
         </div>
 
-        {/* Contrôles Topbar : Sélecteur d'appareil, Aperçu Privé, Publier */}
+        {/* Contrôles Topbar : Sélecteur d'appareil, Aperçu Privé, Publier (Prompt 17-M) */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Toggle Appareil Desktop / Mobile */}
-          <div className="flex items-center rounded-xl border border-black/10 bg-white p-1 shadow-2xs">
-            <button
-              type="button"
-              onClick={() => setPreviewDevice("desktop")}
-              className={`p-1.5 rounded-lg transition-all ${previewDevice === "desktop"
-                ? "bg-[#111111] text-[#FAF8F5] font-bold"
-                : "text-[#666660] hover:text-[#111111]"
-                }`}
-              title="Aperçu Ordinateur"
-            >
-              <Monitor className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setPreviewDevice("mobile")}
-              className={`p-1.5 rounded-lg transition-all ${previewDevice === "mobile"
-                ? "bg-[#111111] text-[#FAF8F5] font-bold"
-                : "text-[#666660] hover:text-[#111111]"
-                }`}
-              title="Aperçu Mobile (iPhone 13)"
-            >
-              <Smartphone className="h-4 w-4" />
-            </button>
-          </div>
+          {/* Sélecteur d'appareil (Prompt 17-M : iPhone 15 Pro Max par défaut) */}
+          <PreviewDeviceSelector
+            selectedDeviceId={previewDevice}
+            onSelectDevice={handleSelectDevice}
+            orientation={previewOrientation}
+            onToggleOrientation={handleToggleOrientation}
+            previewUrl={`/boutique/${storeSlug}`}
+            onOpenNewTab={() => {
+              const dev = PREVIEW_DEVICES[previewDevice] || PREVIEW_DEVICES["iphone-15-pro-max"];
+              const dims = getEffectiveDimensions(dev, previewOrientation);
+              openInNewWindowAtSize(`/boutique/${storeSlug}`, dims.width, dims.height);
+            }}
+          />
 
-          {/* Bouton Aperçu Privé */}
+          {/* Bouton Aperçu Privé (Modale) */}
           <button
             type="button"
+            data-testid="btn-open-private-preview-modal"
             onClick={() => setIsPreviewModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-black/10 bg-white text-xs font-bold text-[#111111] hover:bg-[#FAF8F5] transition-all shadow-2xs cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-black/10 bg-white text-xs font-bold text-[#111111] hover:bg-[#FAF8F5] transition-all shadow-2xs cursor-pointer min-h-[36px]"
           >
             <Eye className="h-3.5 w-3.5" />
             <span>Aperçu privé</span>
@@ -1355,17 +1375,19 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
             </span>
           </div>
 
-          {/* Cadre de l'appareil (Desktop plein écran ou Mobile iPhone 390px) */}
-          <div
-            className={`w-full transition-all duration-300 overflow-hidden border border-black/15 bg-white shadow-xl ${previewDevice === "mobile"
-              ? "max-w-[390px] rounded-[42px] border-8 border-black p-2 min-h-[680px]"
-              : "rounded-3xl min-h-[640px]"
-              }`}
-            style={{
-              backgroundColor: draftTheme.colors.background,
-              fontFamily: draftTheme.typography.fontFamily,
-            }}
+          {/* Cadre de l'appareil (Prompt 17-M : iPhone 15 Pro Max par défaut) */}
+          <DeviceFrame
+            deviceId={previewDevice}
+            orientation={previewOrientation}
+            urlLabel={`novika.africa/boutique/${storeSlug}`}
           >
+            <div
+              className="w-full min-h-[640px]"
+              style={{
+                backgroundColor: draftTheme.colors.background,
+                fontFamily: draftTheme.typography.fontFamily,
+              }}
+            >
             {/* 1. Bandeau supérieur d'annonce */}
             {storefront.announcementBar.isEnabled && (
               <div
@@ -1492,9 +1514,19 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
                 )}
               </div>
             )}
-          </div>
+            </div>
+          </DeviceFrame>
         </div>
       </div>
+
+      {/* Modale d'Aperçu Privé (Prompt 17-M) */}
+      <ClientPreviewModal
+        isOpen={isPreviewModalOpen}
+        onClose={() => setIsPreviewModalOpen(false)}
+        storeSlug={storeSlug}
+        initialPath={`/boutique/${storeSlug}?preview=true`}
+        modalTitle="Aperçu Privé de la Vitrine"
+      />
     </div>
   );
 }
