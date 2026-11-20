@@ -675,3 +675,150 @@ export function batchUpdateProductsStatus(
 
   return { success: true, count: modifiedCount };
 }
+
+/**
+ * Assigne une collection en lot à plusieurs produits (Prompt 17 - Phase 17-A).
+ */
+export function batchAssignCollection(
+  shopSlug: string,
+  productIds: string[],
+  collectionName: string,
+  role: UserRole = "owner"
+): { success: boolean; count: number; error?: string } {
+  if (!productIds || productIds.length === 0) return { success: true, count: 0 };
+  if (!canBatchManageProducts(role)) {
+    return { success: false, count: 0, error: "Action non autorisée pour votre rôle." };
+  }
+
+  const cleanCollection = collectionName.trim();
+  if (!cleanCollection) {
+    return { success: false, count: 0, error: "Le nom de la collection est requis." };
+  }
+
+  const targetIds = new Set(productIds.slice(0, 100));
+  const products = getShopProductsRaw(shopSlug);
+  let modifiedCount = 0;
+
+  const updatedList = products.map((prod) => {
+    if (!targetIds.has(prod.id)) return prod;
+    modifiedCount++;
+    const existingCollections = Array.isArray(prod.collections) ? [...prod.collections] : [prod.collection].filter(Boolean);
+    if (!existingCollections.includes(cleanCollection)) {
+      existingCollections.push(cleanCollection);
+    }
+    return {
+      ...prod,
+      collection: cleanCollection,
+      collections: existingCollections,
+      updatedAt: new Date().toISOString(),
+    };
+  });
+
+  saveShopProductsList(shopSlug, updatedList);
+
+  logProductAuditEvent(shopSlug, {
+    action: "batch_update",
+    userRole: role,
+    productIds: Array.from(targetIds),
+    count: modifiedCount,
+    details: `Collection "${cleanCollection}" assignée à ${modifiedCount} produit(s)`,
+  });
+
+  return { success: true, count: modifiedCount };
+}
+
+/**
+ * Ajoute une balise (tag) en lot à plusieurs produits (Prompt 17 - Phase 17-A).
+ */
+export function batchAddTag(
+  shopSlug: string,
+  productIds: string[],
+  tag: string,
+  role: UserRole = "owner"
+): { success: boolean; count: number; error?: string } {
+  if (!productIds || productIds.length === 0) return { success: true, count: 0 };
+  if (!canBatchManageProducts(role)) {
+    return { success: false, count: 0, error: "Action non autorisée pour votre rôle." };
+  }
+
+  const cleanTag = tag.trim();
+  if (!cleanTag) {
+    return { success: false, count: 0, error: "La balise ne peut pas être vide." };
+  }
+
+  const targetIds = new Set(productIds.slice(0, 100));
+  const products = getShopProductsRaw(shopSlug);
+  let modifiedCount = 0;
+
+  const updatedList = products.map((prod) => {
+    if (!targetIds.has(prod.id)) return prod;
+    modifiedCount++;
+    const currentTags = Array.isArray(prod.tags) ? [...prod.tags] : [];
+    if (!currentTags.includes(cleanTag)) {
+      currentTags.push(cleanTag);
+    }
+    return {
+      ...prod,
+      tags: currentTags,
+      updatedAt: new Date().toISOString(),
+    };
+  });
+
+  saveShopProductsList(shopSlug, updatedList);
+
+  logProductAuditEvent(shopSlug, {
+    action: "batch_update",
+    userRole: role,
+    productIds: Array.from(targetIds),
+    count: modifiedCount,
+    details: `Balise "${cleanTag}" ajoutée à ${modifiedCount} produit(s)`,
+  });
+
+  return { success: true, count: modifiedCount };
+}
+
+/**
+ * Active le suivi de stock en lot pour plusieurs produits (Prompt 17 - Phase 17-A).
+ */
+export function batchEnableStockTracking(
+  shopSlug: string,
+  productIds: string[],
+  initialStock: number = 0,
+  role: UserRole = "owner"
+): { success: boolean; count: number; error?: string } {
+  if (!productIds || productIds.length === 0) return { success: true, count: 0 };
+  if (!canBatchManageProducts(role)) {
+    return { success: false, count: 0, error: "Action non autorisée pour votre rôle." };
+  }
+
+  const targetIds = new Set(productIds.slice(0, 100));
+  const products = getShopProductsRaw(shopSlug);
+  let modifiedCount = 0;
+
+  const updatedList = products.map((prod) => {
+    if (!targetIds.has(prod.id)) return prod;
+    modifiedCount++;
+    const currentStock = typeof prod.stock === "number" ? prod.stock : initialStock;
+    return {
+      ...prod,
+      trackQuantity: true,
+      trackStock: true,
+      stock: currentStock,
+      availableStock: currentStock,
+      stockStatus: currentStock === 0 ? ("out_of_stock" as const) : currentStock <= (prod.lowStockThreshold || 10) ? ("low_stock" as const) : ("in_stock" as const),
+      updatedAt: new Date().toISOString(),
+    };
+  });
+
+  saveShopProductsList(shopSlug, updatedList);
+
+  logProductAuditEvent(shopSlug, {
+    action: "batch_update",
+    userRole: role,
+    productIds: Array.from(targetIds),
+    count: modifiedCount,
+    details: `Suivi de stock activé pour ${modifiedCount} produit(s)`,
+  });
+
+  return { success: true, count: modifiedCount };
+}

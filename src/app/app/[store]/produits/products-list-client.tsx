@@ -34,6 +34,14 @@ import {
   Undo2,
   AlertCircle,
   ShieldAlert,
+  HelpCircle,
+  SlidersHorizontal,
+  ChevronLeft,
+  ChevronRight,
+  FolderTree,
+  Tag,
+  Boxes,
+  MoreHorizontal,
 } from "lucide-react";
 import {
   canUseAiProductGenerator,
@@ -41,17 +49,21 @@ import {
   canArchiveProduct,
   canHardDeleteProduct,
   canBatchManageProducts,
+  canViewProducts,
+  canManageProducts,
+  canViewProductFinancials,
+  canImportProducts,
 } from "@/config/permissions";
 import { MOCK_PRODUCTS } from "@/mock-data/products";
 import { MOCK_COLLECTIONS } from "@/mock-data/collections";
-import { MOCK_SUPPLIERS } from "@/mock-data/suppliers";
-import { Product, ProductStatus } from "@/server/data/types";
+import { MOCK_ORDERS } from "@/mock-data/orders";
+import { Product, Order, ProductStatus } from "@/server/data/types";
 import { formatFcfa } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/components/layout/app-shell";
 import { ProductsNavTabs } from "@/components/products/products-nav-tabs";
 import { CsvImportModal } from "@/components/products/csv-import-modal";
-import { CSV_SAMPLE_TEMPLATE, sanitizeCellForCsv } from "@/lib/csv-import-engine";
+import { sanitizeCellForCsv } from "@/lib/csv-import-engine";
 import {
   softDeleteProduct,
   restoreProduct,
@@ -59,9 +71,19 @@ import {
   hardDeleteProduct,
   emptyTrash,
   batchUpdateProductsStatus,
+  batchAssignCollection,
+  batchAddTag,
+  batchEnableStockTracking,
   getPendingOrdersCountForProduct,
   purgeExpiredTrash,
+  getShopProductsRaw,
+  saveShopProductsList,
 } from "@/lib/products-store";
+import {
+  calculateProductIndicators,
+  IndicatorPeriod,
+  ProductDashboardIndicators,
+} from "@/lib/product-indicators";
 
 interface ProductsListClientProps {
   storeSlug: string;
@@ -71,17 +93,17 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
   const { activeRole } = useApp();
   const isFounderDemoStore = storeSlug === "lome-glow";
 
-  const isOwner = activeRole === "owner";
-  const isAdmin = activeRole === "admin";
-  const isCloser = activeRole === "closer";
-  const isRider = activeRole === "rider";
-  const isRestricted = isCloser || isRider;
-
+  // Contrôle des droits (Prompt 17)
+  const canView = canViewProducts(activeRole);
+  const canManage = canManageProducts(activeRole);
+  const canSeeFinancials = canViewProductFinancials(activeRole);
+  const canImport = canImportProducts(activeRole);
   const canTrash = canTrashProduct(activeRole);
   const canArchive = canArchiveProduct(activeRole);
   const canHardDelete = canHardDeleteProduct(activeRole);
   const canBatch = canBatchManageProducts(activeRole);
 
+  // État des produits & commandes
   const [products, setProducts] = useState<Product[]>(() => {
     if (typeof window !== "undefined") {
       purgeExpiredTrash(storeSlug, 30);
@@ -99,69 +121,147 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
     return isFounderDemoStore ? MOCK_PRODUCTS : [];
   });
 
+  const [orders, setOrders] = useState<Order[]>(() => {
+    if (typeof window !== "undefined") {
+      const savedOrders = localStorage.getItem(`novika_store_orders_${storeSlug}`);
+      if (savedOrders) {
+        try {
+          const parsed = JSON.parse(savedOrders);
+          if (Array.isArray(parsed)) return parsed;
+        } catch {}
+      }
+    }
+    return isFounderDemoStore ? MOCK_ORDERS : [];
+  });
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       purgeExpiredTrash(storeSlug, 30);
-      const saved = localStorage.getItem(`novika_store_products_${storeSlug}`);
-      if (saved) {
+      const prods = getShopProductsRaw(storeSlug);
+      setProducts(prods);
+
+      let ords: Order[] = [];
+      const savedOrders = localStorage.getItem(`novika_store_orders_${storeSlug}`);
+      if (savedOrders) {
         try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) {
-            setProducts(parsed.filter((p) => p && typeof p === "object"));
-            return;
-          }
+          const parsed = JSON.parse(savedOrders);
+          if (Array.isArray(parsed)) ords = parsed;
         } catch {}
       }
-      if (!isFounderDemoStore) {
-        setProducts([]);
-      } else {
-        setProducts(MOCK_PRODUCTS);
+      if (ords.length === 0 && isFounderDemoStore) {
+        ords = MOCK_ORDERS;
       }
+      setOrders(ords);
     }
   }, [storeSlug, isFounderDemoStore]);
 
+  // Synchronisation sauvegarde produits
   useEffect(() => {
     if (typeof window !== "undefined" && !isFounderDemoStore) {
-      localStorage.setItem(`novika_store_products_${storeSlug}`, JSON.stringify(products));
+      saveShopProductsList(storeSlug, products);
     }
   }, [products, storeSlug, isFounderDemoStore]);
 
+  // Filtres et Vues (Prompt 17)
+  const [quickView, setQuickView] = useState<
+    "all" | "active" | "draft" | "archived" | "out_of_stock" | "low_stock" | "trash"
+  >("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "draft" | "archived" | "trash">("all");
-  const [stockFilter, setStockFilter] = useState<"all" | "in_stock" | "low_stock" | "out_of_stock">("all");
-  const [collectionFilter, setCollectionFilter] = useState<string>("all");
-  const [supplierFilter, setSupplierFilter] = useState<string>("all");
-  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
 
-  // Modales
+  // Indicateurs & Sélecteur de période (Aujourd'hui / 7 j / 30 j / 90 j)
+  const [indicatorPeriod, setIndicatorPeriod] = useState<IndicatorPeriod>("30d");
+
+  // Choix des colonnes optionnelles (mémorisé dans le navigateur)
+  const [visibleColumns, setVisibleColumns] = useState<{
+    supplier: boolean;
+    collections: boolean;
+    margin: boolean;
+    updatedAt: boolean;
+  }>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem(`novika_product_columns_${storeSlug}`);
+        if (saved) return JSON.parse(saved);
+      } catch {}
+    }
+    return {
+      supplier: false,
+      collections: false,
+      margin: true,
+      updatedAt: false,
+    };
+  });
+
+  const toggleColumn = (key: keyof typeof visibleColumns) => {
+    setVisibleColumns((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      if (typeof window !== "undefined") {
+        localStorage.setItem(`novika_product_columns_${storeSlug}`, JSON.stringify(next));
+      }
+      return next;
+    });
+  };
+
+  const [isColumnPickerOpen, setIsColumnPickerOpen] = useState(false);
+  const [isMoreActionsMenuOpen, setIsMoreActionsMenuOpen] = useState(false);
+
+  // Pagination (50 par page par défaut, Prompt 17)
+  const [pageSize, setPageSize] = useState<number>(50);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
+  // Tri par colonne
+  const [sortBy, setSortBy] = useState<"title" | "price" | "stock" | "date">("title");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+
+  const handleSort = (column: "title" | "price" | "stock" | "date") => {
+    if (sortBy === column) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(column);
+      setSortOrder("asc");
+    }
+  };
+
+  // Modales d'actions
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [isImportMenuOpen, setIsImportMenuOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [visibilityConfirmTarget, setVisibilityConfirmTarget] = useState<Product | null>(null);
-
-  // Undo Toast state (Prompt 14-B)
   const [undoToast, setUndoToast] = useState<{
     productIds: string[];
     message: string;
   } | null>(null);
 
-  // Hard Delete Modal state (Prompt 14-B)
+  // Modale Hard Delete
   const [hardDeleteTarget, setHardDeleteTarget] = useState<Product | null>(null);
   const [hardDeleteConfirmInput, setHardDeleteConfirmInput] = useState("");
   const [hardDeleteError, setHardDeleteError] = useState<string | null>(null);
 
-  // Empty Trash Modal state (Prompt 14-B)
+  // Modale Vider Corbeille
   const [isEmptyTrashModalOpen, setIsEmptyTrashModalOpen] = useState(false);
   const [emptyTrashBlockedCount, setEmptyTrashBlockedCount] = useState(0);
+
+  // Modales Actions Groupées Prompt 17
+  const [isBatchCollectionModalOpen, setIsBatchCollectionModalOpen] = useState(false);
+  const [batchCollectionInput, setBatchCollectionInput] = useState("");
+  const [isBatchTagModalOpen, setIsBatchTagModalOpen] = useState(false);
+  const [batchTagInput, setBatchTagInput] = useState("");
+  const [isBatchStockTrackModalOpen, setIsBatchStockTrackModalOpen] = useState(false);
+  const [isBatchStatusModalOpen, setIsBatchStatusModalOpen] = useState(false);
+  const [batchStatusChoice, setBatchStatusChoice] = useState<"active" | "draft" | "archived">("active");
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Calcul des compteurs par onglet
-  const tabCounts = useMemo(() => {
+  // Calcul dynamique des 3 indicateurs
+  const indicators: ProductDashboardIndicators = useMemo(() => {
+    return calculateProductIndicators(products, orders, indicatorPeriod);
+  }, [products, orders, indicatorPeriod]);
+
+  // Compteurs des vues rapides
+  const viewCounts = useMemo(() => {
     const valid = products.filter((p) => p && typeof p === "object");
     const trashed = valid.filter((p) => p.deletedAt != null);
     const nonTrashed = valid.filter((p) => !p.deletedAt);
@@ -170,102 +270,154 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
     const draft = nonTrashed.filter((p) => p.productStatus === "draft");
     const archived = nonTrashed.filter((p) => p.productStatus === "archived");
 
+    const outOfStock = nonTrashed.filter((p) => {
+      const isStockTracked = p.trackQuantity !== false && p.trackStock !== false;
+      if (!isStockTracked) return false;
+      const stock = p.availableStock ?? p.stock ?? 0;
+      return stock === 0;
+    });
+
+    const lowStock = nonTrashed.filter((p) => {
+      const isStockTracked = p.trackQuantity !== false && p.trackStock !== false;
+      if (!isStockTracked) return false;
+      const stock = p.availableStock ?? p.stock ?? 0;
+      return stock > 0 && stock <= (p.lowStockThreshold || 10);
+    });
+
     return {
       all: nonTrashed.length,
       active: active.length,
       draft: draft.length,
       archived: archived.length,
+      outOfStock: outOfStock.length,
+      lowStock: lowStock.length,
       trash: trashed.length,
     };
   }, [products]);
 
-  // Filtrage combiné (Prompt 14-B)
+  // Filtrage combiné multi-critères
   const filteredProducts = useMemo(() => {
     return products.filter((prod) => {
       if (!prod || typeof prod !== "object") return false;
 
-      // Gestion stricte de la corbeille
-      if (statusFilter === "trash") {
+      // Gestion corbeille
+      if (quickView === "trash") {
         if (!prod.deletedAt) return false;
       } else {
-        // En dehors de l'onglet corbeille, exclure TOUS les produits supprimés
         if (prod.deletedAt) return false;
       }
 
-      const prodName = prod.name || prod.title || "";
-      const prodCategory = prod.category || "";
-      const prodSku = prod.sku || "";
-      const prodType = prod.productType || prod.type || "";
+      // Vues rapides
+      if (quickView === "active") {
+        if ((prod.productStatus || "active") !== "active") return false;
+      } else if (quickView === "draft") {
+        if (prod.productStatus !== "draft") return false;
+      } else if (quickView === "archived") {
+        if (prod.productStatus !== "archived") return false;
+      } else if (quickView === "out_of_stock") {
+        const isStockTracked = prod.trackQuantity !== false && prod.trackStock !== false;
+        if (!isStockTracked) return false;
+        const stock = prod.availableStock ?? prod.stock ?? 0;
+        if (stock !== 0) return false;
+      } else if (quickView === "low_stock") {
+        const isStockTracked = prod.trackQuantity !== false && prod.trackStock !== false;
+        if (!isStockTracked) return false;
+        const stock = prod.availableStock ?? prod.stock ?? 0;
+        if (stock === 0 || stock > (prod.lowStockThreshold || 10)) return false;
+      }
 
-      const matchSearch =
-        searchQuery === "" ||
-        prodName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        prodCategory.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        prodSku.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        prodType.toLowerCase().includes(searchQuery.toLowerCase());
+      // Recherche multi-critères : nom, SKU, catégorie, type, fournisseur, tags, collection
+      if (searchQuery.trim() !== "") {
+        const q = searchQuery.toLowerCase().trim();
+        const name = (prod.name || prod.title || "").toLowerCase();
+        const sku = (prod.sku || "").toLowerCase();
+        const category = (prod.category || "").toLowerCase();
+        const type = (prod.productType || prod.type || "").toLowerCase();
+        const supplier = (prod.supplierName || "").toLowerCase();
+        const collection = (prod.collection || "").toLowerCase();
+        const tags = Array.isArray(prod.tags) ? prod.tags.join(" ").toLowerCase() : "";
 
-      const currentStatus = prod.productStatus || ((prod.stock || 0) > 0 ? "active" : "draft");
-      const matchStatus =
-        statusFilter === "all" ||
-        statusFilter === "trash" ||
-        currentStatus === statusFilter;
+        const match =
+          name.includes(q) ||
+          sku.includes(q) ||
+          category.includes(q) ||
+          type.includes(q) ||
+          supplier.includes(q) ||
+          collection.includes(q) ||
+          tags.includes(q);
 
-      const currentStockStatus =
-        prod.stockStatus || ((prod.stock || 0) === 0 ? "out_of_stock" : (prod.stock || 0) <= 10 ? "low_stock" : "in_stock");
-      const matchStock = stockFilter === "all" || currentStockStatus === stockFilter;
+        if (!match) return false;
+      }
 
-      const matchCollection = collectionFilter === "all" || prod.collection === collectionFilter;
-      const matchSupplier = supplierFilter === "all" || prod.supplierId === supplierFilter;
-
-      return matchSearch && matchStatus && matchStock && matchCollection && matchSupplier;
+      return true;
     });
-  }, [products, searchQuery, statusFilter, stockFilter, collectionFilter, supplierFilter]);
+  }, [products, quickView, searchQuery]);
 
-  // Indicateurs globaux (basés sur le catalogue non supprimé)
-  const kpis = useMemo(() => {
-    const validProds = products.filter((p) => p && typeof p === "object" && !p.deletedAt);
-    let totalStockValue = 0;
-    let outOfStockCount = 0;
-    let criticalStockCount = 0;
-    let warningStockCount = 0;
-    let healthyStockCount = 0;
-    let classA = 0;
-    let classB = 0;
-    let classC = 0;
-
-    validProds.forEach((p) => {
-      const stock = p.availableStock ?? p.stock ?? 0;
-      const cost = p.costPrice || 0;
-      totalStockValue += stock * cost;
-
-      const days = p.daysOfStock ?? 0;
-      if (stock === 0) outOfStockCount++;
-      else if (days < 7) criticalStockCount++;
-      else if (days <= 15) warningStockCount++;
-      else healthyStockCount++;
-
-      if (p.abcClass === "A") classA++;
-      else if (p.abcClass === "C") classC++;
-      else classB++;
+  // Tri dynamique
+  const sortedProducts = useMemo(() => {
+    const list = [...filteredProducts];
+    list.sort((a, b) => {
+      let comparison = 0;
+      if (sortBy === "title") {
+        const nameA = (a.name || a.title || "").toLowerCase();
+        const nameB = (b.name || b.title || "").toLowerCase();
+        comparison = nameA.localeCompare(nameB);
+      } else if (sortBy === "price") {
+        const priceA = a.salePrice ?? a.price ?? 0;
+        const priceB = b.salePrice ?? b.price ?? 0;
+        comparison = priceA - priceB;
+      } else if (sortBy === "stock") {
+        const stockA = a.trackQuantity === false ? -1 : a.availableStock ?? a.stock ?? 0;
+        const stockB = b.trackQuantity === false ? -1 : b.availableStock ?? b.stock ?? 0;
+        comparison = stockA - stockB;
+      } else if (sortBy === "date") {
+        const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+        const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+        comparison = dateA - dateB;
+      }
+      return sortOrder === "asc" ? comparison : -comparison;
     });
+    return list;
+  }, [filteredProducts, sortBy, sortOrder]);
 
-    return {
-      totalStockValue,
-      outOfStockCount,
-      criticalStockCount,
-      warningStockCount,
-      healthyStockCount,
-      classA,
-      classB,
-      classC,
-    };
-  }, [products]);
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(sortedProducts.length / pageSize));
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return sortedProducts.slice(start, start + pageSize);
+  }, [sortedProducts, currentPage, pageSize]);
+
+  // Réinitialiser la page courante si le filtre change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [quickView, searchQuery, pageSize]);
 
   // ==========================================
-  // ACTIONS INDIVIDUELLES (Prompt 14-B)
+  // ACTIONS DE SÉLECTION
   // ==========================================
+  const handleSelectPage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      const pageIds = paginatedProducts.map((p) => p.id);
+      setSelectedProductIds(Array.from(new Set([...selectedProductIds, ...pageIds])));
+    } else {
+      const pageIdsSet = new Set(paginatedProducts.map((p) => p.id));
+      setSelectedProductIds((prev) => prev.filter((id) => !pageIdsSet.has(id)));
+    }
+  };
 
-  // Soft delete -> Corbeille
+  const handleSelectAllFiltered = () => {
+    setSelectedProductIds(filteredProducts.map((p) => p.id));
+  };
+
+  const handleSelectOne = (id: string) => {
+    setSelectedProductIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  // ==========================================
+  // ACTIONS INDIVIDUELLES
+  // ==========================================
   const handleSoftDelete = (product: Product) => {
     const res = softDeleteProduct(storeSlug, product.id, activeRole);
     if (!res.success) {
@@ -278,14 +430,12 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
     );
     setSelectedProductIds((prev) => prev.filter((id) => id !== product.id));
 
-    // Déclencher le toast avec bouton Annuler
     setUndoToast({
       productIds: [product.id],
       message: `« ${product.name || product.title} » a été déplacé dans la corbeille.`,
     });
   };
 
-  // Restaurer depuis la corbeille
   const handleRestore = (product: Product) => {
     const res = restoreProduct(storeSlug, product.id, activeRole);
     if (!res.success) {
@@ -300,7 +450,6 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
     showToast(`« ${product.name || product.title} » a été restauré avec succès.`);
   };
 
-  // Archiver un produit
   const handleArchive = (product: Product) => {
     const res = archiveProduct(storeSlug, product.id, activeRole);
     if (!res.success) {
@@ -314,7 +463,29 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
     showToast(`« ${product.name || product.title} » a été archivé.`);
   };
 
-  // Annuler la suppression (Undo toast)
+  const handleDuplicateProduct = (product: Product) => {
+    const newId = `prod_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
+    const newName = `${product.name || product.title} (Copie)`;
+    const newSlug = `${product.slug || "produit"}-copie-${Math.floor(Math.random() * 1000)}`;
+
+    const duplicated: Product = {
+      ...product,
+      id: newId,
+      name: newName,
+      title: newName,
+      slug: newSlug,
+      productStatus: "draft",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      deletedAt: null,
+    };
+
+    const updated = [duplicated, ...products];
+    setProducts(updated);
+    saveShopProductsList(storeSlug, updated);
+    showToast(`Produit « ${newName} » dupliqué en brouillon.`);
+  };
+
   const handleUndo = () => {
     if (!undoToast) return;
     const { productIds } = undoToast;
@@ -328,14 +499,13 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
     showToast("Suppression annulée : produit(s) restauré(s).");
   };
 
-  // Ouvrir modale de suppression définitive
+  // Hard Delete Modal
   const openHardDeleteModal = (product: Product) => {
     setHardDeleteTarget(product);
     setHardDeleteConfirmInput("");
     setHardDeleteError(null);
   };
 
-  // Confirmer suppression définitive
   const handleHardDeleteConfirm = () => {
     if (!hardDeleteTarget) return;
 
@@ -347,11 +517,10 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
 
     setProducts((prev) => prev.filter((p) => p.id !== hardDeleteTarget.id));
     setSelectedProductIds((prev) => prev.filter((id) => id !== hardDeleteTarget.id));
-    showToast(`« ${hardDeleteTarget.name || hardDeleteTarget.title} » a été définitivement supprimé.`);
+    showToast(`« ${hardDeleteTarget.name || hardDeleteTarget.title} » définitivement supprimé.`);
     setHardDeleteTarget(null);
   };
 
-  // Ouvrir modale Vider la corbeille
   const openEmptyTrashModal = () => {
     const trashed = products.filter((p) => p.deletedAt != null);
     let blocked = 0;
@@ -364,7 +533,6 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
     setIsEmptyTrashModalOpen(true);
   };
 
-  // Confirmer vider la corbeille
   const handleEmptyTrashConfirm = () => {
     const res = emptyTrash(storeSlug, activeRole);
     if (!res.success) {
@@ -373,7 +541,6 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
       return;
     }
 
-    // Garder uniquement les produits non supprimés ou ceux bloqués par des commandes
     setProducts((prev) =>
       prev.filter((p) => {
         if (!p.deletedAt) return true;
@@ -391,35 +558,85 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
   };
 
   // ==========================================
-  // ACTIONS GROUPÉES (Batch Actions - Prompt 14-B)
+  // EXPORT CSV (Prompt 17)
   // ==========================================
-  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.checked) {
-      setSelectedProductIds(filteredProducts.map((p) => p.id).slice(0, 100));
-    } else {
-      setSelectedProductIds([]);
+  const handleExportCsv = () => {
+    const targetProducts =
+      selectedProductIds.length > 0
+        ? filteredProducts.filter((p) => selectedProductIds.includes(p.id))
+        : filteredProducts;
+
+    if (targetProducts.length === 0) {
+      showToast("Aucun produit à exporter.");
+      return;
     }
+
+    const headers = [
+      "ID",
+      "Nom",
+      "Slug",
+      "Statut",
+      "Prix Vente (FCFA)",
+      "Prix Revient (FCFA)",
+      "Stock",
+      "Suivi Stock",
+      "Catégorie",
+      "Type",
+      "Collection",
+      "Fournisseur",
+      "SKU",
+      "Balises",
+      "Offres",
+    ];
+
+    const rows = targetProducts.map((p) => [
+      sanitizeCellForCsv(p.id),
+      sanitizeCellForCsv(p.name || p.title || ""),
+      sanitizeCellForCsv(p.slug || ""),
+      sanitizeCellForCsv(p.productStatus || "active"),
+      sanitizeCellForCsv(p.salePrice ?? p.price ?? 0),
+      sanitizeCellForCsv(canSeeFinancials ? p.costPrice ?? 0 : "Masqué"),
+      sanitizeCellForCsv(p.trackQuantity === false ? "Non suivi" : p.availableStock ?? p.stock ?? 0),
+      sanitizeCellForCsv(p.trackQuantity === false ? "NON" : "OUI"),
+      sanitizeCellForCsv(p.category || ""),
+      sanitizeCellForCsv(p.productType || p.type || "Standard"),
+      sanitizeCellForCsv(p.collection || ""),
+      sanitizeCellForCsv(p.supplierName || ""),
+      sanitizeCellForCsv(p.sku || ""),
+      sanitizeCellForCsv((p.tags || []).join("; ")),
+      sanitizeCellForCsv(p.quantityOffers ? `${p.quantityOffers.length} offre(s)` : "0"),
+    ]);
+
+    const csvContent =
+      "\uFEFF" +
+      [headers.join(";"), ...rows.map((row) => row.join(";"))].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `produits_${storeSlug}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast(`${targetProducts.length} produit(s) exporté(s) en CSV.`);
   };
 
-  const handleSelectOne = (id: string) => {
-    setSelectedProductIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  };
-
+  // ==========================================
+  // ACTIONS GROUPÉES (Prompt 17)
+  // ==========================================
   const handleBulkAction = (
     action: "publish" | "unpublish" | "archive" | "trash" | "restore" | "hard_delete"
   ) => {
     if (selectedProductIds.length === 0) return;
 
     if (action === "hard_delete") {
-      // Pour hard_delete en lot : confirmation via modale si un seul ou batch confirm
       const firstTarget = products.find((p) => p.id === selectedProductIds[0]);
       if (selectedProductIds.length === 1 && firstTarget) {
         openHardDeleteModal(firstTarget);
         return;
       }
-      // Confirmation forte pour lot > 1
       if (!window.confirm(`Confirmez-vous la SUPPRESSION DÉFINITIVE de ${selectedProductIds.length} produit(s) ? Cette action est irréversible.`)) {
         return;
       }
@@ -431,7 +648,6 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
       return;
     }
 
-    // Mise à jour de l'état local
     const nowIso = new Date().toISOString();
     setProducts((prev) => {
       const targetSet = new Set(selectedProductIds);
@@ -449,7 +665,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
           case "unpublish":
             return { ...p, productStatus: "draft" as const };
           case "archive":
-            return { ...p, productStatus: "archived" as const };
+            return { ...p, productStatus: "archived" as const, archivedAt: nowIso };
           case "trash":
             return { ...p, deletedAt: nowIso };
           case "restore":
@@ -466,72 +682,100 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
         message: `${res.count} produit(s) déplacé(s) dans la corbeille.`,
       });
     } else {
-      showToast(
-        action === "publish"
-          ? `${res.count} produit(s) publié(s) en catalogue.`
-          : action === "unpublish"
-          ? `${res.count} produit(s) passé(s) en brouillon.`
-          : action === "archive"
-          ? `${res.count} produit(s) archivé(s).`
-          : action === "restore"
-          ? `${res.count} produit(s) restauré(s).`
-          : `${res.count} produit(s) définitivement supprimé(s).`
-      );
-    }
-
-    if (res.error) {
-      showToast(res.error);
+      showToast(`${res.count} produit(s) mis à jour.`);
     }
 
     setSelectedProductIds([]);
   };
 
-  // Bascule directe Visibilité
-  const handleToggleVisibility = (product: Product) => {
-    const isCurrentlyActive = (product.productStatus || "active") === "active";
-    if (isCurrentlyActive) {
-      setVisibilityConfirmTarget(product);
+  // Action groupée : Assigner à une collection
+  const handleConfirmBatchCollection = () => {
+    if (!batchCollectionInput.trim()) {
+      showToast("Veuillez sélectionner ou saisir une collection.");
+      return;
+    }
+    const res = batchAssignCollection(storeSlug, selectedProductIds, batchCollectionInput, activeRole);
+    if (res.success) {
+      setProducts(getShopProductsRaw(storeSlug));
+      showToast(`${res.count} produit(s) assigné(s) à « ${batchCollectionInput} ».`);
+      setIsBatchCollectionModalOpen(false);
+      setBatchCollectionInput("");
+      setSelectedProductIds([]);
     } else {
-      const updated = { ...product, productStatus: "active" as const };
-      setProducts((prev) => prev.map((p) => (p.id === product.id ? updated : p)));
-      showToast(`« ${product.name} » est maintenant visible sur la boutique.`);
+      showToast(res.error || "Erreur lors de l'assignation de la collection.");
     }
   };
 
-  const confirmPassToDraft = () => {
-    if (!visibilityConfirmTarget) return;
-    const updated = { ...visibilityConfirmTarget, productStatus: "draft" as const };
-    setProducts((prev) => prev.map((p) => (p.id === visibilityConfirmTarget.id ? updated : p)));
-    showToast(`« ${visibilityConfirmTarget.name} » est maintenant en brouillon (masqué du public).`);
-    setVisibilityConfirmTarget(null);
-  };
-
-  const handleCopyProductLink = (product: Product) => {
-    if (typeof window !== "undefined") {
-      const url = `${window.location.origin}/boutique/${storeSlug}/produit/${product.id}`;
-      navigator.clipboard.writeText(url);
-      showToast("Lien de la page produit copié !");
+  // Action groupée : Ajouter une balise (tag)
+  const handleConfirmBatchTag = () => {
+    if (!batchTagInput.trim()) {
+      showToast("Veuillez saisir une balise.");
+      return;
+    }
+    const res = batchAddTag(storeSlug, selectedProductIds, batchTagInput, activeRole);
+    if (res.success) {
+      setProducts(getShopProductsRaw(storeSlug));
+      showToast(`Balise « ${batchTagInput} » ajoutée à ${res.count} produit(s).`);
+      setIsBatchTagModalOpen(false);
+      setBatchTagInput("");
+      setSelectedProductIds([]);
+    } else {
+      showToast(res.error || "Erreur lors de l'ajout de balise.");
     }
   };
 
-  const handleImportSuccess = (imported: Product[] | number) => {
-    const count = Array.isArray(imported) ? imported.length : imported;
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem(`novika_store_products_${storeSlug}`);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) {
-            setProducts(parsed.filter((p) => p && typeof p === "object"));
-          }
-        } catch {}
-      }
+  // Action groupée : Activer le suivi de stock (Prompt 17)
+  const handleConfirmBatchEnableStock = () => {
+    const res = batchEnableStockTracking(storeSlug, selectedProductIds, 0, activeRole);
+    if (res.success) {
+      setProducts(getShopProductsRaw(storeSlug));
+      showToast(`Suivi de stock activé pour ${res.count} produit(s).`);
+      setIsBatchStockTrackModalOpen(false);
+      setSelectedProductIds([]);
+    } else {
+      showToast(res.error || "Erreur lors de l'activation du suivi de stock.");
     }
-    showToast(`${count} produit(s) importé(s) en brouillon avec succès !`);
   };
+
+  // Action groupée : Modifier le statut en masse
+  const handleConfirmBatchStatus = () => {
+    handleBulkAction(batchStatusChoice === "active" ? "publish" : batchStatusChoice === "draft" ? "unpublish" : "archive");
+    setIsBatchStatusModalOpen(false);
+  };
+
+  // ==========================================
+  // PROTECTION DES DROITS (Prompt 17)
+  // ==========================================
+  if (!canView) {
+    return (
+      <div className="min-h-screen bg-[#FAF8F5] pb-24 text-[#111111] flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white rounded-3xl border border-rose-200 p-8 text-center shadow-lg">
+          <div className="w-16 h-16 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 mx-auto mb-4">
+            <ShieldAlert className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl font-black text-[#111111]">Accès non autorisé</h2>
+          <p className="text-sm text-[#7A7A7A] mt-2 leading-relaxed">
+            Votre profil (<strong>{activeRole}</strong>) ne possède pas les permissions nécessaires pour accéder au catalogue des produits.
+          </p>
+          <div className="mt-6">
+            <Link
+              href={`/app/${storeSlug}`}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-colors"
+            >
+              Retourner au tableau de bord
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const isPageSelected =
+    paginatedProducts.length > 0 &&
+    paginatedProducts.every((p) => selectedProductIds.includes(p.id));
 
   return (
-    <div className="space-y-6 pb-24">
+    <div className="space-y-6 pb-24 text-[#111111]">
       {/* Toast d'action */}
       {toastMessage && (
         <div className="fixed top-5 right-5 z-50 bg-[#111111] text-white px-5 py-3 rounded-2xl shadow-xl text-xs font-semibold flex items-center gap-2.5 animate-in fade-in slide-in-from-top-3">
@@ -540,7 +784,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
         </div>
       )}
 
-      {/* Undo Toast : Annulation rapide de mise à la corbeille (Prompt 14-B) */}
+      {/* Undo Toast (Prompt 14-B) */}
       {undoToast && (
         <div
           id="toast-undo-trash"
@@ -569,377 +813,458 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
         </div>
       )}
 
-      {/* En-tête de section avec onglets de navigation */}
+      {/* ======================================================== */}
+      {/* 1) BARRE DU HAUT (Prompt 17 - Phase 17-A) */}
+      {/* ======================================================== */}
       <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-black text-[#111111] tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#111111] tracking-tight">
               Produits
             </h1>
-            <p className="text-xs text-[#666660] mt-0.5">
-              Gestion des fiches produits, niveaux d'alerte entrepôts, alertes de réapprovisionnement et fournisseurs.
+            <p className="text-xs text-[#7A7A7A] mt-1">
+              Catalogue, tarification, variantes et suivi d'inventaire de la boutique.
             </p>
           </div>
 
-          {/* Boutons d'action principaux */}
-          <div className="flex items-center gap-2">
-            {canUseAiProductGenerator(activeRole) && (
-              <Link
-                href={`/app/${storeSlug}/produits/nouveau-ia`}
-                id="btn-create-with-ai"
-                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-700 via-indigo-700 to-purple-800 text-white text-xs font-bold shadow-2xs hover:opacity-95 transition-all"
-                title="Générateur IA Gemini de fiches produits à partir d'images (Admin propriétaire uniquement)"
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Bouton : Afficher en tant que client */}
+            <a
+              href={`/boutique/${storeSlug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#E6E0D4] bg-white text-xs font-semibold text-[#111111] hover:bg-[#F3EFE6] transition-colors shadow-2xs"
+              title="Ouvrir la vitrine publique dans un nouvel onglet"
+            >
+              <ExternalLink className="w-3.5 h-3.5 text-[#666660]" />
+              <span>Afficher en tant que client</span>
+            </a>
+
+            {/* Bouton : Importer (CSV) */}
+            {canImport && (
+              <button
+                type="button"
+                id="btn-import-csv"
+                onClick={() => setIsImportModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#E6E0D4] bg-white text-xs font-semibold text-[#111111] hover:bg-[#F3EFE6] transition-colors shadow-2xs"
               >
-                <Sparkles className="w-4 h-4 text-purple-200 animate-pulse" />
-                <span>Créer une fiche avec l'IA</span>
-              </Link>
+                <Upload className="w-3.5 h-3.5 text-[#666660]" />
+                <span>Importer</span>
+              </button>
             )}
 
-            {/* Menu Déroulant Import CSV */}
+            {/* Bouton : Exporter (CSV) */}
+            <button
+              type="button"
+              id="btn-export-csv"
+              onClick={handleExportCsv}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#E6E0D4] bg-white text-xs font-semibold text-[#111111] hover:bg-[#F3EFE6] transition-colors shadow-2xs"
+            >
+              <Download className="w-3.5 h-3.5 text-[#666660]" />
+              <span>Exporter</span>
+            </button>
+
+            {/* Menu : Plus d'actions */}
+            {canManage && (
+              <div className="relative">
+                <button
+                  type="button"
+                  id="btn-more-actions-menu"
+                  onClick={() => setIsMoreActionsMenuOpen(!isMoreActionsMenuOpen)}
+                  className="inline-flex items-center gap-1 px-3 py-2 rounded-xl border border-[#E6E0D4] bg-white text-xs font-semibold text-[#111111] hover:bg-[#F3EFE6] transition-colors shadow-2xs"
+                >
+                  <span>Plus d'actions</span>
+                  <ChevronDown className="w-3 h-3 text-[#666660]" />
+                </button>
+
+                {isMoreActionsMenuOpen && (
+                  <div className="absolute right-0 mt-1 w-56 rounded-2xl border border-[#E6E0D4] bg-white p-2 shadow-xl z-30 space-y-1">
+                    <button
+                      type="button"
+                      disabled={selectedProductIds.length !== 1}
+                      onClick={() => {
+                        setIsMoreActionsMenuOpen(false);
+                        const target = products.find((p) => p.id === selectedProductIds[0]);
+                        if (target) handleDuplicateProduct(target);
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-xl hover:bg-[#F3EFE6] disabled:opacity-40 disabled:hover:bg-transparent text-xs font-semibold text-[#111111] flex items-center gap-2"
+                    >
+                      <Copy className="w-4 h-4 text-[#666660]" />
+                      <span>Dupliquer le produit</span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={selectedProductIds.length === 0}
+                      onClick={() => {
+                        setIsMoreActionsMenuOpen(false);
+                        handleBulkAction("archive");
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-xl hover:bg-[#F3EFE6] disabled:opacity-40 disabled:hover:bg-transparent text-xs font-semibold text-[#111111] flex items-center gap-2"
+                    >
+                      <Archive className="w-4 h-4 text-stone-600" />
+                      <span>Archiver la sélection</span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={selectedProductIds.length === 0}
+                      onClick={() => {
+                        setIsMoreActionsMenuOpen(false);
+                        setIsBatchStatusModalOpen(true);
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-xl hover:bg-[#F3EFE6] disabled:opacity-40 disabled:hover:bg-transparent text-xs font-semibold text-[#111111] flex items-center gap-2"
+                    >
+                      <SlidersHorizontal className="w-4 h-4 text-blue-600" />
+                      <span>Modifier en masse (statut)</span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={selectedProductIds.length === 0}
+                      onClick={() => {
+                        setIsMoreActionsMenuOpen(false);
+                        setIsBatchCollectionModalOpen(true);
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-xl hover:bg-[#F3EFE6] disabled:opacity-40 disabled:hover:bg-transparent text-xs font-semibold text-[#111111] flex items-center gap-2"
+                    >
+                      <FolderTree className="w-4 h-4 text-amber-600" />
+                      <span>Modifier collection</span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={selectedProductIds.length === 0}
+                      onClick={() => {
+                        setIsMoreActionsMenuOpen(false);
+                        setIsBatchTagModalOpen(true);
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-xl hover:bg-[#F3EFE6] disabled:opacity-40 disabled:hover:bg-transparent text-xs font-semibold text-[#111111] flex items-center gap-2"
+                    >
+                      <Tag className="w-4 h-4 text-purple-600" />
+                      <span>Modifier balises (tags)</span>
+                    </button>
+                    <div className="h-px bg-[#E6E0D4] my-1" />
+                    <button
+                      type="button"
+                      disabled={selectedProductIds.length === 0}
+                      onClick={() => {
+                        setIsMoreActionsMenuOpen(false);
+                        handleBulkAction("trash");
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-xl hover:bg-rose-50 disabled:opacity-40 disabled:hover:bg-transparent text-xs font-semibold text-rose-700 flex items-center gap-2"
+                    >
+                      <Trash2 className="w-4 h-4 text-rose-600" />
+                      <span>Supprimer (Corbeille)</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Bouton : Ajouter un produit (bouton principal sombre) */}
+            {canManage && (
+              <Link
+                href={`/app/${storeSlug}/produits/nouveau`}
+                id="btn-add-product-main"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-colors shadow-sm"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Ajouter un produit</span>
+              </Link>
+            )}
+          </div>
+        </div>
+
+        {/* Sous-menu Produits officiel Prompt 17 */}
+        <ProductsNavTabs storeSlug={storeSlug} />
+      </div>
+
+      {/* ======================================================== */}
+      {/* 2) BANDEAU DE 3 INDICATEURS AVEC SÉLECTEUR DE PÉRIODE */}
+      {/* ======================================================== */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold text-[#7A7A7A] uppercase tracking-wider">
+            Indicateurs de performance (commandes livrées)
+          </span>
+
+          {/* Sélecteur de période */}
+          <div className="flex items-center gap-1 p-1 bg-white border border-[#E6E0D4] rounded-xl shadow-2xs">
+            {(
+              [
+                { id: "today", label: "Aujourd'hui" },
+                { id: "7d", label: "7 j" },
+                { id: "30d", label: "30 j" },
+                { id: "90d", label: "90 j" },
+              ] as const
+            ).map((p) => (
+              <button
+                key={p.id}
+                onClick={() => setIndicatorPeriod(p.id)}
+                className={cn(
+                  "px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer",
+                  indicatorPeriod === p.id
+                    ? "bg-[#111111] text-white shadow-xs"
+                    : "text-[#666660] hover:text-[#111111] hover:bg-[#F3EFE6]"
+                )}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Indicateur 1 : Taux de vente moyen */}
+          <div className="rounded-2xl border border-[#E6E0D4] bg-white p-5 shadow-2xs flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between text-xs font-semibold text-[#7A7A7A] mb-2">
+                <span className="flex items-center gap-1.5">
+                  <TrendingUp className="w-4 h-4 text-emerald-600" />
+                  <span>Taux de vente moyen</span>
+                </span>
+                <span
+                  title="Formule : Unités vendues ÷ (Unités vendues + Stock restant) sur les commandes livrées de la période."
+                  className="cursor-help text-[#AAAAAA] hover:text-[#111111]"
+                >
+                  <HelpCircle className="w-3.5 h-3.5" />
+                </span>
+              </div>
+              <div className="text-2xl font-black text-[#111111]">
+                {indicators.sellThrough.hasData
+                  ? indicators.sellThrough.formattedRate
+                  : "Aucune donnée"}
+              </div>
+              <p className="mt-1 text-xs text-[#7A7A7A]">
+                {indicators.sellThrough.hasData
+                  ? `${indicators.sellThrough.totalSoldUnits} unités livrées · ${indicators.sellThrough.totalRemainingStock} en stock`
+                  : "Aucune commande livrée sur cette période"}
+              </p>
+            </div>
+            <div className="mt-3 pt-2 border-t border-[#F0EBE0] text-[10px] text-[#888888]">
+              Unités vendues ÷ (vendues + stock restant)
+            </div>
+          </div>
+
+          {/* Indicateur 2 : Produits par jours de stock restants */}
+          <div className="rounded-2xl border border-[#E6E0D4] bg-white p-5 shadow-2xs flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between text-xs font-semibold text-[#7A7A7A] mb-2">
+                <span className="flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-amber-600" />
+                  <span>Jours de stock restants</span>
+                </span>
+                <span
+                  title="Formule : Stock disponible ÷ Ventes moyennes par jour sur les commandes livrées. Alerte les ruptures imminentes (< 7 j)."
+                  className="cursor-help text-[#AAAAAA] hover:text-[#111111]"
+                >
+                  <HelpCircle className="w-3.5 h-3.5" />
+                </span>
+              </div>
+              <div className="text-xl font-black text-[#111111]">
+                {indicators.runway.hasData
+                  ? indicators.runway.summaryText
+                  : "Aucune donnée"}
+              </div>
+              <p className="mt-1 text-xs text-[#7A7A7A]">
+                {indicators.runway.hasData
+                  ? `${indicators.runway.criticalCount} < 7 j (alerte) · ${indicators.runway.warningCount} 7-15 j`
+                  : "Rythme de vente indisponible"}
+              </p>
+            </div>
+            <div className="mt-3 pt-2 border-t border-[#F0EBE0] text-[10px] text-[#888888]">
+              Stock dispo ÷ ventes quotidiennes livrées
+            </div>
+          </div>
+
+          {/* Indicateur 3 : Analyse ABC */}
+          <div className="rounded-2xl border border-[#E6E0D4] bg-white p-5 shadow-2xs flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between text-xs font-semibold text-[#7A7A7A] mb-2">
+                <span className="flex items-center gap-1.5">
+                  <Layers className="w-4 h-4 text-blue-600" />
+                  <span>Analyse ABC</span>
+                </span>
+                <span
+                  title="Classement Pareto du chiffre d'affaires livré : Classe A (80% premiers), Classe B (15% suivants), Classe C (le reste)."
+                  className="cursor-help text-[#AAAAAA] hover:text-[#111111]"
+                >
+                  <HelpCircle className="w-3.5 h-3.5" />
+                </span>
+              </div>
+              <div className="text-xl font-black text-[#111111]">
+                {indicators.abc.hasData ? indicators.abc.summaryText : "Aucune donnée"}
+              </div>
+              <p className="mt-1 text-xs text-[#7A7A7A]">
+                {indicators.abc.hasData
+                  ? canSeeFinancials
+                    ? `CA livré cumulé : ${formatFcfa(indicators.abc.totalRevenue)}`
+                    : "Classement établi sur les livraisons"
+                  : "Aucune vente livrée"}
+              </p>
+            </div>
+            <div className="mt-3 pt-2 border-t border-[#F0EBE0] text-[10px] text-[#888888]">
+              Pareto : A (80 % CA) · B (15 %) · C (5 %)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ======================================================== */}
+      {/* 3) BARRE DE FILTRES : VUES RAPIDES + RECHERCHE + CHOIX COLONNES */}
+      {/* ======================================================== */}
+      <div className="space-y-3">
+        {/* Vues rapides par onglets */}
+        <div className="flex flex-wrap items-center gap-2 border-b border-[#E6E0D4] pb-2">
+          {(
+            [
+              { id: "all", label: "Tous", count: viewCounts.all },
+              { id: "active", label: "Actifs", count: viewCounts.active },
+              { id: "draft", label: "Brouillons", count: viewCounts.draft },
+              { id: "archived", label: "Archivés", count: viewCounts.archived },
+              { id: "out_of_stock", label: "En rupture", count: viewCounts.outOfStock },
+              { id: "low_stock", label: "Stock bas", count: viewCounts.lowStock },
+              { id: "trash", label: "Corbeille", count: viewCounts.trash },
+            ] as const
+          ).map((v) => (
+            <button
+              key={v.id}
+              type="button"
+              id={`tab-view-${v.id}`}
+              onClick={() => {
+                setQuickView(v.id);
+                setSelectedProductIds([]);
+              }}
+              className={cn(
+                "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer",
+                quickView === v.id
+                  ? v.id === "trash"
+                    ? "bg-rose-700 text-white shadow-xs"
+                    : v.id === "out_of_stock"
+                    ? "bg-red-700 text-white shadow-xs"
+                    : v.id === "low_stock"
+                    ? "bg-amber-700 text-white shadow-xs"
+                    : "bg-[#111111] text-white shadow-xs"
+                  : "bg-white border border-[#E6E0D4] text-[#666660] hover:text-[#111111] hover:bg-[#F3EFE6]"
+              )}
+            >
+              <span>{v.label}</span>
+              <span
+                className={cn(
+                  "px-1.5 py-0.2 rounded-full text-[10px]",
+                  quickView === v.id ? "bg-white/20 text-white" : "bg-[#EFECE6] text-[#666660]"
+                )}
+              >
+                {v.count}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Bannière Corbeille si sélectionnée */}
+        {quickView === "trash" && (
+          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start sm:items-center gap-3">
+              <div className="p-2 rounded-xl bg-rose-100 text-rose-700 shrink-0">
+                <Trash2 className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="font-bold block">Articles dans la corbeille (Rétention 30 jours)</span>
+                <span className="text-rose-700 text-[11px]">
+                  Ces produits sont retirés de la vitrine. Ils seront définitivement purgés après 30 jours.
+                </span>
+              </div>
+            </div>
+
+            {canHardDelete && viewCounts.trash > 0 && (
+              <button
+                type="button"
+                id="btn-empty-trash"
+                onClick={openEmptyTrashModal}
+                className="px-3.5 py-2 rounded-xl bg-rose-700 hover:bg-rose-800 text-white text-xs font-bold transition-colors shadow-xs flex items-center gap-2 shrink-0 cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Vider la corbeille</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Barre de recherche et choix des colonnes */}
+        <div className="rounded-2xl border border-[#E6E0D4] bg-white p-3 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
+          {/* Champ « Rechercher et filtrer » multi-critères */}
+          <div className="relative flex-1 w-full">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#888880]" />
+            <input
+              type="text"
+              id="input-product-search"
+              placeholder="Rechercher et filtrer (nom, SKU, catégorie, type, fournisseur, tag, collection)..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 text-xs rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] text-[#111111] placeholder:text-[#999990] focus:outline-none focus:border-[#111111]"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            {/* Bouton de choix des colonnes */}
             <div className="relative">
               <button
                 type="button"
-                id="btn-import-csv-menu"
-                onClick={() => setIsImportMenuOpen(!isImportMenuOpen)}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-black/[0.08] bg-white text-[#111111] text-xs font-bold shadow-2xs hover:bg-black/[0.04] transition-colors"
+                id="btn-columns-picker"
+                onClick={() => setIsColumnPickerOpen(!isColumnPickerOpen)}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] text-[#111111] text-xs font-semibold hover:bg-[#EFECE6] transition-colors"
+                title="Personnaliser les colonnes du tableau"
               >
-                <Upload className="w-3.5 h-3.5 text-[#666660]" />
-                <span>Importer (CSV)</span>
-                <ChevronDown className="w-3 h-3 text-[#666660]" />
+                <SlidersHorizontal className="w-3.5 h-3.5 text-[#666660]" />
+                <span>Colonnes</span>
               </button>
 
-              {isImportMenuOpen && (
-                <div className="absolute right-0 mt-1 w-64 rounded-2xl border border-black/[0.08] bg-[#FAF8F5] p-2 shadow-xl z-30 space-y-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsImportMenuOpen(false);
-                      setIsImportModalOpen(true);
-                    }}
-                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-black/[0.05] text-xs font-semibold text-[#111111] flex items-center gap-2"
-                  >
-                    <Upload className="w-4 h-4 text-emerald-600" />
-                    <span>Lancer l'import automatique</span>
-                  </button>
-                  <a
-                    href="/api/products/import/template"
-                    download="modele-catalogue-novika.csv"
-                    onClick={() => setIsImportMenuOpen(false)}
-                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-black/[0.05] text-xs font-semibold text-[#111111] flex items-center gap-2"
-                  >
-                    <Download className="w-4 h-4 text-blue-600" />
-                    <span>Télécharger modèle Novika</span>
-                  </a>
+              {isColumnPickerOpen && (
+                <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-[#E6E0D4] bg-white p-3 shadow-xl z-30 space-y-2">
+                  <p className="text-xs font-bold text-[#111111] pb-1 border-b border-[#E6E0D4]">
+                    Colonnes optionnelles
+                  </p>
+                  <label className="flex items-center gap-2 text-xs text-[#4A4A4A] cursor-pointer hover:text-[#111111]">
+                    <input
+                      type="checkbox"
+                      checked={visibleColumns.supplier}
+                      onChange={() => toggleColumn("supplier")}
+                      className="rounded border-[#E6E0D4] text-black focus:ring-black"
+                    />
+                    <span>Fournisseur</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-[#4A4A4A] cursor-pointer hover:text-[#111111]">
+                    <input
+                      type="checkbox"
+                      checked={visibleColumns.collections}
+                      onChange={() => toggleColumn("collections")}
+                      className="rounded border-[#E6E0D4] text-black focus:ring-black"
+                    />
+                    <span>Collections</span>
+                  </label>
+                  {canSeeFinancials && (
+                    <label className="flex items-center gap-2 text-xs text-[#4A4A4A] cursor-pointer hover:text-[#111111]">
+                      <input
+                        type="checkbox"
+                        checked={visibleColumns.margin}
+                        onChange={() => toggleColumn("margin")}
+                        className="rounded border-[#E6E0D4] text-black focus:ring-black"
+                      />
+                      <span>Marge & Coût</span>
+                    </label>
+                  )}
+                  <label className="flex items-center gap-2 text-xs text-[#4A4A4A] cursor-pointer hover:text-[#111111]">
+                    <input
+                      type="checkbox"
+                      checked={visibleColumns.updatedAt}
+                      onChange={() => toggleColumn("updatedAt")}
+                      className="rounded border-[#E6E0D4] text-black focus:ring-black"
+                    />
+                    <span>Dernière modification</span>
+                  </label>
                 </div>
               )}
             </div>
 
-            <Link
-              href={`/app/${storeSlug}/produits/nouveau`}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold shadow-2xs hover:bg-black transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Nouveau produit</span>
-            </Link>
-          </div>
-        </div>
-
-        {/* Navigation inter-modules */}
-        <ProductsNavTabs storeSlug={storeSlug} />
-      </div>
-
-      {/* Cartes KPI : Stock financier, Santé & ABC */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* KPI 1 : Valeur du stock */}
-        <div className="rounded-[20px] border border-black/[0.08] bg-[#FAF8F5] p-5 shadow-2xs">
-          <div className="flex items-center justify-between text-[#666660] text-xs font-bold uppercase tracking-wider">
-            <span className="flex items-center gap-1.5">
-              <Package className="w-4 h-4 text-[#111111]" />
-              Vitesse de Vente Moyenne
-            </span>
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">
-              Prix de revient
-            </span>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl font-black text-[#111111]">
-              {!isRestricted ? formatFcfa(kpis.totalStockValue) : "Confidentiel"}
-            </div>
-            <p className="mt-1 text-[11px] text-[#666660]">
-              {tabCounts.all} fiches actives dans le catalogue ({tabCounts.active} visibles, {tabCounts.draft} brouillons).
-            </p>
-          </div>
-        </div>
-
-        {/* KPI 2 : Santé des stocks */}
-        <div className="rounded-[20px] border border-black/[0.08] bg-[#FAF8F5] p-5 shadow-2xs">
-          <div className="flex items-center justify-between text-[#666660] text-xs font-bold uppercase tracking-wider">
-            <span className="flex items-center gap-1.5">
-              <Clock className="w-4 h-4 text-[#111111]" />
-              Jours de Stock Restants
-            </span>
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold">
-              Vitesse de vente
-            </span>
-          </div>
-          <div className="mt-3">
-            <div className="space-y-1.5">
-              <div className="h-2 w-full rounded-full bg-black/[0.06] overflow-hidden flex">
-                {products.length > 0 && (
-                  <>
-                    <div
-                      style={{ width: `${(kpis.outOfStockCount / Math.max(1, tabCounts.all)) * 100}%` }}
-                      className="bg-rose-500"
-                      title={`${kpis.outOfStockCount} Rupture`}
-                    />
-                    <div
-                      style={{ width: `${(kpis.criticalStockCount / Math.max(1, tabCounts.all)) * 100}%` }}
-                      className="bg-amber-500"
-                      title={`${kpis.criticalStockCount} < 7 jours`}
-                    />
-                    <div
-                      style={{ width: `${(kpis.warningStockCount / Math.max(1, tabCounts.all)) * 100}%` }}
-                      className="bg-blue-400"
-                      title={`${kpis.warningStockCount} 7-15 jours`}
-                    />
-                    <div
-                      style={{ width: `${(kpis.healthyStockCount / Math.max(1, tabCounts.all)) * 100}%` }}
-                      className="bg-emerald-500"
-                      title={`${kpis.healthyStockCount} > 15 jours`}
-                    />
-                  </>
-                )}
-              </div>
-              <div className="flex justify-between text-[10px] text-[#666660] font-semibold pt-1">
-                <span className="text-rose-600 font-bold">{kpis.outOfStockCount} rupture</span>
-                <span className="text-amber-600">{kpis.criticalStockCount} &lt; 7j</span>
-                <span className="text-blue-600">{kpis.warningStockCount} 7-15j</span>
-                <span className="text-emerald-700">{kpis.healthyStockCount} &gt; 15j</span>
-              </div>
-            </div>
-          </div>
-          <p className="mt-2 text-[11px] text-[#666660]">
-            Disponible ÷ Vitesse. Prévient les ruptures avant les délais fournisseurs maritimes.
-          </p>
-        </div>
-
-        {/* KPI 3 : Analyse ABC des produits */}
-        <div className="rounded-[20px] border border-black/[0.08] bg-[#FAF8F5] p-5 shadow-2xs">
-          <div className="flex items-center justify-between text-[#666660] text-xs font-bold uppercase tracking-wider">
-            <span className="flex items-center gap-1.5">
-              <Layers className="w-4 h-4 text-[#111111]" />
-              Analyse ABC du Catalogue
-            </span>
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#111111]/[0.05] text-[#111111] font-bold">
-              Loi de Pareto (80/20)
-            </span>
-          </div>
-          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-            <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-2">
-              <span className="text-xs font-black text-amber-800">Classe A</span>
-              <div className="text-lg font-black text-amber-950">{kpis.classA}</div>
-              <span className="text-[10px] text-amber-700 font-medium">80% du CA</span>
-            </div>
-            <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-2">
-              <span className="text-xs font-black text-blue-800">Classe B</span>
-              <div className="text-lg font-black text-blue-950">{kpis.classB}</div>
-              <span className="text-[10px] text-blue-700 font-medium">15% du CA</span>
-            </div>
-            <div className="rounded-xl border border-stone-200 bg-stone-100/70 p-2">
-              <span className="text-xs font-black text-stone-700">Classe C</span>
-              <div className="text-lg font-black text-stone-900">{kpis.classC}</div>
-              <span className="text-[10px] text-stone-600 font-medium">5% du CA</span>
-            </div>
-          </div>
-          <p className="mt-2 text-[11px] text-[#666660]">
-            Classe A : produits champions à approvisionner en priorité absolue.
-          </p>
-        </div>
-      </div>
-
-      {/* ======================================================== */}
-      {/* NOUVEAUX ONGLETS DE FILTRAGE : TOUS / ACTIFS / CORBEILLE */}
-      {/* ======================================================== */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-black/[0.08] pb-2">
-        <button
-          type="button"
-          id="btn-tab-all"
-          onClick={() => {
-            setStatusFilter("all");
-            setSelectedProductIds([]);
-          }}
-          className={cn(
-            "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer",
-            statusFilter === "all"
-              ? "bg-[#111111] text-white shadow-xs"
-              : "bg-white border border-black/[0.08] text-[#666660] hover:text-[#111111] hover:bg-black/[0.03]"
-          )}
-        >
-          <span>Tous</span>
-          <span className={cn(
-            "px-1.5 py-0.2 rounded-full text-[10px]",
-            statusFilter === "all" ? "bg-white/20 text-white" : "bg-black/[0.06] text-[#666660]"
-          )}>
-            {tabCounts.all}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          id="btn-tab-active"
-          onClick={() => {
-            setStatusFilter("active");
-            setSelectedProductIds([]);
-          }}
-          className={cn(
-            "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer",
-            statusFilter === "active"
-              ? "bg-emerald-700 text-white shadow-xs"
-              : "bg-white border border-black/[0.08] text-[#666660] hover:text-[#111111] hover:bg-black/[0.03]"
-          )}
-        >
-          <span className="h-2 w-2 rounded-full bg-emerald-400" />
-          <span>Actifs</span>
-          <span className={cn(
-            "px-1.5 py-0.2 rounded-full text-[10px]",
-            statusFilter === "active" ? "bg-white/20 text-white" : "bg-black/[0.06] text-[#666660]"
-          )}>
-            {tabCounts.active}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          id="btn-tab-draft"
-          onClick={() => {
-            setStatusFilter("draft");
-            setSelectedProductIds([]);
-          }}
-          className={cn(
-            "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer",
-            statusFilter === "draft"
-              ? "bg-amber-600 text-white shadow-xs"
-              : "bg-white border border-black/[0.08] text-[#666660] hover:text-[#111111] hover:bg-black/[0.03]"
-          )}
-        >
-          <span className="h-2 w-2 rounded-full bg-amber-300" />
-          <span>Brouillons</span>
-          <span className={cn(
-            "px-1.5 py-0.2 rounded-full text-[10px]",
-            statusFilter === "draft" ? "bg-white/20 text-white" : "bg-black/[0.06] text-[#666660]"
-          )}>
-            {tabCounts.draft}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          id="btn-tab-archived"
-          onClick={() => {
-            setStatusFilter("archived");
-            setSelectedProductIds([]);
-          }}
-          className={cn(
-            "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer",
-            statusFilter === "archived"
-              ? "bg-stone-700 text-white shadow-xs"
-              : "bg-white border border-black/[0.08] text-[#666660] hover:text-[#111111] hover:bg-black/[0.03]"
-          )}
-        >
-          <Archive className="w-3.5 h-3.5" />
-          <span>Archivés</span>
-          <span className={cn(
-            "px-1.5 py-0.2 rounded-full text-[10px]",
-            statusFilter === "archived" ? "bg-white/20 text-white" : "bg-black/[0.06] text-[#666660]"
-          )}>
-            {tabCounts.archived}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          id="btn-tab-trash"
-          onClick={() => {
-            setStatusFilter("trash");
-            setSelectedProductIds([]);
-          }}
-          className={cn(
-            "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ml-auto",
-            statusFilter === "trash"
-              ? "bg-rose-700 text-white shadow-xs"
-              : "bg-white border border-rose-200 text-rose-700 hover:bg-rose-50"
-          )}
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-          <span>Corbeille</span>
-          <span className={cn(
-            "px-1.5 py-0.2 rounded-full text-[10px]",
-            statusFilter === "trash" ? "bg-white/20 text-white" : "bg-rose-100 text-rose-800"
-          )}>
-            {tabCounts.trash}
-          </span>
-        </button>
-      </div>
-
-      {/* Bannière explicative spécifique à l'onglet Corbeille */}
-      {statusFilter === "trash" && (
-        <div className="p-4 rounded-2xl bg-rose-50/80 border border-rose-200 text-xs text-rose-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-start sm:items-center gap-3">
-            <div className="p-2 rounded-xl bg-rose-100 text-rose-700 shrink-0">
-              <Trash2 className="w-4 h-4" />
-            </div>
-            <div>
-              <span className="font-bold block">Articles dans la corbeille (Rétention 30 jours)</span>
-              <span className="text-rose-700 text-[11px]">
-                Ces produits sont immédiatement masqués de la vitrine, du catalogue et de la recherche. Ils sont définitivement purgés après 30 jours.
-              </span>
-            </div>
-          </div>
-
-          {canHardDelete && tabCounts.trash > 0 && (
-            <button
-              type="button"
-              id="btn-empty-trash"
-              onClick={openEmptyTrashModal}
-              className="px-3.5 py-2 rounded-xl bg-rose-700 hover:bg-rose-800 text-white text-xs font-bold transition-colors shadow-xs flex items-center gap-2 shrink-0 self-start sm:self-auto cursor-pointer"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Vider la corbeille</span>
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Barre de recherche, filtres et sélections */}
-      <div className="rounded-[20px] border border-black/[0.08] bg-[#FAF8F5] p-4 shadow-2xs space-y-3">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-          {/* Recherche */}
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#888880]" />
-            <input
-              type="text"
-              placeholder="Rechercher par titre, catégorie, SKU, type..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 text-xs rounded-xl border border-black/[0.08] bg-white text-[#111111] placeholder:text-[#999990] focus:outline-none focus:border-[#111111]"
-            />
-          </div>
-
-          {/* Filtres dropdowns */}
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={stockFilter}
-              onChange={(e) => setStockFilter(e.target.value as any)}
-              className="text-xs font-semibold px-3 py-2 rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
-            >
-              <option value="all">Tous les stocks</option>
-              <option value="in_stock">En stock</option>
-              <option value="low_stock">Stock bas (&lt; 10)</option>
-              <option value="out_of_stock">Rupture</option>
-            </select>
-
-            {/* Bascule Vue Tableau / Vue Grille */}
-            <div className="flex items-center rounded-xl border border-black/[0.08] bg-white p-1">
+            {/* Sélecteur Vue Tableau / Grille */}
+            <div className="flex items-center rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] p-1">
               <button
                 onClick={() => setViewMode("table")}
                 className={cn(
@@ -965,94 +1290,157 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
         </div>
       </div>
 
-      {/* Contenu : Tableau ou Grille */}
+      {/* ======================================================== */}
+      {/* 4) TABLEAU DES PRODUITS (Prompt 17 - Phase 17-A) */}
+      {/* ======================================================== */}
       {filteredProducts.length === 0 ? (
-        <div className="rounded-[24px] border border-black/[0.08] bg-[#FAF8F5] p-12 text-center shadow-2xs space-y-4">
-          <div className="h-14 w-14 rounded-2xl bg-[#111111]/[0.05] border border-black/[0.08] flex items-center justify-center mx-auto text-[#666660]">
-            {statusFilter === "trash" ? <Trash2 className="h-7 w-7 text-rose-500" /> : <Package className="h-7 w-7" />}
+        /* État vide soigné (Prompt 17) */
+        <div className="rounded-3xl border border-[#E6E0D4] bg-white p-12 text-center shadow-2xs space-y-4">
+          <div className="h-16 w-16 rounded-2xl bg-[#FAF8F5] border border-[#E6E0D4] flex items-center justify-center mx-auto text-[#7A7A7A]">
+            {quickView === "trash" ? (
+              <Trash2 className="h-8 w-8 text-rose-500" />
+            ) : (
+              <Package className="h-8 w-8 text-[#111111]" />
+            )}
           </div>
           <div>
-            <h3 className="text-base font-black text-[#111111]">
-              {statusFilter === "trash"
+            <h3 className="text-lg font-bold text-[#111111]">
+              {quickView === "trash"
                 ? "La corbeille est vide"
                 : products.length === 0
-                ? "Votre catalogue est vide"
-                : "Aucun produit trouvé"}
+                ? "Ajoutez votre premier produit"
+                : "Aucun produit ne correspond à vos filtres"}
             </h3>
-            <p className="text-xs text-[#666660] max-w-sm mx-auto mt-1">
-              {statusFilter === "trash"
-                ? "Aucun produit n'a été placé dans la corbeille. Les produits supprimés y resteront 30 jours avant suppression définitive."
+            <p className="text-xs text-[#7A7A7A] max-w-sm mx-auto mt-1 leading-relaxed">
+              {quickView === "trash"
+                ? "Aucun produit n'a été déplacé dans la corbeille."
                 : products.length === 0
-                ? "Vous démarrez avec une boutique vierge. Ajoutez vos propres produits ou importez un catalogue CSV pour commencer à vendre."
+                ? "Commencez par ajouter votre premier produit pour alimenter votre vitrine et lancer vos campagnes publicitaires."
                 : searchQuery
-                ? `Aucun produit ne correspond à votre recherche « ${searchQuery} ».`
-                : "Vous n'avez aucun article correspondant aux critères sélectionnés."}
+                ? `Aucun produit ne correspond à « ${searchQuery} ».`
+                : "Modifiez vos filtres pour afficher des produits."}
             </p>
           </div>
-          {statusFilter !== "trash" && (
-            <div className="pt-2 flex flex-wrap items-center justify-center gap-2.5">
+
+          {quickView !== "trash" && canManage && (
+            <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
               <Link
                 href={`/app/${storeSlug}/produits/nouveau`}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#111111] text-white text-xs font-bold shadow-2xs hover:bg-black transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-colors shadow-xs"
               >
                 <Plus className="w-4 h-4" />
-                <span>Ajouter mon premier produit</span>
+                <span>Ajouter un produit</span>
               </Link>
+              <button
+                type="button"
+                onClick={() => setIsImportModalOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E6E0D4] bg-white text-[#111111] text-xs font-semibold hover:bg-[#F3EFE6] transition-colors"
+              >
+                <Upload className="w-4 h-4 text-[#666660]" />
+                <span>Importer (CSV)</span>
+              </button>
+              {canUseAiProductGenerator(activeRole) && (
+                <Link
+                  href={`/app/${storeSlug}/produits/nouveau-ia`}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-700 text-white text-xs font-bold hover:bg-purple-800 transition-colors shadow-xs"
+                >
+                  <Sparkles className="w-4 h-4 text-purple-200" />
+                  <span>Générer avec l'IA</span>
+                </Link>
+              )}
             </div>
           )}
         </div>
       ) : viewMode === "table" ? (
-        /* TABLEAU */
-        <div className="rounded-[24px] border border-black/[0.08] bg-[#FAF8F5] overflow-hidden shadow-2xs">
-          <div className="overflow-x-auto">
+        /* VUE TABLEAU (Desktop) & CARTES RESPONSIVES (Mobile iPhone 13) */
+        <div className="rounded-3xl border border-[#E6E0D4] bg-white overflow-hidden shadow-2xs">
+          {/* Version Desktop : TABLEAU */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-left border-collapse" id="table-products-list">
               <thead>
-                <tr className="border-b border-black/[0.08] bg-black/[0.02] text-[10px] font-bold uppercase tracking-wider text-[#666660]">
+                <tr className="border-b border-[#E6E0D4] bg-[#FAF8F5] text-[10px] font-bold uppercase tracking-wider text-[#7A7A7A]">
                   <th className="py-3.5 pl-5 pr-2 w-8">
                     <input
                       type="checkbox"
                       id="checkbox-select-all"
-                      checked={
-                        selectedProductIds.length === filteredProducts.length &&
-                        filteredProducts.length > 0
-                      }
-                      onChange={handleSelectAll}
-                      className="rounded border-gray-300 text-black focus:ring-black cursor-pointer"
+                      checked={isPageSelected}
+                      onChange={handleSelectPage}
+                      className="rounded border-[#E6E0D4] text-black focus:ring-black cursor-pointer"
+                      title="Sélectionner la page"
                     />
                   </th>
-                  <th className="py-3.5 pl-2 pr-3">Produit</th>
+                  <th className="py-3.5 pl-2 pr-3 w-14">Image</th>
+                  <th
+                    onClick={() => handleSort("title")}
+                    className="py-3.5 px-3 cursor-pointer hover:text-[#111111]"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Titre</span>
+                      <ArrowUpDown className="w-3 h-3" />
+                    </div>
+                  </th>
                   <th className="py-3.5 px-3">Statut</th>
-                  {statusFilter !== "trash" && <th className="py-3.5 px-3">Visible</th>}
-                  {statusFilter === "trash" && <th className="py-3.5 px-3">Délai Corbeille</th>}
-                  <th className="py-3.5 px-3">Stock Dispo</th>
-                  <th className="py-3.5 px-3">Prix de Vente</th>
-                  {!isRestricted && <th className="py-3.5 px-3">Coût / Marge</th>}
+                  <th
+                    onClick={() => handleSort("stock")}
+                    className="py-3.5 px-3 cursor-pointer hover:text-[#111111]"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Stock</span>
+                      <ArrowUpDown className="w-3 h-3" />
+                    </div>
+                  </th>
+                  <th className="py-3.5 px-3">Catégorie</th>
+                  <th className="py-3.5 px-3">Type</th>
+                  <th
+                    onClick={() => handleSort("price")}
+                    className="py-3.5 px-3 cursor-pointer hover:text-[#111111]"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Prix</span>
+                      <ArrowUpDown className="w-3 h-3" />
+                    </div>
+                  </th>
+                  <th className="py-3.5 px-3">Offres</th>
+                  {visibleColumns.supplier && <th className="py-3.5 px-3">Fournisseur</th>}
+                  {visibleColumns.collections && <th className="py-3.5 px-3">Collections</th>}
+                  {visibleColumns.margin && canSeeFinancials && (
+                    <th className="py-3.5 px-3">Marge</th>
+                  )}
+                  {visibleColumns.updatedAt && (
+                    <th
+                      onClick={() => handleSort("date")}
+                      className="py-3.5 px-3 cursor-pointer hover:text-[#111111]"
+                    >
+                      <div className="flex items-center gap-1">
+                        <span>Modifié</span>
+                        <ArrowUpDown className="w-3 h-3" />
+                      </div>
+                    </th>
+                  )}
                   <th className="py-3.5 pr-6 pl-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-black/[0.05] text-xs">
-                {filteredProducts.map((product) => {
-                  const currentStockStatus =
-                    product.stockStatus ||
-                    (product.stock === 0 ? "out_of_stock" : product.stock <= 10 ? "low_stock" : "in_stock");
-                  const currentStatus = product.productStatus || "active";
+              <tbody className="divide-y divide-[#F0EBE0] text-xs">
+                {paginatedProducts.map((product) => {
                   const isSelected = selectedProductIds.includes(product.id);
                   const isTrashed = product.deletedAt != null;
-
-                  // Calcul jours restants dans la corbeille (30 jours max)
-                  const daysInTrash = isTrashed
-                    ? Math.floor((Date.now() - new Date(product.deletedAt!).getTime()) / (1000 * 60 * 60 * 24))
-                    : 0;
-                  const daysRemainingInTrash = Math.max(0, 30 - daysInTrash);
+                  const isStockTracked = product.trackQuantity !== false && product.trackStock !== false;
+                  const currentStock = product.availableStock ?? product.stock ?? 0;
+                  const variantsCount = product.variants ? product.variants.length : 1;
+                  const offersCount = product.quantityOffers ? product.quantityOffers.length : 0;
+                  const primaryImage =
+                    (product.images && product.images[0]) ||
+                    (product.mediaItems && product.mediaItems[0]?.url) ||
+                    null;
 
                   return (
                     <tr
                       key={product.id}
                       id={`product-row-${product.id}`}
                       className={cn(
-                        "hover:bg-black/[0.015] transition-colors group",
-                        isSelected && "bg-black/[0.03]",
-                        isTrashed && "opacity-90 bg-rose-50/20"
+                        "hover:bg-[#FAF8F5] transition-colors group",
+                        isSelected && "bg-[#FAF8F5]",
+                        isTrashed && "opacity-85 bg-rose-50/20"
                       )}
                     >
                       {/* Checkbox */}
@@ -1062,211 +1450,215 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
                           id={`checkbox-product-${product.id}`}
                           checked={isSelected}
                           onChange={() => handleSelectOne(product.id)}
-                          className="rounded border-gray-300 text-black focus:ring-black cursor-pointer"
+                          className="rounded border-[#E6E0D4] text-black focus:ring-black cursor-pointer"
                         />
                       </td>
 
-                      {/* Photo + Titre */}
+                      {/* Image Miniature Optimisée */}
                       <td className="py-3.5 pl-2 pr-3">
-                        <div className="flex items-center gap-3">
-                          <div className="h-11 w-11 rounded-xl border border-black/[0.08] bg-[#EFECE6] flex items-center justify-center shrink-0 overflow-hidden font-bold text-xs text-[#666660]">
-                            {(product.name || product.title || "P").charAt(0).toUpperCase()}
-                          </div>
-                          <div className="min-w-0">
-                            <Link
-                              href={`/app/${storeSlug}/produits/${product.id}`}
-                              className="font-bold text-xs text-[#111111] hover:underline block truncate max-w-xs"
-                            >
-                              {product.name || product.title || "Produit sans titre"}
-                            </Link>
-                            <span className="text-[10px] text-[#888880] block">
-                              SKU: {product.sku || "N/A"} · {product.variants ? product.variants.length : 1} variante(s)
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Statut Produit */}
-                      <td className="py-3.5 px-3">
-                        <div className="flex flex-col items-start gap-1">
-                          {isTrashed ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800">
-                              <Trash2 className="w-3 h-3" />
-                              Corbeille
-                            </span>
-                          ) : currentStatus === "active" ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
-                              Actif
-                            </span>
-                          ) : currentStatus === "draft" ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">
-                              Brouillon
-                            </span>
+                        <div className="h-11 w-11 rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] flex items-center justify-center shrink-0 overflow-hidden font-bold text-xs text-[#7A7A7A]">
+                          {primaryImage ? (
+                            <img
+                              src={primaryImage}
+                              alt={product.name || product.title || "Produit"}
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                            />
                           ) : (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-stone-200 text-stone-700">
-                              Archivé
-                            </span>
+                            (product.name || product.title || "P").charAt(0).toUpperCase()
                           )}
                         </div>
                       </td>
 
-                      {/* Colonne Visible OU Délai Corbeille */}
-                      {statusFilter !== "trash" ? (
-                        <td className="py-3.5 px-3">
-                          <button
-                            type="button"
-                            id={`toggle-visibility-${product.id}`}
-                            onClick={() => handleToggleVisibility(product)}
-                            title={
-                              currentStatus === "active"
-                                ? "Rendre invisible (Passer en Brouillon)"
-                                : "Rendre visible (Passer en Actif)"
-                            }
-                            aria-label={`Bascule visibilité pour ${product.name}`}
-                            className={cn(
-                              "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-black",
-                              currentStatus === "active" ? "bg-emerald-600" : "bg-[#DDD7CD]"
-                            )}
-                          >
-                            <span
-                              className={cn(
-                                "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out",
-                                currentStatus === "active" ? "translate-x-4" : "translate-x-0"
-                              )}
-                            />
-                          </button>
+                      {/* Titre (tronqué 2 lignes max) + SKU */}
+                      <td className="py-3.5 px-3 min-w-[200px] max-w-xs">
+                        <Link
+                          href={`/app/${storeSlug}/produits/${product.id}`}
+                          className="font-bold text-xs text-[#111111] hover:underline line-clamp-2"
+                        >
+                          {product.name || product.title || "Produit sans titre"}
+                        </Link>
+                        <span className="text-[10px] text-[#888880] block mt-0.5">
+                          SKU: {product.sku || "N/A"}
+                        </span>
+                      </td>
+
+                      {/* Statut (pastille colorée) */}
+                      <td className="py-3.5 px-3 whitespace-nowrap">
+                        {isTrashed ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800">
+                            <Trash2 className="w-3 h-3" />
+                            Corbeille
+                          </span>
+                        ) : product.productStatus === "active" ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
+                            Actif
+                          </span>
+                        ) : product.productStatus === "draft" ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">
+                            Brouillon
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-stone-200 text-stone-700">
+                            Archivé
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Stock (Prompt 17 : « Stock non suivi » ou « X en stock · Y variantes ») */}
+                      <td className="py-3.5 px-3 whitespace-nowrap">
+                        {!isStockTracked ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-stone-100 text-stone-600 border border-stone-200">
+                            Stock non suivi
+                          </span>
+                        ) : currentStock === 0 ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800">
+                            Rupture de stock
+                          </span>
+                        ) : currentStock <= (product.lowStockThreshold || 10) ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900">
+                            {currentStock} en stock{variantsCount > 1 ? ` · ${variantsCount} var.` : ""}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            {currentStock} en stock{variantsCount > 1 ? ` · ${variantsCount} var.` : ""}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Catégorie */}
+                      <td className="py-3.5 px-3 whitespace-nowrap text-[#4A4A4A]">
+                        {product.category || "—"}
+                      </td>
+
+                      {/* Type de produit */}
+                      <td className="py-3.5 px-3 whitespace-nowrap text-[#666660]">
+                        {product.productType || product.type || "Standard"}
+                      </td>
+
+                      {/* Prix (FCFA) */}
+                      <td className="py-3.5 px-3 whitespace-nowrap font-bold text-[#111111]">
+                        {formatFcfa(product.salePrice ?? product.price ?? 0)}
+                      </td>
+
+                      {/* Offres (nombre de packs configurés) */}
+                      <td className="py-3.5 px-3 whitespace-nowrap text-[#666660]">
+                        {offersCount > 0 ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 text-[11px] font-semibold border border-purple-200">
+                            {offersCount} offre{offersCount > 1 ? "s" : ""}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+
+                      {/* Colonne optionnelle : Fournisseur */}
+                      {visibleColumns.supplier && (
+                        <td className="py-3.5 px-3 whitespace-nowrap text-[#666660]">
+                          {product.supplierName || "—"}
                         </td>
-                      ) : (
-                        <td className="py-3.5 px-3">
-                          <div className="flex flex-col gap-0.5">
-                            <span className="inline-flex items-center gap-1 font-bold text-xs text-rose-800">
-                              <Clock className="w-3.5 h-3.5 text-rose-600" />
-                              {daysRemainingInTrash} j restants
-                            </span>
-                            <span className="text-[10px] text-[#888880]">
-                              avant purge auto
-                            </span>
+                      )}
+
+                      {/* Colonne optionnelle : Collections */}
+                      {visibleColumns.collections && (
+                        <td className="py-3.5 px-3 whitespace-nowrap text-[#666660]">
+                          {product.collection || (product.collections || []).join(", ") || "—"}
+                        </td>
+                      )}
+
+                      {/* Colonne optionnelle : Marge (réservée admin) */}
+                      {visibleColumns.margin && canSeeFinancials && (
+                        <td className="py-3.5 px-3 whitespace-nowrap">
+                          <div className="text-[11px] font-semibold text-emerald-700">
+                            +{formatFcfa((product.salePrice ?? 0) - (product.costPrice ?? 0))}
+                          </div>
+                          <div className="text-[10px] text-[#888880]">
+                            Revient: {formatFcfa(product.costPrice ?? 0)}
                           </div>
                         </td>
                       )}
 
-                      {/* Statut Stock & Dispo */}
-                      <td className="py-3.5 px-3">
-                        <div className="flex flex-col gap-1">
-                          <span className="font-black text-[#111111]">
-                            {product.availableStock ?? product.stock}
-                          </span>
-                          <span className="text-[10px] text-[#888880]">
-                            disponible
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Prix de Vente */}
-                      <td className="py-3.5 px-3">
-                        <div className="font-black text-[#111111]">
-                          {formatFcfa(product.salePrice)}
-                        </div>
-                      </td>
-
-                      {/* Coût / Marge */}
-                      {!isRestricted && (
-                        <td className="py-3.5 px-3">
-                          <div className="text-[11px] font-semibold text-[#666660]">
-                            Revient: {formatFcfa(product.costPrice)}
-                          </div>
-                          <div className="text-[11px] font-bold text-emerald-700">
-                            +{formatFcfa(product.salePrice - product.costPrice)}
-                          </div>
+                      {/* Colonne optionnelle : Modifié */}
+                      {visibleColumns.updatedAt && (
+                        <td className="py-3.5 px-3 whitespace-nowrap text-[11px] text-[#888880]">
+                          {product.updatedAt
+                            ? new Date(product.updatedAt).toLocaleDateString("fr-FR")
+                            : "—"}
                         </td>
                       )}
 
-                      {/* Actions */}
-                      <td className="py-3.5 pr-6 pl-3 text-right">
+                      {/* Actions rapides */}
+                      <td className="py-3.5 pr-6 pl-3 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
+                          {/* Icône œil : aperçu vitrine */}
+                          <a
+                            id={`btn-product-preview-${product.id}`}
+                            href={`/boutique/${storeSlug}/produits/${product.slug || product.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Voir sur la vitrine"
+                            className="p-2 min-w-[34px] min-h-[34px] flex items-center justify-center rounded-xl border border-[#E6E0D4] bg-white text-[#111111] hover:bg-[#F3EFE6] transition-colors"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                          </a>
+
+                          {/* Modifier (si gestionnaire) */}
+                          {canManage && (
+                            <Link
+                              href={`/app/${storeSlug}/produits/${product.id}`}
+                              className="p-2 min-w-[34px] min-h-[34px] flex items-center justify-center rounded-xl border border-[#E6E0D4] bg-white text-[#111111] hover:bg-[#F3EFE6] transition-colors"
+                              title="Modifier la fiche produit"
+                            >
+                              <Edit className="h-3.5 w-3.5" />
+                            </Link>
+                          )}
+
+                          {/* Si Corbeille : Restaurer / Supprimer définitivement */}
                           {isTrashed ? (
-                            /* ACTIONS EN CORBEILLE */
                             <>
                               <button
                                 type="button"
-                                id={`btn-restore-${product.id}`}
                                 onClick={() => handleRestore(product)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 hover:bg-emerald-100 text-xs font-bold transition-colors cursor-pointer"
-                                title="Restaurer le produit dans son statut d'origine"
+                                className="p-2 min-w-[34px] min-h-[34px] flex items-center justify-center rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 hover:bg-emerald-100 transition-colors"
+                                title="Restaurer"
                               >
-                                <RotateCcw className="w-3.5 h-3.5" />
-                                <span>Restaurer</span>
+                                <RotateCcw className="h-3.5 w-3.5" />
                               </button>
-
                               {canHardDelete && (
                                 <button
                                   type="button"
-                                  id={`btn-hard-delete-${product.id}`}
                                   onClick={() => openHardDeleteModal(product)}
-                                  className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 hover:bg-rose-100 text-xs font-bold transition-colors cursor-pointer"
-                                  title="Supprimer définitivement ce produit"
+                                  className="p-2 min-w-[34px] min-h-[34px] flex items-center justify-center rounded-xl bg-rose-50 border border-rose-200 text-rose-800 hover:bg-rose-100 transition-colors"
+                                  title="Supprimer définitivement"
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                  <span>Supprimer définitivement</span>
+                                  <Trash2 className="h-3.5 w-3.5" />
                                 </button>
                               )}
                             </>
                           ) : (
-                            /* ACTIONS NORMALES */
-                            <>
-                              <a
-                                id={`btn-product-preview-${product.id}`}
-                                href={
-                                  currentStatus === "active"
-                                    ? `/boutique/${storeSlug}/produit/${product.id}`
-                                    : `/boutique/${storeSlug}/apercu/produit/${product.id}`
-                                }
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                title="Voir sur la vitrine"
-                                className="p-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-xl border border-black/[0.08] bg-white text-[#111111] hover:bg-black/5 transition-colors cursor-pointer"
-                              >
-                                {currentStatus === "active" ? (
-                                  <Eye className="h-4 w-4" />
-                                ) : (
-                                  <EyeOff className="h-4 w-4 text-amber-600" />
+                            /* Menu contextuel ... pour actions avancées */
+                            canManage && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDuplicateProduct(product)}
+                                  title="Dupliquer"
+                                  className="p-2 min-w-[34px] min-h-[34px] flex items-center justify-center rounded-xl border border-[#E6E0D4] bg-white text-[#666660] hover:bg-[#F3EFE6] transition-colors"
+                                >
+                                  <Copy className="h-3.5 w-3.5" />
+                                </button>
+                                {canTrash && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSoftDelete(product)}
+                                    title="Mettre à la corbeille"
+                                    className="p-2 min-w-[34px] min-h-[34px] flex items-center justify-center rounded-xl border border-rose-200 bg-white text-rose-600 hover:bg-rose-50 transition-colors"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
                                 )}
-                              </a>
-
-                              <Link
-                                href={`/app/${storeSlug}/produits/${product.id}`}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-black/[0.08] bg-white text-xs font-bold text-[#111111] hover:bg-black/[0.03] transition-colors cursor-pointer min-h-[36px]"
-                              >
-                                <Edit className="h-3.5 w-3.5" />
-                                <span>Modifier</span>
-                              </Link>
-
-                              {/* Archiver / Désarchiver */}
-                              {canArchive && currentStatus !== "archived" && (
-                                <button
-                                  type="button"
-                                  id={`btn-archive-${product.id}`}
-                                  onClick={() => handleArchive(product)}
-                                  title="Archiver le produit (masquer sans supprimer)"
-                                  className="p-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-xl border border-black/[0.08] bg-white text-stone-600 hover:bg-stone-100 transition-colors cursor-pointer"
-                                >
-                                  <Archive className="h-4 w-4" />
-                                </button>
-                              )}
-
-                              {/* Mettre à la corbeille */}
-                              {canTrash && (
-                                <button
-                                  type="button"
-                                  id={`btn-delete-${product.id}`}
-                                  onClick={() => handleSoftDelete(product)}
-                                  title="Déplacer dans la corbeille"
-                                  className="p-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-xl border border-rose-200 bg-white text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              )}
-                            </>
+                              </>
+                            )
                           )}
                         </div>
                       </td>
@@ -1276,30 +1668,64 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
               </tbody>
             </table>
           </div>
-        </div>
-      ) : (
-        /* VUE GRILLE */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredProducts.map((product) => {
-            const isTrashed = product.deletedAt != null;
-            const isSelected = selectedProductIds.includes(product.id);
-            return (
-              <div
-                key={product.id}
-                className={cn(
-                  "rounded-2xl border border-black/[0.08] bg-white p-4 shadow-2xs space-y-3 relative flex flex-col justify-between",
-                  isSelected && "ring-2 ring-black",
-                  isTrashed && "opacity-90 bg-rose-50/20 border-rose-200"
-                )}
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-2">
+
+          {/* Version Mobile : CARTES (iPhone 13 responsive, sans coupure) */}
+          <div className="sm:hidden divide-y divide-[#F0EBE0]">
+            {paginatedProducts.map((product) => {
+              const isSelected = selectedProductIds.includes(product.id);
+              const isTrashed = product.deletedAt != null;
+              const isStockTracked = product.trackQuantity !== false && product.trackStock !== false;
+              const currentStock = product.availableStock ?? product.stock ?? 0;
+              const primaryImage =
+                (product.images && product.images[0]) ||
+                (product.mediaItems && product.mediaItems[0]?.url) ||
+                null;
+
+              return (
+                <div
+                  key={product.id}
+                  className={cn("p-4 space-y-3", isSelected && "bg-[#FAF8F5]")}
+                >
+                  <div className="flex items-start gap-3">
                     <input
                       type="checkbox"
                       checked={isSelected}
                       onChange={() => handleSelectOne(product.id)}
-                      className="rounded border-gray-300 text-black focus:ring-black cursor-pointer"
+                      className="mt-1 rounded border-[#E6E0D4] text-black focus:ring-black"
                     />
+
+                    <div className="h-12 w-12 rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] flex items-center justify-center shrink-0 overflow-hidden font-bold text-xs text-[#7A7A7A]">
+                      {primaryImage ? (
+                        <img
+                          src={primaryImage}
+                          alt={product.name || product.title || "Produit"}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        (product.name || product.title || "P").charAt(0).toUpperCase()
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <Link
+                        href={`/app/${storeSlug}/produits/${product.id}`}
+                        className="font-bold text-sm text-[#111111] block line-clamp-2"
+                      >
+                        {product.name || product.title}
+                      </Link>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="font-extrabold text-sm text-[#111111]">
+                          {formatFcfa(product.salePrice ?? product.price ?? 0)}
+                        </span>
+                        <span className="text-[10px] text-[#888880]">
+                          SKU: {product.sku || "N/A"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    {/* Statut */}
                     {isTrashed ? (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800">
                         Corbeille
@@ -1309,53 +1735,172 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
                         {product.productStatus || "Actif"}
                       </span>
                     )}
+
+                    {/* Stock */}
+                    {!isStockTracked ? (
+                      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-stone-100 text-stone-600">
+                        Stock non suivi
+                      </span>
+                    ) : currentStock === 0 ? (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800">
+                        Rupture
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                        {currentStock} en stock
+                      </span>
+                    )}
+
+                    {product.category && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#FAF8F5] text-[#666660] border border-[#E6E0D4]">
+                        {product.category}
+                      </span>
+                    )}
                   </div>
 
-                  <h4 className="font-bold text-xs text-[#111111] mt-2 line-clamp-1">
-                    {product.name || product.title}
-                  </h4>
-                  <p className="text-[11px] font-black text-[#111111] mt-1">
-                    {formatFcfa(product.salePrice)}
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-1.5 pt-2 border-t border-black/[0.05]">
-                  {isTrashed ? (
-                    <>
-                      <button
-                        onClick={() => handleRestore(product)}
-                        className="flex-1 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 text-xs font-bold"
-                      >
-                        Restaurer
-                      </button>
-                      {canHardDelete && (
-                        <button
-                          onClick={() => openHardDeleteModal(product)}
-                          className="p-1.5 rounded-lg bg-rose-50 text-rose-700"
-                          title="Supprimer définitivement"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </>
-                  ) : (
-                    <>
+                  {/* Actions mobile */}
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#F0EBE0]">
+                    <a
+                      href={`/boutique/${storeSlug}/produits/${product.slug || product.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 rounded-lg border border-[#E6E0D4] bg-white text-xs font-semibold text-[#111111] flex items-center gap-1"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Vitrine</span>
+                    </a>
+                    {canManage && (
                       <Link
                         href={`/app/${storeSlug}/produits/${product.id}`}
-                        className="flex-1 text-center py-1.5 rounded-lg bg-[#111111] text-white text-xs font-bold"
+                        className="px-3 py-1.5 rounded-lg bg-[#111111] text-white text-xs font-bold"
                       >
                         Modifier
                       </Link>
-                      {canTrash && (
-                        <button
-                          onClick={() => handleSoftDelete(product)}
-                          className="p-1.5 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50"
-                          title="Mettre à la corbeille"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Pagination (50 par page, Prompt 17) */}
+          <div className="p-4 border-t border-[#E6E0D4] bg-[#FAF8F5] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#7A7A7A]">
+            <div className="flex items-center gap-3">
+              <span>
+                Affichage de {paginatedProducts.length} sur {sortedProducts.length} produit(s)
+              </span>
+              <div className="flex items-center gap-1.5">
+                <span>Par page :</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  className="px-2 py-1 rounded-lg border border-[#E6E0D4] bg-white text-[#111111] font-semibold focus:outline-none"
+                >
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={currentPage <= 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="p-1.5 rounded-lg border border-[#E6E0D4] bg-white text-[#111111] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#F3EFE6]"
+                title="Page précédente"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="font-semibold text-[#111111]">
+                Page {currentPage} sur {totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="p-1.5 rounded-lg border border-[#E6E0D4] bg-white text-[#111111] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#F3EFE6]"
+                title="Page suivante"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* VUE GRILLE (Grid) */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {paginatedProducts.map((product) => {
+            const isSelected = selectedProductIds.includes(product.id);
+            const isStockTracked = product.trackQuantity !== false && product.trackStock !== false;
+            const currentStock = product.availableStock ?? product.stock ?? 0;
+            const primaryImage =
+              (product.images && product.images[0]) ||
+              (product.mediaItems && product.mediaItems[0]?.url) ||
+              null;
+
+            return (
+              <div
+                key={product.id}
+                className={cn(
+                  "rounded-2xl border border-[#E6E0D4] bg-white p-4 shadow-2xs space-y-3 relative flex flex-col justify-between",
+                  isSelected && "ring-2 ring-black"
+                )}
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-2">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => handleSelectOne(product.id)}
+                      className="rounded border-[#E6E0D4] text-black focus:ring-black"
+                    />
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                      {product.productStatus || "Actif"}
+                    </span>
+                  </div>
+
+                  <div className="h-32 rounded-xl bg-[#FAF8F5] border border-[#E6E0D4] my-2 overflow-hidden flex items-center justify-center">
+                    {primaryImage ? (
+                      <img
+                        src={primaryImage}
+                        alt={product.name || product.title}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <Package className="w-8 h-8 text-[#CCCCCC]" />
+                    )}
+                  </div>
+
+                  <h4 className="font-bold text-xs text-[#111111] line-clamp-1">
+                    {product.name || product.title}
+                  </h4>
+                  <p className="text-sm font-extrabold text-[#111111] mt-1">
+                    {formatFcfa(product.salePrice ?? product.price ?? 0)}
+                  </p>
+                  <p className="text-[10px] text-[#7A7A7A]">
+                    {!isStockTracked ? "Stock non suivi" : `${currentStock} en stock`}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-1.5 pt-2 border-t border-[#F0EBE0]">
+                  <a
+                    href={`/boutique/${storeSlug}/produits/${product.slug || product.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 rounded-lg border border-[#E6E0D4] text-[#111111] hover:bg-[#FAF8F5]"
+                    title="Voir vitrine"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </a>
+                  {canManage && (
+                    <Link
+                      href={`/app/${storeSlug}/produits/${product.id}`}
+                      className="flex-1 text-center py-2 rounded-lg bg-[#111111] text-white text-xs font-bold"
+                    >
+                      Modifier
+                    </Link>
                   )}
                 </div>
               </div>
@@ -1365,96 +1910,266 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
       )}
 
       {/* ======================================================== */}
-      {/* BARRE D'ACTIONS GROUPÉES COLLANTE (Prompt 14-B) */}
+      {/* 5) BARRE FLOTTANTE D'ACTIONS GROUPÉES (Prompt 17) */}
       {/* ======================================================== */}
-      {selectedProductIds.length > 0 && (
+      {selectedProductIds.length > 0 && canManage && (
         <div
           id="batch-bar"
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[#111111] text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-4 text-xs font-semibold animate-in slide-in-from-bottom-3 duration-200 border border-white/10"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[#111111] text-white px-5 py-3 rounded-2xl shadow-2xl flex flex-wrap items-center gap-3 text-xs font-semibold animate-in slide-in-from-bottom-3 duration-200 border border-white/10"
         >
           <span className="font-bold text-white whitespace-nowrap">
             {selectedProductIds.length} sélectionné(s)
           </span>
 
-          <div className="h-4 w-px bg-white/20" />
+          <div className="h-4 w-px bg-white/20 hidden sm:block" />
 
-          {statusFilter === "trash" ? (
-            /* ACTIONS EN LOT EN CORBEILLE */
-            <div className="flex items-center gap-2">
+          {/* Actions groupées Prompt 17 */}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsBatchStatusModalOpen(true)}
+              className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold transition-colors cursor-pointer"
+            >
+              Modifier le statut
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsBatchCollectionModalOpen(true)}
+              className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold transition-colors cursor-pointer"
+            >
+              Ajouter à une collection
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsBatchTagModalOpen(true)}
+              className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold transition-colors cursor-pointer"
+            >
+              Ajouter une balise
+            </button>
+            <button
+              type="button"
+              id="btn-batch-enable-stock"
+              onClick={() => setIsBatchStockTrackModalOpen(true)}
+              className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold transition-colors cursor-pointer"
+            >
+              Activer le suivi de stock
+            </button>
+            {canTrash && (
               <button
                 type="button"
-                id="btn-batch-restore"
-                onClick={() => handleBulkAction("restore")}
-                className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                id="btn-batch-trash"
+                onClick={() => handleBulkAction("trash")}
+                className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold transition-colors cursor-pointer flex items-center gap-1.5"
               >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Restaurer la sélection</span>
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Supprimer</span>
               </button>
+            )}
+          </div>
 
-              {canHardDelete && (
-                <button
-                  type="button"
-                  id="btn-batch-hard-delete"
-                  onClick={() => handleBulkAction("hard_delete")}
-                  className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold transition-colors cursor-pointer flex items-center gap-1.5"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Supprimer définitivement</span>
-                </button>
-              )}
-            </div>
-          ) : (
-            /* ACTIONS EN LOT STANDARD */
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                id="btn-batch-publish"
-                onClick={() => handleBulkAction("publish")}
-                className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-colors cursor-pointer"
-              >
-                Publier
-              </button>
-              <button
-                type="button"
-                id="btn-batch-unpublish"
-                onClick={() => handleBulkAction("unpublish")}
-                className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold transition-colors cursor-pointer"
-              >
-                Dépublier
-              </button>
-              {canArchive && (
-                <button
-                  type="button"
-                  id="btn-batch-archive"
-                  onClick={() => handleBulkAction("archive")}
-                  className="px-3 py-1.5 rounded-xl bg-stone-700 hover:bg-stone-600 text-white font-bold transition-colors cursor-pointer"
-                >
-                  Archiver
-                </button>
-              )}
-              {canTrash && (
-                <button
-                  type="button"
-                  id="btn-batch-trash"
-                  onClick={() => handleBulkAction("trash")}
-                  className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold transition-colors cursor-pointer flex items-center gap-1.5"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Supprimer</span>
-                </button>
-              )}
-            </div>
-          )}
-
-          <div className="h-4 w-px bg-white/20" />
+          <div className="h-4 w-px bg-white/20 hidden sm:block" />
 
           <button
             type="button"
             onClick={() => setSelectedProductIds([])}
-            className="text-stone-400 hover:text-white text-xs underline cursor-pointer"
+            className="text-stone-400 hover:text-white text-xs underline cursor-pointer ml-auto"
           >
-            Désélectionner tout
+            Désélectionner
           </button>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODALE : MODIFIER LE STATUT EN MASSE */}
+      {/* ======================================================== */}
+      {isBatchStatusModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl space-y-4">
+            <h3 className="text-base font-bold text-[#111111]">
+              Modifier le statut de {selectedProductIds.length} produit(s)
+            </h3>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 p-3 rounded-xl border border-[#E6E0D4] cursor-pointer hover:bg-[#FAF8F5]">
+                <input
+                  type="radio"
+                  name="batch-status"
+                  value="active"
+                  checked={batchStatusChoice === "active"}
+                  onChange={() => setBatchStatusChoice("active")}
+                  className="text-black"
+                />
+                <div>
+                  <p className="font-bold text-xs text-[#111111]">Actif</p>
+                  <p className="text-[11px] text-[#7A7A7A]">Visible en ligne pour les acheteurs</p>
+                </div>
+              </label>
+              <label className="flex items-center gap-2 p-3 rounded-xl border border-[#E6E0D4] cursor-pointer hover:bg-[#FAF8F5]">
+                <input
+                  type="radio"
+                  name="batch-status"
+                  value="draft"
+                  checked={batchStatusChoice === "draft"}
+                  onChange={() => setBatchStatusChoice("draft")}
+                  className="text-black"
+                />
+                <div>
+                  <p className="font-bold text-xs text-[#111111]">Brouillon</p>
+                  <p className="text-[11px] text-[#7A7A7A]">Masqué du catalogue public</p>
+                </div>
+              </label>
+              <label className="flex items-center gap-2 p-3 rounded-xl border border-[#E6E0D4] cursor-pointer hover:bg-[#FAF8F5]">
+                <input
+                  type="radio"
+                  name="batch-status"
+                  value="archived"
+                  checked={batchStatusChoice === "archived"}
+                  onChange={() => setBatchStatusChoice("archived")}
+                  className="text-black"
+                />
+                <div>
+                  <p className="font-bold text-xs text-[#111111]">Archivé</p>
+                  <p className="text-[11px] text-[#7A7A7A]">Non modifiable et masqué de la vitrine</p>
+                </div>
+              </label>
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E6E0D4]">
+              <button
+                type="button"
+                onClick={() => setIsBatchStatusModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-[#E6E0D4] text-xs font-semibold text-[#666660] hover:bg-[#FAF8F5]"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmBatchStatus}
+                className="px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black"
+              >
+                Appliquer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODALE : AJOUTER À UNE COLLECTION EN LOT */}
+      {/* ======================================================== */}
+      {isBatchCollectionModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl space-y-4">
+            <h3 className="text-base font-bold text-[#111111]">
+              Ajouter {selectedProductIds.length} produit(s) à une collection
+            </h3>
+            <p className="text-xs text-[#7A7A7A]">
+              Choisissez une collection existante ou tapez le nom d'une nouvelle collection.
+            </p>
+            <input
+              type="text"
+              placeholder="Ex: Soins Visage, Meilleures Ventes..."
+              value={batchCollectionInput}
+              onChange={(e) => setBatchCollectionInput(e.target.value)}
+              className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] text-[#111111] focus:outline-none focus:border-[#111111]"
+            />
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E6E0D4]">
+              <button
+                type="button"
+                onClick={() => setIsBatchCollectionModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-[#E6E0D4] text-xs font-semibold text-[#666660] hover:bg-[#FAF8F5]"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmBatchCollection}
+                className="px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black"
+              >
+                Valider
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODALE : AJOUTER UNE BALISE (TAG) EN LOT */}
+      {/* ======================================================== */}
+      {isBatchTagModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl space-y-4">
+            <h3 className="text-base font-bold text-[#111111]">
+              Ajouter une balise à {selectedProductIds.length} produit(s)
+            </h3>
+            <p className="text-xs text-[#7A7A7A]">
+              Les balises permettent de filtrer rapidement votre catalogue et de cibler vos campagnes.
+            </p>
+            <input
+              type="text"
+              placeholder="Ex: Promo, Vedette, Pack Promo, Bio..."
+              value={batchTagInput}
+              onChange={(e) => setBatchTagInput(e.target.value)}
+              className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] text-[#111111] focus:outline-none focus:border-[#111111]"
+            />
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E6E0D4]">
+              <button
+                type="button"
+                onClick={() => setIsBatchTagModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-[#E6E0D4] text-xs font-semibold text-[#666660] hover:bg-[#FAF8F5]"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmBatchTag}
+                className="px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black"
+              >
+                Ajouter la balise
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODALE : ACTIVER LE SUIVI DE STOCK EN LOT (Prompt 17) */}
+      {/* ======================================================== */}
+      {isBatchStockTrackModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-2xl bg-amber-100 text-amber-800">
+                <Boxes className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-[#111111]">
+                  Activer le suivi de stock ?
+                </h3>
+                <p className="text-xs text-[#7A7A7A]">
+                  {selectedProductIds.length} produit(s) sélectionné(s)
+                </p>
+              </div>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 leading-relaxed">
+              <strong>Avertissement :</strong> Activer le suivi de stock oblige Novika à décompter les pièces physiques disponibles. Les produits sélectionnés dont le stock n'est pas encore renseigné seront initialisés à 0 et pourront apparaître en rupture tant qu'un réapprovisionnement n'aura pas été saisi.
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E6E0D4]">
+              <button
+                type="button"
+                onClick={() => setIsBatchStockTrackModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-[#E6E0D4] text-xs font-semibold text-[#666660] hover:bg-[#FAF8F5]"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                id="btn-confirm-enable-stock"
+                onClick={handleConfirmBatchEnableStock}
+                className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-xs"
+              >
+                Confirmer l'activation
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1464,7 +2179,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
       {hardDeleteTarget && (
         <div
           id="modal-hard-delete"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
         >
           <div className="w-full max-w-lg rounded-3xl border border-rose-200 bg-[#FAF8F5] p-6 shadow-2xl space-y-4">
             <div className="flex items-start gap-3">
@@ -1481,19 +2196,17 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
               </div>
             </div>
 
-            {/* Vérification des commandes en cours (Protection stricte) */}
             {(() => {
               const pendingCount = getPendingOrdersCountForProduct(storeSlug, hardDeleteTarget.id);
               if (pendingCount > 0) {
                 return (
-                  <div className="p-3.5 rounded-2xl bg-rose-100/90 border border-rose-300 text-xs text-rose-900 space-y-2">
+                  <div className="p-3.5 rounded-2xl bg-rose-100 border border-rose-300 text-xs text-rose-900 space-y-2">
                     <div className="font-bold flex items-center gap-2">
                       <AlertCircle className="w-4 h-4 text-rose-700 shrink-0" />
                       <span>Suppression impossible : commandes en cours</span>
                     </div>
                     <p className="leading-relaxed">
                       Impossible de supprimer : <strong>{pendingCount} commande(s) en cours</strong> contiennent ce produit.
-                      Traitez ou annulez ces commandes d'abord, ou conservez le produit dans la corbeille.
                     </p>
                   </div>
                 );
@@ -1502,17 +2215,13 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
                 <div className="space-y-3">
                   <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1">
                     <p className="font-semibold leading-relaxed">
-                      Cette action est <strong>irréversible</strong>. Les variantes, offres et liaisons seront définitivement nettoyées.
-                      Le slug « {hardDeleteTarget.slug} » sera immédiatement libéré pour être réutilisé.
-                    </p>
-                    <p className="text-[11px] text-amber-700">
-                      Les commandes passées conservent leur instantané figé (titre, prix, image) et ne seront jamais altérées.
+                      Cette action est <strong>irréversible</strong>. Le slug « {hardDeleteTarget.slug} » sera immédiatement libéré.
                     </p>
                   </div>
 
                   <div className="space-y-1.5 pt-1">
                     <label className="block text-xs font-bold text-[#111111]">
-                      Pour confirmer, tapez le nom du produit (« {hardDeleteTarget.name || hardDeleteTarget.title} ») ou « SUPPRIMER » :
+                      Pour confirmer, tapez le nom du produit ou « SUPPRIMER » :
                     </label>
                     <input
                       type="text"
@@ -1523,7 +2232,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
                         setHardDeleteError(null);
                       }}
                       placeholder="Tapez SUPPRIMER pour valider"
-                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-black/[0.12] bg-white text-[#111111] focus:outline-none focus:border-rose-600 font-mono"
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E6E0D4] bg-white text-[#111111] focus:outline-none focus:border-rose-600 font-mono"
                     />
                   </div>
 
@@ -1569,7 +2278,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
       {isEmptyTrashModalOpen && (
         <div
           id="modal-empty-trash"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
         >
           <div className="w-full max-w-md rounded-3xl border border-rose-200 bg-[#FAF8F5] p-6 shadow-2xl space-y-4">
             <div className="flex items-center gap-3">
@@ -1578,13 +2287,12 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
               </div>
               <div>
                 <h3 className="text-base font-black text-rose-950">Vider la corbeille ?</h3>
-                <p className="text-xs text-rose-800">{tabCounts.trash} produit(s) concerné(s)</p>
+                <p className="text-xs text-rose-800">{viewCounts.trash} produit(s) concerné(s)</p>
               </div>
             </div>
 
             <p className="text-xs text-[#666660] leading-relaxed">
               Tous les produits actuellement dans la corbeille seront définitivement effacés. Leurs slugs seront libérés.
-              Cette action est irréversible.
             </p>
 
             {emptyTrashBlockedCount > 0 && (
@@ -1614,53 +2322,19 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
         </div>
       )}
 
-      {/* Modale de Confirmation de passage en Brouillon si commandes ouvertes */}
-      {visibilityConfirmTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="w-full max-w-md rounded-3xl border border-black/10 bg-[#FAF8F5] p-6 shadow-2xl space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold">
-                <AlertTriangle className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-[#111111]">Passer ce produit en Brouillon ?</h3>
-                <p className="text-xs text-[#666660]">{visibilityConfirmTarget.name}</p>
-              </div>
-            </div>
-            <p className="text-xs text-[#666660] leading-relaxed">
-              Ce produit a des commandes récentes ou ouvertes en cours de traitement. En le passant en
-              Brouillon, il ne sera plus accessible aux visiteurs de la vitrine en ligne, mais les
-              commandes existantes resteront traitables.
-            </p>
-            <div className="flex items-center justify-end gap-2.5 pt-2">
-              <button
-                type="button"
-                onClick={() => setVisibilityConfirmTarget(null)}
-                className="px-4 py-2 rounded-xl border border-black/10 text-xs font-bold text-[#666660] hover:bg-black/5"
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                id="btn-confirm-pass-draft"
-                onClick={confirmPassToDraft}
-                className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-xs transition-colors"
-              >
-                Confirmer le passage en Brouillon
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modale Assistant Importation CSV en 5 étapes */}
+      {/* Modale d'importation CSV */}
       <CsvImportModal
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
         storeSlug={storeSlug}
         activeRole={activeRole}
         existingProducts={products}
-        onImportSuccess={handleImportSuccess}
+        onImportSuccess={(imported) => {
+          setIsImportModalOpen(false);
+          const count = Array.isArray(imported) ? imported.length : imported;
+          setProducts(getShopProductsRaw(storeSlug));
+          showToast(`${count} produit(s) importé(s) avec succès !`);
+        }}
       />
     </div>
   );

@@ -3,7 +3,16 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Package, Boxes, Truck, ShoppingCart, FolderTree, AlertTriangle } from "lucide-react";
+import {
+  Package,
+  Boxes,
+  Truck,
+  ShoppingCart,
+  FolderTree,
+  AlertTriangle,
+  ArrowUpDown,
+  TrendingUp,
+} from "lucide-react";
 import { useApp } from "@/components/layout/app-shell";
 import { MOCK_PRODUCTS, MOCK_SUPPLIERS, MOCK_PURCHASE_ORDERS, MOCK_COLLECTIONS, MOCK_REORDER_ITEMS } from "@/mock-data";
 
@@ -82,14 +91,35 @@ export function ProductsNavTabs({ storeSlug }: ProductsNavTabsProps) {
       badgeColor: "bg-[#EAE4D9] text-[#111111]",
     },
     {
+      id: "collections",
+      label: "Collections",
+      href: `/app/${storeSlug}/produits/collections`,
+      aliases: [`/app/${storeSlug}/collections`],
+      icon: FolderTree,
+      badge: tabCounts.collections,
+      badgeColor: "bg-[#EAE4D9] text-[#111111]",
+    },
+    {
       id: "stock",
-      label: "Stock",
+      label: "Inventaire",
       href: `/app/${storeSlug}/produits/stock`,
       aliases: [`/app/${storeSlug}/stock`],
       icon: Boxes,
       badge: tabCounts.reorderAlerts > 0 ? `${tabCounts.reorderAlerts} à renouveler` : undefined,
       badgeColor: "bg-amber-100 text-amber-800",
       badgeIcon: AlertTriangle,
+    },
+    {
+      id: "import-export",
+      label: "Import / Export",
+      href: `/app/${storeSlug}/produits/import-export`,
+      icon: ArrowUpDown,
+    },
+    {
+      id: "performance",
+      label: "Performance produit",
+      href: `/app/${storeSlug}/produits/performance`,
+      icon: TrendingUp,
     },
     ...(!isRestricted
       ? [
@@ -112,15 +142,6 @@ export function ProductsNavTabs({ storeSlug }: ProductsNavTabsProps) {
         },
       ]
       : []),
-    {
-      id: "collections",
-      label: "Collections",
-      href: `/app/${storeSlug}/produits/collections`,
-      aliases: [`/app/${storeSlug}/collections`],
-      icon: FolderTree,
-      badge: tabCounts.collections,
-      badgeColor: "bg-[#EAE4D9] text-[#111111]",
-    },
   ];
 
   const isTabActive = (tab: (typeof tabs)[number]) => {
@@ -131,7 +152,9 @@ export function ProductsNavTabs({ storeSlug }: ProductsNavTabsProps) {
           !pathname.includes("/stock") &&
           !pathname.includes("/fournisseurs") &&
           !pathname.includes("/achats") &&
-          !pathname.includes("/collections"))
+          !pathname.includes("/collections") &&
+          !pathname.includes("/import-export") &&
+          !pathname.includes("/performance"))
       );
     }
     if (pathname === tab.href || tab.aliases?.some((a) => pathname === a || pathname.startsWith(a))) {
@@ -149,6 +172,7 @@ export function ProductsNavTabs({ storeSlug }: ProductsNavTabsProps) {
           return (
             <Link
               key={tab.id}
+              id={`products-nav-tab-${tab.id}`}
               href={tab.href}
               className={`group flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap shadow-xs ${active
                 ? "bg-[#111111] text-white shadow-sm"

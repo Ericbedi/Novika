@@ -55,7 +55,7 @@ export const PERMISSIONS_MATRIX: PermissionRule[] = [
   { resource: "products", role: "owner", level: "full", allowedActions: ["view", "create", "update", "delete", "export"] },
   { resource: "products", role: "admin", level: "full", allowedActions: ["view", "create", "update", "delete", "export"] },
   { resource: "products", role: "manager", level: "read", allowedActions: ["view"] },
-  { resource: "products", role: "closer", level: "none", allowedActions: [] },
+  { resource: "products", role: "closer", level: "read", allowedActions: ["view"], scopeCondition: "no_financials" },
   { resource: "products", role: "rider", level: "none", allowedActions: [] },
   { resource: "products", role: "courier", level: "none", allowedActions: [] },
   { resource: "products", role: "agency", level: "none", allowedActions: [] },
@@ -409,6 +409,25 @@ export function canHardDeleteProduct(role: UserRole): boolean {
 }
 
 export function canBatchManageProducts(role: UserRole): boolean {
+  return role === "owner" || role === "admin";
+}
+
+/**
+ * Règles d'accès et de visibilité financière des Produits (Prompt 17) :
+ * - Voir les produits : admin, co-admin, manager, closeuse (lecture).
+ * - Créer / modifier / supprimer : admin, co-admin.
+ * - Coût, marge, fournisseur : admin et co-admin uniquement.
+ * - Livreur et agence : aucun accès à cette section (refus par défaut).
+ */
+export function canViewProducts(role: UserRole): boolean {
+  return role === "owner" || role === "admin" || role === "manager" || role === "closer";
+}
+
+export function canManageProducts(role: UserRole): boolean {
+  return role === "owner" || role === "admin";
+}
+
+export function canViewProductFinancials(role: UserRole): boolean {
   return role === "owner" || role === "admin";
 }
 
