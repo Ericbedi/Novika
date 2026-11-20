@@ -1638,7 +1638,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
                           {/* Icône œil : aperçu vitrine */}
                           <a
                             id={`btn-product-preview-${product.id}`}
-                            href={`/boutique/${storeSlug}/produits/${product.slug || product.id}`}
+                            href={`/boutique/${storeSlug}/produits/${product.slug || product.id}?preview=true`}
                             target="_blank"
                             rel="noopener noreferrer"
                             title="Voir sur la vitrine"
@@ -1806,7 +1806,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
                   {/* Actions mobile */}
                   <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#F0EBE0]">
                     <a
-                      href={`/boutique/${storeSlug}/produits/${product.slug || product.id}`}
+                      href={`/boutique/${storeSlug}/produits/${product.slug || product.id}?preview=true`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-3 py-1.5 rounded-lg border border-[#E6E0D4] bg-white text-xs font-semibold text-[#111111] flex items-center gap-1"
@@ -1931,7 +1931,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
 
                 <div className="flex items-center gap-1.5 pt-2 border-t border-[#F0EBE0]">
                   <a
-                    href={`/boutique/${storeSlug}/produits/${product.slug || product.id}`}
+                    href={`/boutique/${storeSlug}/produits/${product.slug || product.id}?preview=true`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="p-2 rounded-lg border border-[#E6E0D4] text-[#111111] hover:bg-[#FAF8F5]"

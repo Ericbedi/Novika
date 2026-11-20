@@ -30,12 +30,13 @@ export default function ProductDetailPage({
   const { store: storeSlug, id: productId } = use(params);
   const searchParams = useSearchParams();
   const urlTemplate = searchParams?.get("template") as any;
+  const isPreview = searchParams?.get("preview") === "true";
 
   const [product, setProduct] = useState<Product | null>(() => {
     return getProductByShopAndSlugOrId({
       shopSlug: storeSlug,
       slugOrId: productId,
-      allowDraft: false,
+      allowDraft: isPreview,
     });
   });
 
@@ -45,11 +46,11 @@ export default function ProductDetailPage({
     const loaded = getProductByShopAndSlugOrId({
       shopSlug: storeSlug,
       slugOrId: productId,
-      allowDraft: false,
+      allowDraft: isPreview,
     });
     setProduct(loaded);
     setIsLoaded(true);
-  }, [storeSlug, productId]);
+  }, [storeSlug, productId, isPreview]);
 
   // Si le produit n'existe pas ou n'est pas actif : Page 404 en français (Zéro repli sur un autre produit)
   if (isLoaded && !product) {

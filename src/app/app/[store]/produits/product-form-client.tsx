@@ -1015,7 +1015,7 @@ export function ProductFormClient({
           {initialProduct && (
             <a
               id="btn-product-preview-store"
-              href={`/boutique/${storeSlug}/produits/${initialProduct.slug || initialProduct.id}`}
+              href={`/boutique/${storeSlug}/produits/${initialProduct.slug || initialProduct.id}?preview=true`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#E6E0D4] bg-white text-xs font-semibold text-[#111111] hover:bg-[#F3EFE6] transition-colors"
