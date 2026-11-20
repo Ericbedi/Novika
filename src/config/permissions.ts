@@ -431,3 +431,8 @@ export function canViewProductFinancials(role: UserRole): boolean {
   return role === "owner" || role === "admin";
 }
 
+export function canManageSettings(role: UserRole): boolean {
+  return role === "owner" || role === "admin";
+}
+
+

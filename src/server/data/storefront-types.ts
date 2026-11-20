@@ -157,6 +157,11 @@ export interface StorefrontData {
   contact: StoreContactInfo;
   reviews: CustomerReview[];
   versions: StorefrontVersion[];
+  seo?: {
+    visibleOnGoogle?: boolean;
+    metaTitle?: string;
+    metaDescription?: string;
+  };
   previewToken?: {
     token: string;
     expiresAt: string;

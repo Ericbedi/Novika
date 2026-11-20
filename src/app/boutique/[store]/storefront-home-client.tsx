@@ -702,6 +702,7 @@ export function StorefrontHomeClient({
           section={editingThemeSection}
           isOpen={Boolean(editingThemeSection)}
           palettes={shopTheme.generalSettings.palettes}
+          storeSlug={storeSlug}
           onClose={() => setEditingThemeSection(null)}
           onSave={handleSaveThemeSection}
           onDelete={handleDeleteThemeSection}

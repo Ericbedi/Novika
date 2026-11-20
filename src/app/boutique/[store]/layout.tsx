@@ -126,14 +126,11 @@ export default function StorefrontLayout({
     }
   }, [storeSlug]);
 
+  // Vitrine à 3 pages UNIQUEMENT (Prompt 21-b : Accueil, Catalogue, Contact)
   const navLinks = [
     { label: "Accueil", href: `/boutique/${storeSlug}` },
-    ...(!themeSettings.hideCatalog
-      ? [{ label: "Catalogue", href: `/boutique/${storeSlug}/catalogue` }]
-      : []),
-    { label: "Blog", href: `/boutique/${storeSlug}/blog` },
-    { label: "Contact & Délais", href: `/boutique/${storeSlug}/contact` },
-    { label: "À Propos", href: `/boutique/${storeSlug}/pages/a-propos` },
+    { label: "Catalogue", href: `/boutique/${storeSlug}/catalogue` },
+    { label: "Contact", href: `/boutique/${storeSlug}/contact` },
   ];
 
   return (
@@ -144,6 +141,15 @@ export default function StorefrontLayout({
         fontFamily: storefront.activeTheme.typography.fontFamily,
       }}
     >
+      {/* Réglage d'indexation « Visible sur Google » (Prompt 21-b) : noindex par défaut */}
+      <head>
+        {storefront.seo?.visibleOnGoogle ? (
+          <meta name="robots" content="index, follow" />
+        ) : (
+          <meta name="robots" content="noindex, nofollow" />
+        )}
+      </head>
+
       {/* Bouclier Anti-Espion & Anti-Extensions Chrome (Empêche le scan et le vol de catalogue) */}
       <StorefrontAntiSpyShield storeSlug={storeSlug} />
 
@@ -204,23 +210,13 @@ export default function StorefrontLayout({
             </nav>
           )}
 
-          {/* Raccourcis Recherche, Pays & WhatsApp */}
+          {/* Raccourcis Pays & WhatsApp (Vitrine 3 pages épurée Prompt 21-b) */}
           <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-            <Link
-              href={`/boutique/${storeSlug}/recherche`}
-              className="p-1.5 sm:p-2 rounded-xl text-[#666660] hover:text-[#111111] hover:bg-black/[0.04] transition-colors shrink-0"
-              title="Recherche instantanée"
-            >
-              <Search className="h-4 w-4" />
-            </Link>
-
             <StorefrontCountrySelector
               storeSlug={storeSlug}
               storeCurrency={store.currency || "XOF"}
               defaultCountryCode={store.country || "TG"}
             />
-
-            <HeaderCartButton storeSlug={storeSlug} />
 
             <a
               href={`https://wa.me/${storefront.contact.whatsappNumber.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
@@ -264,23 +260,23 @@ export default function StorefrontLayout({
               </div>
             </div>
 
-            {/* Colonne 2 : Navigation rapide */}
+            {/* Colonne 2 : Navigation rapide (3 pages UNIQUEMENT Prompt 21-b) */}
             <div className="space-y-3 text-xs">
               <p className="font-black uppercase tracking-wider text-[#111111]">Boutique</p>
               <ul className="space-y-2 text-[#666660] font-medium">
                 <li>
+                  <Link href={`/boutique/${storeSlug}`} className="hover:text-[#111111]">
+                    Accueil
+                  </Link>
+                </li>
+                <li>
                   <Link href={`/boutique/${storeSlug}/catalogue`} className="hover:text-[#111111]">
-                    Tous les Produits
+                    Catalogue des Produits
                   </Link>
                 </li>
                 <li>
                   <Link href={`/boutique/${storeSlug}/contact`} className="hover:text-[#111111]">
-                    Zones & Frais de Livraison
-                  </Link>
-                </li>
-                <li>
-                  <Link href={`/boutique/${storeSlug}/pages/a-propos`} className="hover:text-[#111111]">
-                    Notre Histoire
+                    Contact & Délais de Livraison
                   </Link>
                 </li>
               </ul>
@@ -474,9 +470,6 @@ export default function StorefrontLayout({
 
       {/* Bandeau de consentement aux cookies avec catégorie Marketing */}
       <CookieConsentBanner storeSlug={storeSlug} />
-
-      {/* Tiroir latéral du Panier Multi-Produits COD */}
-      <CartDrawer storeSlug={storeSlug} />
     </div>
   );
 }

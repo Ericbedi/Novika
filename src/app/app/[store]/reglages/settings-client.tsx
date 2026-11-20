@@ -709,6 +709,22 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
       icon: Activity,
     },
     {
+      id: "domaines" as const,
+      label: "Domaines",
+      description: "Noms de domaine et DNS Vercel",
+      icon: Globe2,
+      href: `/app/${storeSlug}/reglages/domaines`,
+      isExternalRoute: true,
+    },
+    {
+      id: "boutiques" as const,
+      label: "Toutes les boutiques",
+      description: "Multi-boutiques & métriques",
+      icon: Building2,
+      href: `/app/${storeSlug}/reglages/boutiques`,
+      isExternalRoute: true,
+    },
+    {
       id: "facturation" as const,
       label: "Facturation & Quotas",
       description: "Abonnement et limites",

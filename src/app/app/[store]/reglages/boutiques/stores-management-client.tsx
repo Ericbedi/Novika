@@ -23,6 +23,9 @@ import {
   Store as StoreIcon,
   Eye,
   Pencil,
+  Globe2,
+  BarChart3,
+  TrendingUp,
 } from "lucide-react";
 import { Store, UserRole, USER_ROLE_LABELS } from "@/server/data/types";
 import { useApp } from "@/components/layout/app-shell";
@@ -31,6 +34,7 @@ import { CreateStoreModal } from "@/components/app/create-store-modal";
 import { EditStoreDrawer } from "@/components/app/edit-store-drawer";
 import { AFRICAN_COUNTRIES_54 } from "@/server/data/african-countries";
 import { canEditStore, canDeleteStore } from "@/config/permissions";
+import { formatFcfa } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 interface StoresManagementClientProps {
@@ -42,6 +46,9 @@ export interface StoreItem extends Store {
   deletionDate?: string;
   orderCount?: number;
   productCount?: number;
+  todayOrders?: number;
+  deliveredOrders?: number;
+  deliveredRevenue?: number;
   description?: string;
   contactEmail?: string;
   logo?: string;
@@ -52,6 +59,12 @@ export function StoresManagementClient({ storeSlug }: StoresManagementClientProp
   const router = useRouter();
   const { activeStore, setActiveStore, activeRole, stores, openCreateStoreModal } = useApp();
 
+  // Plafond technique réglable par variable d'environnement (Prompt 19)
+  const maxShopsLimit = parseInt(process.env.NEXT_PUBLIC_MAX_SHOPS_LIMIT || "20", 10);
+
+  // Vue synthétique propriétaire vs cartes individuelles
+  const [viewMode, setViewMode] = useState<"cards" | "owner_overview">("cards");
+
   // Liste des boutiques synchronisée avec le magasin serveur
   const [storeList, setStoreList] = useState<StoreItem[]>(() => {
     return stores.map((s, idx) => ({
@@ -59,6 +72,9 @@ export function StoresManagementClient({ storeSlug }: StoresManagementClientProp
       status: idx === 3 ? "archived" : "active",
       orderCount: idx === 3 ? 0 : 142 + idx * 85,
       productCount: 12 + idx * 4,
+      todayOrders: idx === 3 ? 0 : 12 + idx * 4,
+      deliveredOrders: idx === 3 ? 0 : 96 + idx * 55,
+      deliveredRevenue: idx === 3 ? 0 : (96 + idx * 55) * 16500,
       description: idx === 0 ? "Boutique de cosmétiques et soins naturels au Togo." : "",
       contactEmail: idx === 0 ? "contact@lomeglow.tg" : `contact@${s.slug}.com`,
       version: 1,
@@ -317,15 +333,25 @@ export function StoresManagementClient({ storeSlug }: StoresManagementClientProp
           </p>
         </div>
 
-        <button
-          type="button"
-          id="btn-create-store-management"
-          onClick={openCreateStoreModal}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#C2410C] hover:bg-[#9A3412] text-white text-xs font-bold shadow-xs transition-all cursor-pointer shrink-0"
-        >
-          <Plus className="h-4 w-4" />
-          <span>+ Créer une boutique</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {storeList.length >= maxShopsLimit ? (
+            <div className="text-right">
+              <span className="text-[11px] font-bold text-amber-800 bg-amber-100 border border-amber-300 px-3 py-1.5 rounded-xl">
+                Plafond atteint ({maxShopsLimit} boutiques)
+              </span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              id="btn-create-store-management"
+              onClick={openCreateStoreModal}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#C2410C] hover:bg-[#9A3412] text-white text-xs font-bold shadow-xs transition-all cursor-pointer shrink-0"
+            >
+              <Plus className="h-4 w-4" />
+              <span>+ Créer une boutique</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Cartes de synthèse */}
@@ -390,8 +416,110 @@ export function StoresManagementClient({ storeSlug }: StoresManagementClientProp
         </div>
       </div>
 
-      {/* Liste des boutiques */}
-      <div className="space-y-3">
+      {/* Sélecteur de vue : Cartes vs Synthèse Propriétaire (Prompt 19) */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-1 p-1 bg-stone-100 rounded-xl border border-black/10">
+          <button
+            type="button"
+            id="tab-view-cards"
+            onClick={() => setViewMode("cards")}
+            className={cn(
+              "px-3 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer",
+              viewMode === "cards" ? "bg-white text-[#111111] shadow-2xs" : "text-[#666660] hover:text-[#111111]"
+            )}
+          >
+            Vue Cartes
+          </button>
+          <button
+            type="button"
+            id="tab-view-owner"
+            onClick={() => setViewMode("owner_overview")}
+            className={cn(
+              "px-3 py-1.5 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer",
+              viewMode === "owner_overview" ? "bg-white text-[#111111] shadow-2xs" : "text-[#666660] hover:text-[#111111]"
+            )}
+          >
+            <BarChart3 className="h-3.5 w-3.5" />
+            <span>Vue « Toutes les boutiques » (Propriétaire)</span>
+          </button>
+        </div>
+      </div>
+
+      {viewMode === "owner_overview" ? (
+        /* Tableau de synthèse Propriétaire (Prompt 19) */
+        <div className="p-5 rounded-2xl bg-white border border-black/[0.08] shadow-2xs space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-black text-[#111111] flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-[#C2410C]" />
+              <span>Tableau de bord global des boutiques</span>
+            </h2>
+            <span className="text-xs text-[#666660]">Commandes du jour, livrées & Chiffre d'affaires livré</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border border-black/[0.08] rounded-xl overflow-hidden">
+              <thead className="bg-[#FAF8F5] text-[#666660] font-bold text-[10px] uppercase tracking-wider">
+                <tr>
+                  <th className="p-3">Boutique</th>
+                  <th className="p-3">Pays & Devise</th>
+                  <th className="p-3 text-right">Commandes du jour</th>
+                  <th className="p-3 text-right">Commandes livrées</th>
+                  <th className="p-3 text-right">CA livré</th>
+                  <th className="p-3">Domaines</th>
+                  <th className="p-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-black/[0.08]">
+                {filteredStores.map((s) => (
+                  <tr key={s.id} className="hover:bg-black/[0.02]">
+                    <td className="p-3 font-bold text-[#111111]">
+                      <div className="flex items-center gap-2">
+                        <CountryFlag code={s.country} width={20} height={14} />
+                        <span>{s.name}</span>
+                        {s.id === activeStore.id && (
+                          <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-[#111111] text-white">Active</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-3 text-[#666660]">{s.countryName} · {s.currency}</td>
+                    <td className="p-3 text-right font-black text-[#111111]">{s.todayOrders ?? 0}</td>
+                    <td className="p-3 text-right font-bold text-emerald-700">{s.deliveredOrders ?? 0}</td>
+                    <td className="p-3 text-right font-black text-[#111111]">
+                      {formatFcfa(s.deliveredRevenue ?? 0)}
+                    </td>
+                    <td className="p-3">
+                      <Link
+                        href={`/app/${s.slug}/reglages/domaines`}
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:underline"
+                      >
+                        <Globe2 className="h-3 w-3" />
+                        <span>Gérer DNS</span>
+                      </Link>
+                    </td>
+                    <td className="p-3 text-right">
+                      {s.id !== activeStore.id ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveStore(s);
+                            router.push(`/app/${s.slug}`);
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-[#FAF8F5] border border-black/10 text-[11px] font-bold hover:bg-black/5"
+                        >
+                          Basculer
+                        </button>
+                      ) : (
+                        <span className="text-[11px] text-[#888880] italic">Active</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        /* Liste des boutiques */
+        <div className="space-y-3">
         {filteredStores.map((store) => {
           const isCurrentActive = store.id === activeStore.id;
           const isPendingDelete = store.status === "pending_deletion";
@@ -506,6 +634,15 @@ export function StoresManagementClient({ storeSlug }: StoresManagementClientProp
                     <Eye className="h-4 w-4" />
                   </a>
 
+                  {/* 2b. Domaines & DNS (Prompt 19) */}
+                  <Link
+                    href={`/app/${store.slug}/reglages/domaines`}
+                    title="Gérer les domaines et DNS"
+                    className="p-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-xl border border-black/[0.08] hover:border-black/20 text-[#666660] hover:text-[#111111] transition-colors"
+                  >
+                    <Globe2 className="h-4 w-4" />
+                  </Link>
+
                   {/* 3. Modifier (icône crayon + texte) - Réservé aux rôles autorisés */}
                   {canEdit && (
                     <button
@@ -584,6 +721,7 @@ export function StoresManagementClient({ storeSlug }: StoresManagementClientProp
           </div>
         )}
       </div>
+      )}
 
       {/* ======================================================== */}
       {/* TIROIR LATÉRAL DE MODIFICATION (DRAWER PROMPT 05-M)     */}
