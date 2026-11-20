@@ -1,0 +1,229 @@
+{
+  "backup_date": "2026-11-20T22:48:42.000Z",
+  "project_id": "auagnybineaupmelyxlu",
+  "tables": {
+    "merchant_accounts": [
+      {
+        "id": "e6468fc2-a776-417e-8c22-79c58e3193b0",
+        "email": "findsunivers@gmail.com",
+        "full_name": "findsunivers",
+        "password_hash": "99521859123.OWN",
+        "phone": null,
+        "country": "TG",
+        "niches": [],
+        "is_verified": true,
+        "role": "owner",
+        "created_at": "2026-11-16T15:04:13.785266+00:00",
+        "updated_at": "2026-11-16T15:04:13.785266+00:00"
+      },
+      {
+        "id": "45b21f76-e461-4f28-9727-2739f7cad916",
+        "email": "afrikexpress228@gmail.com",
+        "full_name": "Abou",
+        "password_hash": "Ownjunior.123",
+        "phone": "+228 97794424",
+        "country": "TG",
+        "niches": [
+          "Cosmétiques, Soins & Beauté",
+          "Maison, Cuisine & Décoration",
+          "Mode, Vêtements & Chaussures",
+          "Téléphones, High-Tech & Gadgets",
+          "Santé, Compléments & Minceur",
+          "Fitness, Sport & Bien-être"
+        ],
+        "is_verified": true,
+        "role": "owner",
+        "created_at": "2026-11-16T15:07:23.889119+00:00",
+        "updated_at": "2026-11-16T15:10:27.174+00:00"
+      },
+      {
+        "id": "bcd25415-c009-4361-86ef-e79694b5c88e",
+        "email": "promisesbedi@gmail.com",
+        "full_name": "bedi",
+        "password_hash": "Ownjunior.123",
+        "phone": "+22897794424",
+        "country": "TG",
+        "niches": [],
+        "is_verified": true,
+        "role": "owner",
+        "created_at": "2026-11-19T14:09:50.602169+00:00",
+        "updated_at": "2026-11-19T14:10:43.132+00:00"
+      },
+      {
+        "id": "5d2983c1-a672-45a4-bf05-fcc536357b8e",
+        "email": "kokouericbedi@gmail.com",
+        "full_name": "Kokou eric BEDI",
+        "password_hash": "Ownjunior.123",
+        "phone": "+22899655566",
+        "country": "TG",
+        "niches": [],
+        "is_verified": false,
+        "role": "owner",
+        "created_at": "2026-11-19T21:31:37.531893+00:00",
+        "updated_at": "2026-11-19T21:31:37.293+00:00"
+      }
+    ],
+    "shops": [
+      {
+        "id": "b7e5c920-410a-4a2f-98f1-85e8d3810001",
+        "owner_email": "promisesbedi@gmail.com",
+        "name": "Kelio",
+        "slug": "kelio",
+        "country_code": "TG",
+        "primary_currency": "XOF",
+        "created_at": "2026-11-20T15:54:36.983788+00:00",
+        "updated_at": "2026-11-20T15:54:36.983788+00:00"
+      }
+    ],
+    "locations": [
+      {
+        "id": "a1b2c3d4-e5f6-4a1b-8c2d-3e4f5a6b7c8d",
+        "store_id": "b7e5c920-410a-4a2f-98f1-85e8d3810001",
+        "name": "Entrepôt Principal Kelio",
+        "city": "Lomé",
+        "country": "TG",
+        "is_default": true,
+        "active": true,
+        "created_at": "2026-11-20T15:54:36.983788+00:00"
+      }
+    ],
+    "products": [
+      {
+        "id": "c8f6d031-521b-4b30-a902-96f9e4920002",
+        "store_id": "b7e5c920-410a-4a2f-98f1-85e8d3810001",
+        "title": "Accompagnez votre équilibre glycémique",
+        "slug": "accompagnez-votre-equilibre-glycemique",
+        "description": "<p>Formule naturelle synergique conçue pour aider à maintenir une glycémie équilibrée, réguler l'appétit et favoriser un métabolisme énergétique sain au quotidien.</p>",
+        "category": "Santé & Bien-être",
+        "type": "Complément alimentaire",
+        "supplier_id": null,
+        "sale_price": 18500,
+        "compare_at_price": 25000,
+        "cost_price": 7000,
+        "charge_tax": false,
+        "track_quantity": true,
+        "sku": null,
+        "barcode": null,
+        "low_stock_threshold": 10,
+        "is_physical": true,
+        "weight_grams": 250,
+        "abc_class": "A",
+        "sales_velocity": 0,
+        "status": "active",
+        "stock_status": "in_stock",
+        "badges_config": {},
+        "seo_title": null,
+        "seo_description": null,
+        "deleted_at": null,
+        "created_at": "2026-11-20T15:54:36.983788+00:00",
+        "updated_at": "2026-11-20T15:54:36.983788+00:00",
+        "published_to_storefront": true,
+        "legacy_id": null,
+        "short_code": "glyc01"
+      },
+      {
+        "id": "6061f941-f956-4ce5-911b-a4bf327ccdc6",
+        "store_id": "b7e5c920-410a-4a2f-98f1-85e8d3810001",
+        "title": "Test Produit Sync",
+        "slug": "test-produit-sync",
+        "description": "",
+        "category": "Santé & Bien-être",
+        "type": "Standard",
+        "supplier_id": null,
+        "sale_price": 12000,
+        "compare_at_price": null,
+        "cost_price": 0,
+        "charge_tax": false,
+        "track_quantity": true,
+        "sku": "SKU-43727c",
+        "barcode": null,
+        "low_stock_threshold": 10,
+        "is_physical": true,
+        "weight_grams": 250,
+        "abc_class": "A",
+        "sales_velocity": 0,
+        "status": "archived",
+        "stock_status": "in_stock",
+        "badges_config": {},
+        "seo_title": null,
+        "seo_description": null,
+        "deleted_at": "2026-11-20T17:46:25.991531+00:00",
+        "created_at": "2026-11-20T17:46:03.451445+00:00",
+        "updated_at": "2026-11-20T17:46:03.451445+00:00",
+        "published_to_storefront": true,
+        "legacy_id": "prod_imp_test_123",
+        "short_code": "3c9378"
+      }
+    ],
+    "variants": [
+      {
+        "id": "ea88f253-743d-4d52-c124-18ab26140004",
+        "product_id": "c8f6d031-521b-4b30-a902-96f9e4920002",
+        "title": "Flacon 60 gélules",
+        "sku": "KEL-GLYC-60",
+        "barcode": null,
+        "price": 18500,
+        "cost_price": 7000,
+        "weight_grams": 200,
+        "image_url": null,
+        "created_at": "2026-11-20T15:54:36.983788+00:00"
+      },
+      {
+        "id": "d6064468-b905-43c0-9c35-aeabb4cf75bf",
+        "product_id": "6061f941-f956-4ce5-911b-a4bf327ccdc6",
+        "title": "Standard",
+        "sku": "SKU-43727c",
+        "barcode": null,
+        "price": 12000,
+        "cost_price": 0,
+        "weight_grams": 200,
+        "image_url": null,
+        "created_at": "2026-11-20T17:46:03.451445+00:00"
+      }
+    ],
+    "product_media": [
+      {
+        "id": "fb99a364-854e-4e63-d235-29bc37250005",
+        "product_id": "c8f6d031-521b-4b30-a902-96f9e4920002",
+        "media_url": "/products/serum-eclat.png",
+        "media_type": "image",
+        "position": 0,
+        "alt_text": "Accompagnez votre équilibre glycémique",
+        "created_at": "2026-11-20T15:54:36.983788+00:00"
+      },
+      {
+        "id": "5a05100c-194d-4010-8432-b572db5ad77e",
+        "product_id": "6061f941-f956-4ce5-911b-a4bf327ccdc6",
+        "media_url": "/products/serum-eclat.png",
+        "media_type": "image",
+        "position": 0,
+        "alt_text": "Test Produit Sync",
+        "created_at": "2026-11-20T17:46:03.451445+00:00"
+      }
+    ],
+    "stock_levels": [
+      {
+        "id": "d9a7e142-632c-4c41-b013-07fa15030003",
+        "product_id": "c8f6d031-521b-4b30-a902-96f9e4920002",
+        "variant_id": "ea88f253-743d-4d52-c124-18ab26140004",
+        "location_id": "a1b2c3d4-e5f6-4a1b-8c2d-3e4f5a6b7c8d",
+        "physical_stock": 45,
+        "reserved_stock": 0,
+        "in_transit_stock": 0,
+        "updated_at": "2026-11-20T15:54:36.983788+00:00",
+        "available_stock": 45
+      },
+      {
+        "id": "50a7597f-2666-432d-81e6-cc1e3939faec",
+        "product_id": "6061f941-f956-4ce5-911b-a4bf327ccdc6",
+        "variant_id": "d6064468-b905-43c0-9c35-aeabb4cf75bf",
+        "location_id": "a1b2c3d4-e5f6-4a1b-8c2d-3e4f5a6b7c8d",
+        "physical_stock": 15,
+        "reserved_stock": 0,
+        "in_transit_stock": 0,
+        "updated_at": "2026-11-20T17:46:03.451445+00:00",
+        "available_stock": 15
+      }
+    ]
+  }
+}
