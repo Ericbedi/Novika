@@ -33,8 +33,8 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={`${poppins.variable} font-sans h-full`}>
-      <body className="min-h-full font-sans antialiased bg-slate-50 text-slate-900">{children}</body>
+    <html lang="fr" className={`${poppins.variable} font-sans h-full`} suppressHydrationWarning>
+      <body className="min-h-full font-sans antialiased bg-slate-50 text-slate-900" suppressHydrationWarning>{children}</body>
     </html>
   );
 }

@@ -17,6 +17,12 @@ export default function GlobalError({
   const [userSpace, setUserSpace] = useState<string>(ROUTES.login);
   const [copied, setCopied] = useState(false);
 
+  const isDev =
+    process.env.NODE_ENV !== "production" ||
+    (typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1"));
+
   // Identifiant court d'incident (digest Next.js ou code généré lisible)
   const [incidentId] = useState(() => {
     if (error?.digest) return error.digest;
@@ -151,6 +157,34 @@ export default function GlobalError({
               Transmettez ce code à l&apos;équipe Novika pour un diagnostic immédiat.
             </p>
           </div>
+
+          {/* Détails techniques affichés en mode développement (Prompt 17-P) */}
+          {isDev && (
+            <div className="rounded-2xl bg-rose-50 border border-rose-200 p-3.5 text-left space-y-2">
+              <div className="flex items-center gap-1.5 text-rose-800 font-bold text-xs">
+                <AlertTriangle className="h-3.5 w-3.5 text-rose-600 shrink-0" />
+                <span>Diagnostic Développeur</span>
+              </div>
+              <div className="p-2 bg-white rounded-xl border border-rose-200 text-rose-950 font-mono text-[11px] break-all select-all leading-relaxed">
+                <strong>Erreur :</strong> {error?.message || "Erreur sans message spécifique"}
+              </div>
+              {error?.digest && (
+                <p className="text-[10px] font-mono text-neutral-600">
+                  <strong>Digest Next.js :</strong> {error.digest}
+                </p>
+              )}
+              {error?.stack && (
+                <details className="pt-1">
+                  <summary className="text-[10px] font-bold text-rose-700 cursor-pointer hover:underline">
+                    Voir la trace complète (Stack trace)
+                  </summary>
+                  <pre className="mt-1.5 p-2 bg-neutral-900 text-neutral-100 rounded-lg text-[9px] overflow-x-auto max-h-40 whitespace-pre-wrap font-mono leading-tight">
+                    {error.stack}
+                  </pre>
+                </details>
+              )}
+            </div>
+          )}
 
           <div className="pt-2 space-y-2.5">
             <button

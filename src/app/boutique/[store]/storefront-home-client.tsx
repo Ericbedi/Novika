@@ -359,18 +359,18 @@ export function StorefrontHomeClient({
               >
                 <div className="space-y-2.5">
                   <Link
-                    href={`/boutique/${storeSlug}/produit/${prod.id}`}
+                    href={`/boutique/${storeSlug}/produits/${prod.slug || prod.id}`}
                     className="relative block h-40 sm:h-48 rounded-2xl bg-[#FAF8F5] overflow-hidden border border-black/[0.04]"
                   >
                     {prod.images && prod.images[0] ? (
                       <img
                         src={prod.images[0]}
-                        alt={prod.name}
+                        alt={prod.title || prod.name || "Produit"}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center p-3 text-center">
-                        <span className="text-xs font-black text-[#111111]">{prod.name}</span>
+                        <span className="text-xs font-black text-[#111111]">{prod.title || prod.name || "Produit"}</span>
                       </div>
                     )}
                     {prod.compareAtPrice && prod.compareAtPrice > (prod.price || (prod as any).sellingPrice || 0) && (
@@ -382,7 +382,7 @@ export function StorefrontHomeClient({
 
                   <div>
                     <h3 className="text-xs sm:text-sm font-black text-[#111111] line-clamp-2">
-                      {prod.name}
+                      {prod.title || prod.name || "Produit"}
                     </h3>
                     <div className="flex items-baseline gap-1.5 mt-1">
                       <span className="text-sm sm:text-base font-black text-[#111111]">
@@ -398,7 +398,7 @@ export function StorefrontHomeClient({
                 </div>
 
                 <Link
-                  href={`/boutique/${storeSlug}/produit/${prod.id}`}
+                  href={`/boutique/${storeSlug}/produits/${prod.slug || prod.id}`}
                   className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-colors"
                 >
                   <span>Commander</span>

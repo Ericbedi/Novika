@@ -82,9 +82,16 @@ export function StorefrontAntiSpyShield({
       }
     };
 
+    // En mode développement ou sur localhost, désactiver le piège anti-débogueur et les suppressions de nœuds
+    // pour éviter les conflits d'hydratation React 19 et permettre l'inspection légitime
+    const isDev =
+      process.env.NODE_ENV !== "production" ||
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1";
+
     // 4. Suppression active des nœuds injectés par les extensions Chrome espionnes (AliHunter, PPSPY, Koala, etc.)
     let observer: MutationObserver | null = null;
-    if (enableAntiExtension) {
+    if (enableAntiExtension && !isDev) {
       observer = new MutationObserver((mutations) => {
         for (const mutation of mutations) {
           for (const node of Array.from(mutation.addedNodes)) {
@@ -131,7 +138,7 @@ export function StorefrontAntiSpyShield({
 
     // 5. Piège anti-débogueur léger : paralyse les inspecteurs automatiques d'extensions
     let debugInterval: NodeJS.Timeout | null = null;
-    if (enableAntiInspect) {
+    if (enableAntiInspect && !isDev) {
       debugInterval = setInterval(() => {
         const start = performance.now();
         // eslint-disable-next-line no-eval
