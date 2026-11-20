@@ -46,6 +46,7 @@ import {
   canPublishStorefront,
 } from "@/mock-data/storefront-data";
 import { MOCK_PRODUCTS } from "@/mock-data/products";
+import { getShopProducts } from "@/lib/products-store";
 import { StorefrontData, ThemeConfig, PageSection } from "@/server/data/storefront-types";
 import { useApp } from "@/components/layout/app-shell";
 import { formatFcfa } from "@/lib/money";
@@ -253,7 +254,8 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
   };
 
   // Condition de publication côté serveur
-  const publishCheck = canPublishStorefront(activeStore, MOCK_PRODUCTS, storefront);
+  const storeProducts = getShopProducts(storeSlug);
+  const publishCheck = canPublishStorefront(activeStore, storeProducts, storefront);
 
   // Détection des modifications non publiées
   const hasUnpublishedChanges = useMemo(() => {

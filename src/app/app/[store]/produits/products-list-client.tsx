@@ -119,14 +119,14 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) {
+          if (Array.isArray(parsed) && parsed.length > 0) {
             return parsed.filter((p) => p && typeof p === "object");
           }
         } catch { }
       }
-      if (!isFounderDemoStore) return [];
+      return getShopProductsRaw(storeSlug);
     }
-    return isFounderDemoStore ? MOCK_PRODUCTS : [];
+    return getShopProductsRaw(storeSlug);
   });
 
   const [orders, setOrders] = useState<Order[]>(() => {

@@ -77,8 +77,38 @@ export default function ProductCanonicalDetailPage({
 
   useEffect(() => {
     const raw = findProductInShopRaw(storeSlug, productId);
-    setProductData(raw);
-    setIsLoaded(true);
+    if (raw.product) {
+      setProductData(raw);
+      setIsLoaded(true);
+    } else {
+      // Tentative de récupération distante via l'API Supabase avant de déclarer 404
+      fetch(`/api/products?store=${encodeURIComponent(storeSlug)}&id=${encodeURIComponent(productId)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.products && data.products.length > 0) {
+            const found = data.products.find(
+              (p: Product) =>
+                p.id === productId ||
+                p.slug === productId ||
+                p.shortCode === productId ||
+                p.short_code === productId
+            ) || data.products[0];
+            setProductData({
+              product: found,
+              isDeleted: Boolean(found.deletedAt),
+              isUnpublished: !found.published_to_storefront,
+            });
+          } else {
+            setProductData(raw);
+          }
+        })
+        .catch(() => {
+          setProductData(raw);
+        })
+        .finally(() => {
+          setIsLoaded(true);
+        });
+    }
 
     // Détection rôle admin connecté
     try {

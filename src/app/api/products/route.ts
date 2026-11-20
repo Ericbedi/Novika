@@ -1,0 +1,84 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { getShopProducts, getShopProductsRaw } from "@/lib/products-store";
+import { Product } from "@/server/data/types";
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const storeSlug = searchParams.get("store") || "lome-glow";
+    const productIdOrSlug = searchParams.get("id") || searchParams.get("slug");
+
+    // 1. Tentative de lecture Supabase via la vue unifiée product_availability
+    try {
+      const supabase = await createClient();
+      let query = (supabase as any)
+        .from("product_availability")
+        .select("*")
+        .eq("shop_slug", storeSlug);
+
+      if (productIdOrSlug) {
+        query = query.or(`slug.eq.${productIdOrSlug},product_id.eq.${productIdOrSlug}`);
+      }
+
+      const { data: dbRows, error } = await query;
+
+      if (!error && dbRows && dbRows.length > 0) {
+        const mappedProducts: Product[] = dbRows.map((r: any) => ({
+          id: r.product_id,
+          name: r.name,
+          title: r.name,
+          slug: r.slug,
+          shortCode: r.slug?.slice(0, 6) || "prod01",
+          short_code: r.slug?.slice(0, 6) || "prod01",
+          description: r.description || "",
+          category: r.category || "Santé & Bien-être",
+          collection: r.category || "Santé & Bien-être",
+          images: [r.image_url || "/products/serum-eclat.png"],
+          salePrice: Number(r.sale_price) || 0,
+          compareAtPrice: Number(r.compare_at_price) || 0,
+          costPrice: 0,
+          stock: Number(r.available_stock) || 0,
+          status: r.status || "active",
+          productStatus: r.status || "active",
+          stockStatus: Number(r.available_stock) > 0 ? "in_stock" : "out_of_stock",
+          physicalStock: Number(r.physical_stock) || 0,
+          reservedStock: 0,
+          availableStock: Number(r.available_stock) || 0,
+          published_to_storefront: Boolean(r.published_to_storefront),
+          sku: r.variant_title || "DEFAULT-SKU",
+          variants: r.variant_id
+            ? [
+                {
+                  id: r.variant_id,
+                  name: r.variant_title || "Standard",
+                  price: Number(r.sale_price) || 0,
+                  costPrice: 0,
+                  stock: Number(r.available_stock) || 0,
+                  sku: r.variant_title || "DEFAULT-SKU",
+                  image: r.image_url || "/products/serum-eclat.png",
+                },
+              ]
+            : [],
+        }));
+
+        return NextResponse.json({
+          products: mappedProducts,
+          source: "supabase",
+        });
+      }
+    } catch (dbErr) {
+      console.warn("[Products API] Supabase fallback to repository:", dbErr);
+    }
+
+    // 2. Repli vers le magasin de données local / mémoire
+    const localProducts = getShopProducts(storeSlug);
+    return NextResponse.json({
+      products: localProducts,
+      source: "local",
+    });
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : "Erreur produits";
+    return NextResponse.json({ success: false, error: errorMsg }, { status: 500 });
+  }
+}

@@ -67,6 +67,25 @@ export default function CataloguePage({
       } else {
         setProductsList(getShopProducts(storeSlug));
       }
+
+      // Synchronisation distante avec la base de données Supabase
+      fetch(`/api/products?store=${encodeURIComponent(storeSlug)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.products && Array.isArray(data.products) && data.products.length > 0) {
+            setProductsList((prev) => {
+              const merged = [...prev];
+              for (const p of data.products) {
+                if (!merged.some((m) => m.id === p.id || m.slug === p.slug)) {
+                  merged.push(p);
+                }
+              }
+              return merged;
+            });
+          }
+        })
+        .catch(() => {});
+
       const savedSettings = localStorage.getItem(`novika_storefront_settings_${storeSlug}`);
       if (savedSettings) {
         try {
