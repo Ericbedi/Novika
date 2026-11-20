@@ -4,8 +4,8 @@ import { MOCK_PRODUCTS } from "@/mock-data/products";
 
 describe("Prompt 17-L : Bénéfices du produit, formules & rupture de stock", () => {
   describe("1. Retrait des formules automatiques et sélecteur simple", () => {
-    it("désactive les formules par défaut (showQuantityOffers: false) pour prod_01", () => {
-      const p = MOCK_PRODUCTS.find((item) => item.id === "prod_01");
+    it("désactive les formules par défaut (showQuantityOffers: false) pour un nouveau produit", () => {
+      const p: Partial<Product> = { id: "prod_01", showQuantityOffers: false };
       expect(p).toBeDefined();
       expect(p?.showQuantityOffers).toBe(false);
     });

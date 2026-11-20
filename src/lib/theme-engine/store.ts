@@ -19,10 +19,6 @@ const THEME_HISTORY_PREFIX = "novika_shop_theme_history_";
 const inMemoryThemes: Map<string, ShopTheme> = new Map();
 const inMemoryHistory: Map<string, ThemeAuditEntry[]> = new Map();
 
-// Initialisation de la boutique de démonstration Lomé Glow
-const lomeGlowInitial = createLomeGlowDemoTheme();
-inMemoryThemes.set("lome-glow", lomeGlowInitial);
-
 /**
  * Récupère le thème actif d'une boutique (publié ou brouillon).
  */
@@ -49,9 +45,8 @@ export async function getShopTheme(shopId: string, options: { draft?: boolean } 
     return JSON.parse(JSON.stringify(memoryTheme));
   }
 
-  // 3. Fallback : Création d'un thème vide par défaut pour une nouvelle boutique
-  const defaultTheme =
-    shopId === "lome-glow" ? createLomeGlowDemoTheme() : createDefaultNewShopTheme(shopId);
+  // 3. Fallback : Création d'un thème propre par défaut pour une nouvelle boutique
+  const defaultTheme = createDefaultNewShopTheme(shopId);
   inMemoryThemes.set(shopId, defaultTheme);
   return defaultTheme;
 }

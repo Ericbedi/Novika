@@ -1,25 +1,77 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 import {
   getShopProducts,
   findProductInShopRaw,
   getShopProductsRaw,
+  saveShopProductsList,
 } from "./products-store";
 import { isProductVisibleOnStorefront } from "./stock-settings-store";
 import { getProductPublicUrl } from "./storefront-urls";
-import { MOCK_STORES } from "@/mock-data/stores";
-import { getAllStores } from "@/server/data/store-repository";
+import { getAllStores, registerStore } from "@/server/data/store-repository";
+import { Product } from "@/server/data/types";
 
 describe("Prompt 17-N : Affichage Catalogue et Fiche Produit Vitrine Kelio (Rôle Anonyme)", () => {
-  it("1. La boutique 'kelio' est configurée et accessible", () => {
-    const storeFromMock = MOCK_STORES.find((s) => s.slug === "kelio");
-    expect(storeFromMock).toBeDefined();
-    expect(storeFromMock?.name).toBe("Kelio");
-    expect(storeFromMock?.country).toBe("TG");
-    expect(storeFromMock?.currency).toBe("XOF");
+  beforeAll(() => {
+    registerStore({
+      id: "store_kelio_test",
+      name: "Kelio",
+      slug: "kelio",
+      description: "Boutique Kelio Santé",
+      country: "TG",
+      countryName: "Togo",
+      flag: "🇹🇬",
+      currency: "XOF",
+      whatsappNumber: "+22890000000",
+      contactEmail: "contact@kelio.com",
+      role: "owner",
+      status: "active",
+      orderCount: 0,
+      productCount: 1,
+      version: 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
 
+    const testGlycemie: Product = {
+      id: "c8f6d031-521b-4b30-a902-96f9e4920002",
+      slug: "accompagnez-votre-equilibre-glycemique",
+      title: "Accompagnez votre équilibre glycémique",
+      shortCode: "glyc60",
+      short_code: "glyc60",
+      status: "active",
+      productStatus: "active",
+      published_to_storefront: true,
+      salePrice: 18500,
+      price: 18500,
+      stock: 45,
+      trackInventory: true,
+      variants: [
+        {
+          id: "var_glyc_1",
+          sku: "KEL-GLYC-60",
+          title: "Boîte 60 gélules",
+          price: 18500,
+          stock: 45,
+        },
+      ],
+      benefits: {
+        items: [
+          { id: "b1", title: "Régulation naturelle", description: "Aide au maintien d'une glycémie normale" },
+          { id: "b2", title: "100% Naturel", description: "Extraits végétaux certifiés" },
+          { id: "b3", title: "Paiement à la livraison", description: "Réglez à réception" },
+        ],
+      },
+    };
+
+    saveShopProductsList("kelio", [testGlycemie]);
+  });
+
+  it("1. La boutique 'kelio' est configurée et accessible", () => {
     const storeFromRepo = getAllStores().find((s) => s.slug === "kelio");
     expect(storeFromRepo).toBeDefined();
     expect(storeFromRepo?.name).toBe("Kelio");
+    expect(storeFromRepo?.country).toBe("TG");
+    expect(storeFromRepo?.currency).toBe("XOF");
   });
 
   it("2. Le catalogue de Kelio contient le produit actif et publié pour un visiteur anonyme", () => {

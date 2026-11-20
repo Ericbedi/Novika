@@ -141,7 +141,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
         } catch { }
       }
     }
-    return isFounderDemoStore ? MOCK_ORDERS : [];
+    return [];
   });
 
   useEffect(() => {
@@ -158,19 +158,16 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
           if (Array.isArray(parsed)) ords = parsed;
         } catch { }
       }
-      if (ords.length === 0 && isFounderDemoStore) {
-        ords = MOCK_ORDERS;
-      }
       setOrders(ords);
     }
-  }, [storeSlug, isFounderDemoStore]);
+  }, [storeSlug]);
 
   // Synchronisation sauvegarde produits
   useEffect(() => {
-    if (typeof window !== "undefined" && !isFounderDemoStore) {
+    if (typeof window !== "undefined") {
       saveShopProductsList(storeSlug, products);
     }
-  }, [products, storeSlug, isFounderDemoStore]);
+  }, [products, storeSlug]);
 
   // Filtres et Vues (Prompt 17)
   const [quickView, setQuickView] = useState<

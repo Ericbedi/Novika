@@ -67,16 +67,16 @@ export function StoresManagementClient({ storeSlug }: StoresManagementClientProp
 
   // Liste des boutiques synchronisée avec le magasin serveur
   const [storeList, setStoreList] = useState<StoreItem[]>(() => {
-    return stores.map((s, idx) => ({
+    return stores.map((s) => ({
       ...s,
-      status: idx === 3 ? "archived" : "active",
-      orderCount: idx === 3 ? 0 : 142 + idx * 85,
-      productCount: 12 + idx * 4,
-      todayOrders: idx === 3 ? 0 : 12 + idx * 4,
-      deliveredOrders: idx === 3 ? 0 : 96 + idx * 55,
-      deliveredRevenue: idx === 3 ? 0 : (96 + idx * 55) * 16500,
-      description: idx === 0 ? "Boutique de cosmétiques et soins naturels au Togo." : "",
-      contactEmail: idx === 0 ? "contact@lomeglow.tg" : `contact@${s.slug}.com`,
+      status: "active",
+      orderCount: 0,
+      productCount: 0,
+      todayOrders: 0,
+      deliveredOrders: 0,
+      deliveredRevenue: 0,
+      description: "",
+      contactEmail: "",
       version: 1,
     }));
   });

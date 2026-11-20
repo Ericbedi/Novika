@@ -64,112 +64,11 @@ const SLUG_REDIRECTS_STORE: Map<string, SlugRedirectRecord> = new Map();
 const STORE_AUDIT_LOGS: StoreAuditLogEntry[] = [];
 
 /**
- * Initialisation des données de test / développement (Prompt 05-M # Données de démonstration)
+ * Initialisation des données : Aucune boutique de démonstration injectée au démarrage.
+ * Seules les boutiques réelles créées par l'utilisateur sont enregistrées.
  */
 function seedInitialStores() {
-  const initialStores: StoreRecord[] = [
-    {
-      id: "store_tg_01",
-      name: "Lomé Glow Cosmétiques",
-      slug: "lome-glow",
-      description: "Boutique de cosmétiques et soins naturels au Togo.",
-      country: "TG",
-      countryName: "Togo",
-      flag: "🇹🇬",
-      currency: "XOF",
-      whatsappNumber: "+22890123456",
-      contactEmail: "contact@lomeglow.tg",
-      logo: "/icons/brand-logo.png",
-      role: "owner",
-      status: "active",
-      orderCount: 142,
-      productCount: 16,
-      version: 1,
-      createdAt: "2026-01-10T08:00:00Z",
-      updatedAt: "2026-01-10T08:00:00Z",
-    },
-    {
-      id: "store_ci_02",
-      name: "Abidjan Prestige Mode",
-      slug: "abidjan-prestige",
-      description: "Vêtements et accessoires haut de gamme en Côte d'Ivoire.",
-      country: "CI",
-      countryName: "Côte d'Ivoire",
-      flag: "🇨🇮",
-      currency: "XOF",
-      whatsappNumber: "+2250708091011",
-      contactEmail: "ventes@abidjanprestige.ci",
-      role: "owner",
-      status: "active",
-      orderCount: 227,
-      productCount: 24,
-      version: 1,
-      createdAt: "2026-01-12T09:30:00Z",
-      updatedAt: "2026-01-12T09:30:00Z",
-    },
-    {
-      id: "store_sn_03",
-      name: "Dakar Vital Santé",
-      slug: "dakar-vital",
-      description: "Compléments alimentaires et infusions bien-être à Dakar.",
-      country: "SN",
-      countryName: "Sénégal",
-      flag: "🇸🇳",
-      currency: "XOF",
-      whatsappNumber: "+221771234567",
-      contactEmail: "hello@dakarvital.sn",
-      role: "owner",
-      status: "archived",
-      orderCount: 95,
-      productCount: 8,
-      version: 1,
-      createdAt: "2026-01-15T11:00:00Z",
-      updatedAt: "2026-01-15T11:00:00Z",
-    },
-    // Boutique sans aucune commande (pour tester la modification du pays et de la devise)
-    {
-      id: "store_bj_04",
-      name: "Cotonou Tech & Style",
-      slug: "cotonou-tech",
-      description: "Nouvelle boutique test sans commande.",
-      country: "BJ",
-      countryName: "Bénin",
-      flag: "🇧🇯",
-      currency: "XOF",
-      whatsappNumber: "+2290190123456",
-      contactEmail: "admin@cotonoutech.bj",
-      role: "owner",
-      status: "active",
-      orderCount: 0,
-      productCount: 4,
-      version: 1,
-      createdAt: "2026-02-01T14:00:00Z",
-      updatedAt: "2026-02-01T14:00:00Z",
-    },
-    {
-      id: "b7e5c920-410a-4a2f-98f1-85e8d3810001",
-      name: "Kelio",
-      slug: "kelio",
-      description: "Boutique officielle Kelio - Santé et équilibre naturel au Togo.",
-      country: "TG",
-      countryName: "Togo",
-      flag: "🇹🇬",
-      currency: "XOF",
-      whatsappNumber: "+22890000000",
-      contactEmail: "contact@kelio.com",
-      role: "owner",
-      status: "active",
-      orderCount: 0,
-      productCount: 1,
-      version: 1,
-      createdAt: "2026-02-01T15:00:00Z",
-      updatedAt: "2026-02-01T15:00:00Z",
-    },
-  ];
-
-  for (const s of initialStores) {
-    STORES_STORE.set(s.id, s);
-  }
+  // Démarrage propre avec zéro boutique de démonstration
 }
 
 seedInitialStores();
@@ -177,6 +76,10 @@ seedInitialStores();
 /**
  * Récupère la liste de toutes les boutiques
  */
+export function registerStore(store: StoreRecord): void {
+  STORES_STORE.set(store.id, store);
+}
+
 export function getAllStores(): StoreRecord[] {
   return Array.from(STORES_STORE.values());
 }

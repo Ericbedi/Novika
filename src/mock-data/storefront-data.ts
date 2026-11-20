@@ -136,7 +136,7 @@ export const THEME_PRESETS: Record<string, ThemeConfig> = {
     name: "Bannière Hero Impact",
     preset: "banner_hero",
     colors: {
-      primary: "#111111", // Noir puissant avec fort contraste
+      primary: "#111111",
       secondary: "#059669",
       background: "#F3EFE6",
       cardBackground: "#FAF8F5",
@@ -160,7 +160,7 @@ export const THEME_PRESETS: Record<string, ThemeConfig> = {
     name: "Galerie Visuelle",
     preset: "visual_gallery",
     colors: {
-      primary: "#059669", // Émeraude profond beauté
+      primary: "#059669",
       secondary: "#10B981",
       background: "#FAF8F5",
       cardBackground: "#FFFFFF",
@@ -184,7 +184,7 @@ export const THEME_PRESETS: Record<string, ThemeConfig> = {
     name: "Éditorial & Storytelling",
     preset: "editorial",
     colors: {
-      primary: "#92400E", // Ambre terreux chaleureux
+      primary: "#92400E",
       secondary: "#B45309",
       background: "#FFFBEB",
       cardBackground: "#FFFFFF",
@@ -208,7 +208,7 @@ export const THEME_PRESETS: Record<string, ThemeConfig> = {
     name: "Vitrine Express COD",
     preset: "express_cod",
     colors: {
-      primary: "#2563EB", // Bleu royal conversion direct
+      primary: "#2563EB",
       secondary: "#1D4ED8",
       background: "#F8FAFC",
       cardBackground: "#FFFFFF",
@@ -232,7 +232,7 @@ export const THEME_PRESETS: Record<string, ThemeConfig> = {
     name: "Minimaliste Moderne",
     preset: "minimal_modern",
     colors: {
-      primary: "#18181B", // Noir zinc épuré
+      primary: "#18181B",
       secondary: "#3F3F46",
       background: "#FFFFFF",
       cardBackground: "#F4F4F5",
@@ -254,243 +254,40 @@ export const THEME_PRESETS: Record<string, ThemeConfig> = {
 };
 
 export const DEFAULT_CONTACT_LOME: StoreContactInfo = {
-  phone: "+228 90 12 34 56",
-  whatsappNumber: "+22890123456",
-  email: "contact@lomeglowing.com",
-  address: "Boulevard du 13 Janvier, Face Échangeur Nyékonakpoè",
-  city: "Lomé",
-  country: "Togo",
-  openingHours: "Lundi au Samedi : 08h00 - 19h30 | Dimanche : Fermé",
-  socials: {
-    facebook: "https://facebook.com/lomeglowing",
-    instagram: "https://instagram.com/lomeglowing",
-    tiktok: "https://tiktok.com/@lomeglowing",
-  },
-  deliveryZones: [
-    { country: "Togo", city: "Lomé (Intra-muros)", delayDays: "Livraison le jour même (2h-4h)", fee: 1000 },
-    { country: "Togo", city: "Agoè, Baguida & Périphérie", delayDays: "Livraison 24h", fee: 1500 },
-    { country: "Côte d'Ivoire", city: "Abidjan (Cocody, Yopougon, Marcory)", delayDays: "24h - 48h chrono", fee: 2000 },
-    { country: "Sénégal", city: "Dakar & Almadies", delayDays: "48h express", fee: 2500 },
-    { country: "Bénin", city: "Cotonou & Calavi", delayDays: "24h chrono", fee: 1500 },
-  ],
+  phone: "",
+  whatsappNumber: "",
+  email: "",
+  address: "",
+  city: "",
+  country: "",
+  openingHours: "",
+  socials: {},
+  deliveryZones: [],
 };
 
-export const DEFAULT_REVIEWS_LOME: CustomerReview[] = [
-  {
-    id: "rev_01",
-    authorName: "Afiwa Mensah",
-    authorCity: "Lomé",
-    authorCountry: "Togo",
-    rating: 5,
-    comment:
-      "J'étais sceptique sur le café aux champignons mais après 2 semaines je ressens une clarté d'esprit incroyable et plus aucun coup de fatigue à 14h. Le livreur est venu à Agoè en moins de 3 heures et j'ai payé en cash après vérification !",
-    date: "12 nov. 2026",
-    productName: "Café Bio Champignon Vitality",
-    verifiedPurchase: true,
-  },
-  {
-    id: "rev_02",
-    authorName: "Koffi Amegah",
-    authorCity: "Lomé",
-    authorCountry: "Togo",
-    rating: 5,
-    comment:
-      "Service impeccable. La closeuse m'a appelé 5 minutes après ma commande pour confirmer mon adresse. Produit authentique, bien emballé dans du papier kraft renforcé.",
-    date: "09 nov. 2026",
-    productName: "Sérum Visage Anti-Taches & Éclat",
-    verifiedPurchase: true,
-  },
-  {
-    id: "rev_03",
-    authorName: "Fatou Diop",
-    authorCity: "Dakar",
-    authorCountry: "Sénégal",
-    rating: 5,
-    comment:
-      "Commande livrée aux Mamelles en 48h. Emballage soigné, odeur très agréable, ma peau est beaucoup plus hydratée et lumineuse. Je recommande les yeux fermés.",
-    date: "02 nov. 2026",
-    productName: "Sérum Visage Anti-Taches & Éclat",
-    verifiedPurchase: true,
-  },
-];
+export const DEFAULT_REVIEWS_LOME: CustomerReview[] = [];
 
-export const DEFAULT_SECTIONS_LOME: PageSection[] = [
-  {
-    id: "sec_hero",
-    type: "hero",
-    title: "Bannière Principale (Hero)",
-    subtitle: "Titre d'accroche, appel à l'action et visuel d'impact",
-    isVisible: true,
-    order: 1,
-    content: {
-      headline: "Révélez Votre Éclat Naturel & Votre Vitalité Quotidienne",
-      subheadline:
-        "Formules cosmétiques et bien-être d'exception, testées et certifiées. Commandez en 1 clic et payez en espèces à la livraison directement chez vous.",
-      ctaText: "Découvrir la Sélection Vedette",
-      ctaUrl: "/boutique/lome-glow/catalogue",
-      imageUrl: "/banners/hero-glow-africa.jpg",
-      badgeText: "🌿 100% Ingrédients Naturels & Éthiques",
-    },
-  },
-  {
-    id: "sec_benefits",
-    type: "benefits",
-    title: "Bandeau d'Avantages (Piliers COD)",
-    subtitle: "Paiement à la livraison, délais rapides et contact WhatsApp",
-    isVisible: true,
-    order: 2,
-    content: {
-      items: [
-        {
-          icon: "ShieldCheck",
-          title: "Paiement à la Livraison (COD)",
-          description: "Inspectez votre colis chez vous avant de remettre l'argent au livreur en toute sérénité.",
-        },
-        {
-          icon: "Truck",
-          title: "Expédition Express 24h/48h",
-          description: "Livraison locale ultra-rapide à Lomé, Abidjan, Dakar et Cotonou par nos livreurs dédiés.",
-        },
-        {
-          icon: "MessageCircle",
-          title: "Assistance WhatsApp 7j/7",
-          description: "Une question ? Nos conseillères vous répondent directement sur WhatsApp en quelques minutes.",
-        },
-        {
-          icon: "Award",
-          title: "Garantie Authenticité & Échange",
-          description: "Formules pures et originales. Échange gratuit sous 7 jours en cas de problème.",
-        },
-      ],
-    },
-  },
-  {
-    id: "sec_featured_products",
-    type: "featured_products",
-    title: "Sélection Vedette & Meilleures Ventes",
-    subtitle: "Nos produits phares plébiscités par plus de 5 000 clientes",
-    isVisible: true,
-    order: 3,
-    content: {
-      title: "Nos Best-Sellers du Moment",
-      subtitle: "Des résultats visibles dès les premières semaines d'utilisation.",
-      maxProducts: 4,
-      showDiscountBadge: true,
-      showQuickOrder: true,
-    },
-  },
-  {
-    id: "sec_brand_story",
-    type: "brand_story",
-    title: "Présentation de la Marque & Histoire",
-    subtitle: "Créer la confiance par un storytelling authentique",
-    isVisible: true,
-    order: 4,
-    content: {
-      title: "Conçu pour la Peau et l'Énergie Africaine",
-      tagline: "Notre mission chez Lomé Glow",
-      text: "Nous croyons que le bien-être et la beauté ne doivent pas être un luxe inaccessible. Chaque ingrédient est méticuleusement sourcé pour répondre au climat chaud et humide, en renforçant la barrière cutanée et la vitalité naturelle sans compromis sur la santé.",
-      imageUrl: "/brand/storytelling-lome.jpg",
-      statValue: "+12 500",
-      statLabel: "Colis livrés avec succès en Afrique de l'Ouest",
-    },
-  },
-  {
-    id: "sec_customer_reviews",
-    type: "customer_reviews",
-    title: "Avis Clients Réels & Témoignages",
-    subtitle: "Retours d'expérience authentiques vérifiés par commande",
-    isVisible: true,
-    order: 5,
-    content: {
-      title: "Ce Que Nos Clientes Disent de Nous",
-      subtitle: "Avis collectés auprès de vraies acheteuses après livraison.",
-      showRatingScore: true,
-      averageScore: 4.9,
-      totalCount: 342,
-    },
-  },
-  {
-    id: "sec_faq",
-    type: "faq",
-    title: "Foire Aux Questions (FAQ)",
-    subtitle: "Doutes levés sur le paiement, la livraison et l'authenticité",
-    isVisible: true,
-    order: 6,
-    content: {
-      title: "Questions Fréquentes",
-      subtitle: "Tout ce que vous devez savoir avant de passer commande.",
-      questions: [
-        {
-          q: "Comment fonctionne le paiement à la livraison ?",
-          a: "Vous passez votre commande sans rien payer d'avance. Notre équipe vous contacte sur WhatsApp pour confirmer votre adresse et convenir de l'heure. Lorsque le livreur arrive, vous ouvrez le colis pour vérifier son contenu puis vous lui remettez le montant exact en espèces.",
-        },
-        {
-          q: "Combien de temps prend la livraison à Lomé ?",
-          a: "Pour toutes les commandes passées avant 14h, la livraison s'effectue le jour même en 2 à 4 heures. Après 14h, la livraison a lieu le lendemain matin.",
-        },
-        {
-          q: "Puis-je commander pour une autre ville ou un autre pays ?",
-          a: "Oui ! Nous livrons également en Côte d'Ivoire (Abidjan), au Sénégal (Dakar) et au Bénin (Cotonou) via notre réseau de partenaires logistiques agréés.",
-        },
-        {
-          q: "Que faire si le produit ne me convient pas ?",
-          a: "Nous offrons une garantie satisfaction de 7 jours. Contactez simplement notre support WhatsApp pour un échange ou des conseils personnalisés.",
-        },
-      ],
-    },
-  },
-];
+export const DEFAULT_SECTIONS_LOME: PageSection[] = [];
 
 export const MOCK_STOREFRONT_LOME: StorefrontData = {
-  storeId: "store_tg_01",
+  storeId: "store_lome_glow",
   storeSlug: "lome-glow",
   subdomain: "lome-glow",
-  customDomain: "lomeglowing.com",
-  isPublished: true,
-  publishedAt: "14 nov. 2026 à 18:30",
-  lastDraftUpdatedAt: "15 nov. 2026 à 14:15",
-  activeTheme: THEME_PRESETS.banner_hero,
-  draftTheme: THEME_PRESETS.banner_hero,
-  announcementBar: {
-    isEnabled: true,
-    text: "✨ Paiement à la livraison garanti partout au Togo & Côte d'Ivoire | Expédition express 24h !",
-    linkUrl: "/boutique/lome-glow/catalogue",
-    bgColor: "#111111",
-    textColor: "#FAF8F5",
-  },
-  header: {
-    logoUrl: "/logo-lome-glow.svg",
-    logoPosition: "left",
-    logoHeight: 36,
-    showSearch: true,
-    showCountryPicker: true,
-  },
-  sections: DEFAULT_SECTIONS_LOME,
+  isPublished: false,
+  activeTheme: THEME_PRESETS.novika,
+  draftTheme: THEME_PRESETS.novika,
+  sections: [],
   contact: DEFAULT_CONTACT_LOME,
-  reviews: DEFAULT_REVIEWS_LOME,
-  versions: [
-    {
-      id: "ver_01",
-      versionNumber: 1,
-      name: "Version Initiale de Lancement",
-      createdAt: "10 nov. 2026 à 10:00",
-      createdBy: "Promises Bedi",
-      themeConfig: THEME_PRESETS.banner_hero,
-      sections: DEFAULT_SECTIONS_LOME,
-      isPublished: true,
-    },
-  ],
-  previewToken: {
-    token: "prv_tok_98eca996b0bb_lome_glow",
-    expiresAt: "2026-11-18T23:59:59Z",
-    isRevoked: false,
+  reviews: [],
+  onboarding: {
+    hasProducts: false,
+    hasConfiguredPayment: false,
+    hasConfiguredDelivery: false,
+    hasCustomDomain: false,
+    hasCompletedTutorial: false,
   },
 };
 
-/**
- * Calcul dynamique côté serveur de l'état d'onboarding à partir des données réelles.
- */
 export function calculateOnboardingProgress(
   store: Store,
   products: Product[],
@@ -504,33 +301,20 @@ export function calculateOnboardingProgress(
   percent: number;
   isAllCompleted: boolean;
 } {
-  // 1. Pays et devise : pays configuré et devise définie
   const isCountryCurrencyDone = Boolean(store.country && store.currency);
-
-  // 2. Ajoutez votre premier produit : au moins un produit actif
   const isFirstProductDone = products.some((p) => p.productStatus === "active");
-
-  // 3. Créez votre page d'accueil : au moins 2 sections visibles
-  const isHomepageDone = storefront.sections.filter((s) => s.isVisible).length >= 2;
-
-  // 4. Personnalisez votre thème : thème défini avec couleur ou logo
+  const isHomepageDone = (storefront.sections || []).filter((s) => s.isVisible).length >= 2;
   const isThemeDone = Boolean(storefront.activeTheme?.colors?.primary);
-
-  // 5. WhatsApp et contact : numéro WhatsApp et email renseignés
   const isContactDone = Boolean(storefront.contact?.whatsappNumber && storefront.contact?.email);
-
-  // 6. Domaine personnalisé : optionnel, validé si domaine personnalisé présent ou passé
   const isDomainDone = Boolean(storefront.customDomain || manualDismissedOptional);
-
-  // 7. Passez une commande test, puis publiez la boutique : au moins une commande ET boutique publiée
-  const isTestOrderAndPublishDone = Boolean(orders.length > 0 && storefront.isPublished);
+  const isTestOrderAndPublishDone = Boolean((orders || []).length > 0 && storefront.isPublished);
 
   const steps: OnboardingStepState[] = [
     {
       id: 1,
       key: "country_currency",
       title: "Pays et devise",
-      subtitle: `${store.countryName} (${store.currency}) configuré pour vos ventes locales.`,
+      subtitle: `${store.countryName || store.country} (${store.currency}) configuré pour vos ventes locales.`,
       isCompleted: isCountryCurrencyDone,
       actionUrl: `/app/${store.slug}/reglages`,
       actionLabel: isCountryCurrencyDone ? "Modifier" : "Démarrer",
@@ -551,7 +335,7 @@ export function calculateOnboardingProgress(
       key: "homepage",
       title: "Créez votre page d'accueil",
       subtitle: isHomepageDone
-        ? `${storefront.sections.filter((s) => s.isVisible).length} sections configurées pour votre vitrine.`
+        ? `${(storefront.sections || []).filter((s) => s.isVisible).length} sections configurées pour votre vitrine.`
         : "Personnalisez la bannière, les avantages COD et les blocs de vente.",
       isCompleted: isHomepageDone,
       actionUrl: `/app/${store.slug}/boutique-en-ligne?tab=sections`,
@@ -561,7 +345,7 @@ export function calculateOnboardingProgress(
       id: 4,
       key: "theme",
       title: "Personnalisez votre thème",
-      subtitle: `Thème actif : ${storefront.activeTheme.name} (Couleurs, typographie et boutons).`,
+      subtitle: `Thème actif : ${storefront.activeTheme?.name || "Novika Signature"} (Couleurs, typographie et boutons).`,
       isCompleted: isThemeDone,
       actionUrl: `/app/${store.slug}/boutique-en-ligne?tab=theme`,
       actionLabel: isThemeDone ? "Modifier" : "Personnaliser",
@@ -571,7 +355,7 @@ export function calculateOnboardingProgress(
       key: "whatsapp_contact",
       title: "WhatsApp et contact",
       subtitle: isContactDone
-        ? `WhatsApp : ${storefront.contact.whatsappNumber} et e-mail configurés.`
+        ? `WhatsApp : ${storefront.contact?.whatsappNumber} et e-mail configurés.`
         : "Renseignez votre numéro WhatsApp vendeur, e-mail et horaires.",
       isCompleted: isContactDone,
       actionUrl: `/app/${store.slug}/boutique-en-ligne?tab=contact`,
@@ -604,7 +388,7 @@ export function calculateOnboardingProgress(
 
   const totalCount = steps.length;
   const completedCount = steps.filter((s) => s.isCompleted).length;
-  const percent = Math.round((completedCount / totalCount) * 100);
+  const percent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
   const isAllCompleted = completedCount === totalCount;
 
   return {
@@ -616,9 +400,6 @@ export function calculateOnboardingProgress(
   };
 }
 
-/**
- * Règle serveur de publication : vérifie que les 3 conditions obligatoires sont remplies.
- */
 export function canPublishStorefront(
   store: Store,
   products: Product[],
@@ -629,7 +410,7 @@ export function canPublishStorefront(
 } {
   const missingRequirements: string[] = [];
 
-  const hasActiveProduct = products.some((p) => p.productStatus === "active");
+  const hasActiveProduct = (products || []).some((p) => p.productStatus === "active");
   if (!hasActiveProduct) {
     missingRequirements.push("Au moins un produit actif et publié en catalogue.");
   }
@@ -651,93 +432,20 @@ export function canPublishStorefront(
 }
 
 export const MOCK_STOREFRONT_KELIO: StorefrontData = {
-  storeId: "b7e5c920-410a-4a2f-98f1-85e8d3810001",
+  storeId: "store_kelio",
   storeSlug: "kelio",
   subdomain: "kelio",
-  isPublished: true,
-  lastDraftUpdatedAt: "2026-02-01T15:00:00Z",
+  isPublished: false,
   activeTheme: THEME_PRESETS.novika,
   draftTheme: THEME_PRESETS.novika,
-  announcementBar: {
-    isEnabled: true,
-    text: "📦 Livraison express partout au Togo · Paiement sécurisé en espèces à la livraison",
-  },
-  header: {
-    logoPosition: "left",
-    logoHeight: 36,
-    showSearch: true,
-    showCountryPicker: true,
-  },
-  sections: [
-    {
-      id: "sec_hero",
-      type: "hero",
-      title: "Bannière Principale",
-      isVisible: true,
-      order: 1,
-      content: {
-        headline: "Accompagnez votre vitalité et votre équilibre naturel",
-        subheadline:
-          "Formules ciblées et compléments d'exception pour soutenir votre santé au quotidien. Commandez facilement et payez en espèces à la livraison au Togo.",
-        ctaText: "Découvrir le catalogue",
-        ctaUrl: "/boutique/kelio/catalogue",
-        imageUrl: "/products/serum-eclat.png",
-        badgeText: "🌿 Formule Naturelle & Contrôlée",
-      },
-    },
-    {
-      id: "sec_benefits",
-      type: "benefits",
-      title: "Garanties de Confiance",
-      isVisible: true,
-      order: 2,
-      content: {
-        items: [
-          {
-            icon: "ShieldCheck",
-            title: "Paiement à la Livraison",
-            description: "Payez en toute sérénité en espèces au livreur après réception de votre commande.",
-          },
-          {
-            icon: "Truck",
-            title: "Livraison Partout au Togo",
-            description: "Expédition rapide à Lomé et dans toutes les préfectures sous 24h à 48h.",
-          },
-          {
-            icon: "MessageCircle",
-            title: "Conseillers WhatsApp Dédiés",
-            description: "Notre équipe est à votre écoute pour vous conseiller et suivre votre colis.",
-          },
-        ],
-      },
-    },
-    {
-      id: "sec_featured_products",
-      type: "featured_products",
-      title: "Nos Produits Vedettes",
-      isVisible: true,
-      order: 3,
-      content: {
-        title: "Notre Sélection",
-        maxProducts: 4,
-        showDiscountBadge: true,
-      },
-    },
-  ],
-  contact: {
-    phone: "+22890000000",
-    whatsappNumber: "+22890000000",
-    email: "contact@kelio.com",
-    address: "Boulevard du 13 Janvier",
-    city: "Lomé",
-    country: "Togo",
-  },
+  sections: [],
+  contact: DEFAULT_CONTACT_LOME,
   reviews: [],
   onboarding: {
-    hasProducts: true,
-    hasConfiguredPayment: true,
-    hasConfiguredDelivery: true,
+    hasProducts: false,
+    hasConfiguredPayment: false,
+    hasConfiguredDelivery: false,
     hasCustomDomain: false,
-    hasCompletedTutorial: true,
+    hasCompletedTutorial: false,
   },
 };

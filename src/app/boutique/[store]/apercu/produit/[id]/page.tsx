@@ -16,6 +16,7 @@ import { buildProductThemePalette } from "@/lib/color-extractor";
 import { CodProductPageTemplate } from "@/components/storefront/cod-product-page-template";
 
 import { getProductByShopAndSlugOrId } from "@/lib/products-store";
+import { resolveStorefrontData } from "@/lib/storefront-resolver";
 import { Product } from "@/server/data/types";
 import { NovikaProductPage } from "@/components/storefront/product/NovikaProductPage";
 
@@ -25,7 +26,7 @@ export default function ProductPreviewPage({
   params: Promise<{ store: string; id: string }>;
 }) {
   const { store: storeSlug, id: productId } = use(params);
-  const store = MOCK_STORES.find((s) => s.slug === storeSlug) || MOCK_STORES[0];
+  const store = resolveStorefrontData(storeSlug).store;
 
   // Récupérer le produit (allowDraft: true pour aperçu d'admin)
   const [product, setProduct] = useState<Product | null>(() => {

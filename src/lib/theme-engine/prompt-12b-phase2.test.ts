@@ -200,7 +200,7 @@ describe("Prompt 12-b Phase 2 : Vitrine Novika Classique (Phase 2 Tests Unitaire
 
       expect(dupResult.success).toBe(true);
       expect(dupResult.theme?.shopId).toBe("abidjan-dup");
-      expect(dupResult.theme?.name).toContain("Lomé Glow");
+      expect(dupResult.theme?.name).toContain("Copie");
     });
   });
 });

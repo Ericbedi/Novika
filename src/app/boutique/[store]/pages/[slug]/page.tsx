@@ -1,8 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { ChevronRight, ShieldAlert, CheckCircle2 } from "lucide-react";
-import { MOCK_STORES } from "@/mock-data/stores";
-import { MOCK_STOREFRONT_LOME } from "@/mock-data/storefront-data";
+import { resolveStorefrontData } from "@/lib/storefront-resolver";
 
 export default async function StorefrontCustomPage({
   params,
@@ -10,7 +9,7 @@ export default async function StorefrontCustomPage({
   params: Promise<{ store: string; slug: string }>;
 }) {
   const { store: storeSlug, slug } = await params;
-  const store = MOCK_STORES.find((s) => s.slug === storeSlug) || MOCK_STORES[0];
+  const store = resolveStorefrontData(storeSlug).store;
 
   const pagesContent: Record<string, { title: string; subtitle: string; content: string[] }> = {
     "a-propos": {

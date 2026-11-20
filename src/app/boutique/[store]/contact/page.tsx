@@ -19,6 +19,7 @@ import { MOCK_STORES } from "@/mock-data/stores";
 import { MOCK_STOREFRONT_LOME } from "@/mock-data/storefront-data";
 import { formatFcfa } from "@/lib/money";
 import { getLiveStoreOpenStatus } from "@/lib/storefront-security";
+import { resolveStorefrontData } from "@/lib/storefront-resolver";
 
 export default function ContactPage({
   params,
@@ -26,8 +27,9 @@ export default function ContactPage({
   params: Promise<{ store: string }>;
 }) {
   const { store: storeSlug } = use(params);
-  const store = MOCK_STORES.find((s) => s.slug === storeSlug) || MOCK_STORES[0];
-  const storefront = MOCK_STOREFRONT_LOME;
+  const resolved = resolveStorefrontData(storeSlug);
+  const store = resolved.store;
+  const storefront = resolved.storefront;
   const openStatus = getLiveStoreOpenStatus(0, 8, 19);
 
   // Formulaire de message

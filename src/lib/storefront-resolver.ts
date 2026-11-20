@@ -1,8 +1,18 @@
 import { Store, Product } from "@/server/data/types";
 import { StorefrontData, CustomerReview, PageSection, ThemeConfig } from "@/server/data/storefront-types";
 import { MOCK_STORES } from "@/mock-data/stores";
-import { MOCK_STOREFRONT_LOME, MOCK_STOREFRONT_KELIO, THEME_PRESETS } from "@/mock-data/storefront-data";
-import { MOCK_PRODUCTS, KELIO_PRODUCTS } from "@/mock-data/products";
+import { THEME_PRESETS } from "@/mock-data/storefront-data";
+import { getShopProducts } from "@/lib/products-store";
+
+const MEMORY_STOREFRONTS: Map<string, StorefrontData> = new Map();
+
+export function setMemoryStorefront(storeSlug: string, data: StorefrontData): void {
+  MEMORY_STOREFRONTS.set(storeSlug, data);
+}
+
+export function clearMemoryStorefronts(): void {
+  MEMORY_STOREFRONTS.clear();
+}
 
 export interface ResolvedStorefront {
   store: Store;
@@ -30,8 +40,6 @@ export function formatStoreSlugToName(slug: string): string {
  * de l'admin. Si vide ou non configurée, aucun texte de démo n'est injecté.
  */
 export function resolveStorefrontData(storeSlug: string): ResolvedStorefront {
-  const isFounderDemo = storeSlug === "lome-glow";
-
   // 1. Boutique (Store)
   let store: Store =
     MOCK_STORES.find((s) => s.slug === storeSlug) || {
@@ -46,52 +54,36 @@ export function resolveStorefrontData(storeSlug: string): ResolvedStorefront {
       role: "owner",
     };
 
-  // 2. Produits
-  let products: Product[] = [];
-  if (typeof window !== "undefined") {
+  // 2. Produits réels (uniquement depuis le stockage ou l'API de la boutique)
+  let products: Product[] = getShopProducts(storeSlug);
+  if (products.length === 0 && typeof window !== "undefined") {
     const savedProducts = localStorage.getItem(`novika_store_products_${storeSlug}`);
     if (savedProducts) {
       try {
         products = JSON.parse(savedProducts);
       } catch {}
-    } else if (isFounderDemo) {
-      products = MOCK_PRODUCTS;
-    } else if (storeSlug === "kelio") {
-      products = KELIO_PRODUCTS;
     }
-  } else if (isFounderDemo) {
-    products = MOCK_PRODUCTS;
-  } else if (storeSlug === "kelio") {
-    products = KELIO_PRODUCTS;
   }
 
-  const activeProducts = products.filter(
+  const activeProducts = (products || []).filter(
     (p) => (p.productStatus === "active" || p.status === "active") && !p.hiddenFromCatalog
   );
 
-  // 3. Réglages de la vitrine (Storefront Settings)
-  let storefront: StorefrontData;
+  // 3. Réglages de la vitrine (Storefront Settings réels)
+  let storefront: StorefrontData | undefined = MEMORY_STOREFRONTS.get(storeSlug);
 
-  if (typeof window !== "undefined") {
+  if (!storefront && typeof window !== "undefined") {
     const savedStorefront = localStorage.getItem(`novika_storefront_settings_${storeSlug}`);
     if (savedStorefront) {
       try {
         storefront = JSON.parse(savedStorefront);
       } catch {
-        storefront = storeSlug === "kelio" ? MOCK_STOREFRONT_KELIO : createEmptyStorefront(storeSlug, store.name);
+        storefront = createEmptyStorefront(storeSlug, store.name);
       }
-    } else if (isFounderDemo) {
-      storefront = MOCK_STOREFRONT_LOME;
-    } else if (storeSlug === "kelio") {
-      storefront = MOCK_STOREFRONT_KELIO;
     } else {
       storefront = createEmptyStorefront(storeSlug, store.name);
     }
-  } else if (isFounderDemo) {
-    storefront = MOCK_STOREFRONT_LOME;
-  } else if (storeSlug === "kelio") {
-    storefront = MOCK_STOREFRONT_KELIO;
-  } else {
+  } else if (!storefront) {
     storefront = createEmptyStorefront(storeSlug, store.name);
   }
 
@@ -113,8 +105,6 @@ export function resolveStorefrontData(storeSlug: string): ResolvedStorefront {
         const orders = JSON.parse(savedOrders);
         deliveredOrdersCount = orders.filter((o: any) => o.status === "delivered").length;
       } catch {}
-    } else if (isFounderDemo) {
-      deliveredOrdersCount = 342;
     }
   }
 

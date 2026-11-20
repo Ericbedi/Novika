@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, slug, country, currency, whatsapp, ownerEmail } = body;
+    const { name, country, currency, whatsapp, ownerEmail } = body;
+    const slug = body.slug || (name ? String(name).toLowerCase().trim().replace(/[^a-z0-9-]+/g, "-") : "");
 
     if (!name || !slug || !country || !currency) {
       return NextResponse.json(
@@ -35,6 +36,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const effectiveOwnerEmail = ownerEmail || "promisesbedi@gmail.com";
+
     // Insertion dans public.shops
     const { data: newShop, error: shopErr } = await (supabase as any)
       .from("shops")
@@ -43,31 +46,15 @@ export async function POST(req: NextRequest) {
         slug: cleanSlug,
         country_code: country,
         primary_currency: currency,
-        currency_locked: false,
-        delivery_policy: "free_local",
-        owner_email: ownerEmail || null,
+        owner_email: effectiveOwnerEmail,
       })
       .select()
       .single();
 
     if (shopErr) {
       console.warn("[Stores Create API] shops insert error:", shopErr);
+      return NextResponse.json({ error: shopErr.message }, { status: 400 });
     }
-
-    // Insertion conjointe dans public.stores
-    await (supabase as any)
-      .from("stores")
-      .insert({
-        id: newShop?.id || `store_${cleanSlug}_${Date.now()}`,
-        name: name.trim(),
-        slug: cleanSlug,
-        country_code: country,
-        country_name: country,
-        flag: "🌍",
-        currency: currency,
-        whatsapp_number: whatsapp || "",
-        owner_email: ownerEmail || null,
-      });
 
     return NextResponse.json({
       success: true,

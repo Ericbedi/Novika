@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { generate2FACode, verify2FACode } from "@/server/auth/password-security";
 import { send2FAEmail } from "@/server/email/email-service";
-import { resolveStorefrontData } from "@/lib/storefront-resolver";
-import { getShopProducts } from "@/lib/products-store";
+import { resolveStorefrontData, setMemoryStorefront, createEmptyStorefront } from "@/lib/storefront-resolver";
+import { getShopProducts, saveShopProductsList } from "@/lib/products-store";
 import { POST as loginPostHandler } from "@/app/api/auth/login/route";
 import { NextRequest } from "next/server";
 
@@ -62,6 +62,33 @@ describe("Prompt 18 & 2FA Email : Double Authentification & Résolution Vitrine"
   });
 
   it("4. La vitrine publique de Kelio est publiée par défaut avec son produit actif", () => {
+    saveShopProductsList("kelio", [
+      {
+        id: "c8f6d031-521b-4b30-a902-96f9e4920002",
+        slug: "accompagnez-votre-equilibre-glycemique",
+        title: "Accompagnez votre équilibre glycémique",
+        status: "active",
+        productStatus: "active",
+        salePrice: 18500,
+        price: 18500,
+        stock: 45,
+        hiddenFromCatalog: false,
+      } as any,
+    ]);
+
+    setMemoryStorefront("kelio", {
+      ...createEmptyStorefront("kelio", "Kelio"),
+      isPublished: true,
+      contact: {
+        whatsappNumber: "+22890000000",
+        phone: "+22890000000",
+        email: "contact@kelio.com",
+        address: "Lomé",
+        city: "Lomé",
+        country: "Togo",
+      },
+    });
+
     const resolved = resolveStorefrontData("kelio");
 
     expect(resolved.store.slug).toBe("kelio");

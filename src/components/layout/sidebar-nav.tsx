@@ -111,12 +111,10 @@ export function SidebarNav({
   const allowedStandalone = config.standaloneRoot.filter(isItemAllowed);
   const allowedGroups = config.groups.filter(isGroupAllowed);
 
-  const isFounderDemoStore = basePath.includes("lome-glow");
-  const effectiveUnreadNotifications = isFounderDemoStore ? unreadNotificationsCount : 0;
+  const effectiveUnreadNotifications = unreadNotificationsCount;
 
   // Vérifier si un groupe a une action en attente (badge > 0)
   const groupHasPendingAction = (group: NavGroupConfig): boolean => {
-    if (!isFounderDemoStore) return false;
     return group.items.some((item) => {
       if (!isItemAllowed(item) || !item.badgeKey) return false;
       return (MOCK_NAV_COUNTS[item.badgeKey] || 0) > 0;
@@ -125,7 +123,7 @@ export function SidebarNav({
 
   // Rendu d'une pastille de compteur normalisée (hauteur 20px, min-w 24px, texte 12px semi-gras)
   const renderBadge = (item: NavItemConfig) => {
-    if (!item.badgeKey || !isFounderDemoStore) return null;
+    if (!item.badgeKey) return null;
     const count = MOCK_NAV_COUNTS[item.badgeKey] || 0;
     if (count <= 0) return null;
 
@@ -268,9 +266,9 @@ export function SidebarNav({
                 ? pathname === basePath
                 : pathname === fullHref || pathname.startsWith(`${fullHref}/`);
 
-            const storeSlug = basePath.replace("/app/", "");
+            const storeSlug = basePath.startsWith("/app/") ? basePath.slice(5) : "";
             const isStoreItem = item.id === "nav-store";
-            const canPreview = activeRole === "owner" || activeRole === "admin";
+            const canPreview = (activeRole === "owner" || activeRole === "admin") && Boolean(storeSlug);
 
             if (isStoreItem && !isCollapsed) {
               return (

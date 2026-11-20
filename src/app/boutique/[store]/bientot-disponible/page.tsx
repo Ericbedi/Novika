@@ -1,8 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { Sparkles, MessageCircle, Clock, ShieldCheck } from "lucide-react";
-import { MOCK_STORES } from "@/mock-data/stores";
-import { MOCK_STOREFRONT_LOME } from "@/mock-data/storefront-data";
+import { resolveStorefrontData } from "@/lib/storefront-resolver";
 
 export default async function BoutiqueBientotDisponiblePage({
   params,
@@ -10,8 +9,9 @@ export default async function BoutiqueBientotDisponiblePage({
   params: Promise<{ store: string }>;
 }) {
   const { store: storeSlug } = await params;
-  const store = MOCK_STORES.find((s) => s.slug === storeSlug) || MOCK_STORES[0];
-  const storefront = MOCK_STOREFRONT_LOME;
+  const resolved = resolveStorefrontData(storeSlug);
+  const store = resolved.store;
+  const storefront = resolved.storefront;
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center p-4 text-[#111111]">

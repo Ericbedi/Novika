@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { Clock, ArrowLeft } from "lucide-react";
-import { MOCK_STORES } from "@/mock-data/stores";
+import { resolveStorefrontData } from "@/lib/storefront-resolver";
 import BoutiqueHomePage from "../page";
 
 export default async function StorefrontPreviewPage({
@@ -12,7 +12,7 @@ export default async function StorefrontPreviewPage({
   searchParams: Promise<{ preview_token?: string }>;
 }) {
   const { store: storeSlug } = await params;
-  const store = MOCK_STORES.find((s) => s.slug === storeSlug) || MOCK_STORES[0];
+  const store = resolveStorefrontData(storeSlug).store;
 
   return (
     <div className="min-h-screen bg-[#FAF8F5]">

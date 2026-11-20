@@ -224,26 +224,8 @@ export function getShopProductsRaw(shopSlug: string): Product[] {
     }
   }
 
-  if (shopSlug === "kelio") {
-    if (list.length === 0) {
-      if (memoryStoreProducts.has("kelio")) {
-        list = memoryStoreProducts.get("kelio")!;
-      } else {
-        list = [...KELIO_PRODUCTS];
-      }
-    } else {
-      for (const kp of KELIO_PRODUCTS) {
-        if (!list.some((p) => p.id === kp.id || p.slug === kp.slug || ((p as any).legacy_id && (p as any).legacy_id === kp.id))) {
-          list.push(kp);
-        }
-      }
-    }
-  } else if (list.length === 0) {
-    if (memoryStoreProducts.has(shopSlug)) {
-      list = memoryStoreProducts.get(shopSlug)!;
-    } else if (shopSlug === "lome-glow") {
-      list = MOCK_PRODUCTS;
-    }
+  if (list.length === 0 && memoryStoreProducts.has(shopSlug)) {
+    list = memoryStoreProducts.get(shopSlug)!;
   }
 
   // Migration non destructive automatique (Prompt 17-K)

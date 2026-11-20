@@ -3,7 +3,7 @@
 import React, { useState, useMemo, use } from "react";
 import Link from "next/link";
 import { BookOpen, Clock, Calendar, ArrowRight, Tag, ChevronRight } from "lucide-react";
-import { MOCK_STORES } from "@/mock-data/stores";
+import { resolveStorefrontData } from "@/lib/storefront-resolver";
 import { getShopBlogPosts, BlogPost } from "@/lib/blog-store";
 import { ProductImage } from "@/components/ui/ProductImage";
 
@@ -13,7 +13,7 @@ export default function BlogListingPage({
   params: Promise<{ store: string }>;
 }) {
   const { store: storeSlug } = use(params);
-  const store = MOCK_STORES.find((s) => s.slug === storeSlug) || MOCK_STORES[0];
+  const store = resolveStorefrontData(storeSlug).store;
 
   const posts = getShopBlogPosts(storeSlug).filter((p) => p.status === "published");
   const [selectedTag, setSelectedTag] = useState<string>("all");

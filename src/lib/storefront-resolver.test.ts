@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { resolveStorefrontData, createEmptyStorefront, formatStoreSlugToName } from "./storefront-resolver";
+import {
+  resolveStorefrontData,
+  createEmptyStorefront,
+  formatStoreSlugToName,
+  setMemoryStorefront,
+} from "./storefront-resolver";
+import { saveShopProductsList } from "./products-store";
 
 const FORBIDDEN_DEMO_STRINGS = [
   "Lomé Glow",
@@ -41,6 +47,33 @@ describe("Prompt 08 : Résolution de la Vitrine & Étanchéité des Données", (
   });
 
   it("2b. Une boutique configurée avec produits réels (ex: kelio) est publiée et accessible", () => {
+    saveShopProductsList("kelio", [
+      {
+        id: "prod_k1",
+        title: "Produit Test Kelio",
+        slug: "produit-test-kelio",
+        price: 15000,
+        salePrice: 15000,
+        status: "active",
+        productStatus: "active",
+        stock: 20,
+        hiddenFromCatalog: false,
+      } as any,
+    ]);
+
+    setMemoryStorefront("kelio", {
+      ...createEmptyStorefront("kelio", "Kelio"),
+      isPublished: true,
+      contact: {
+        whatsappNumber: "+22890000000",
+        phone: "+22890000000",
+        email: "contact@kelio.com",
+        address: "Lomé",
+        city: "Lomé",
+        country: "Togo",
+      },
+    });
+
     const data = resolveStorefrontData("kelio");
 
     expect(data.store.name).toBe("Kelio");

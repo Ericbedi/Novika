@@ -129,9 +129,92 @@ describe("Prompt 05-G : Formules de scaling & Performance Produit", () => {
   });
 
   describe("Extension Calendrier & Analyse Weekly : Détection d'Over-scaling vs Scaling Sain", () => {
+    const TEST_WEEKLY_SCALING_HISTORY = [
+      {
+        weekKey: "2026-W46",
+        weekNumber: 46,
+        label: "Semaine 46 (10 - 16 Nov 2026)",
+        shortLabel: "Semaine 46 (En cours)",
+        startDate: "2026-11-10",
+        endDate: "2026-11-16",
+        isCurrent: true,
+        adSpendDollars: 355,
+        ordersCount: 110,
+        deliveredUnits: 32,
+        pendingUnits: 18,
+        closingRate: 0.291,
+        realCpaDollars: 11.09,
+        cpaTargetDollars: 7.86,
+        cpaBreakevenDollars: 12.14,
+        netProfitFcfa: -12400,
+        dollarRate: 700,
+        productsSummary: [],
+      },
+      {
+        weekKey: "2026-W45",
+        weekNumber: 45,
+        label: "Semaine 45 (03 - 09 Nov 2026)",
+        shortLabel: "Semaine 45",
+        startDate: "2026-11-03",
+        endDate: "2026-11-09",
+        isCurrent: false,
+        adSpendDollars: 280,
+        ordersCount: 93,
+        deliveredUnits: 33,
+        pendingUnits: 14,
+        closingRate: 0.355,
+        realCpaDollars: 8.48,
+        cpaTargetDollars: 7.86,
+        cpaBreakevenDollars: 12.14,
+        netProfitFcfa: 32500,
+        dollarRate: 700,
+        productsSummary: [],
+      },
+      {
+        weekKey: "2026-W44",
+        weekNumber: 44,
+        label: "Semaine 44 (27 Oct - 02 Nov 2026)",
+        shortLabel: "Semaine 44",
+        startDate: "2026-11-27",
+        endDate: "2026-11-02",
+        isCurrent: false,
+        adSpendDollars: 210,
+        ordersCount: 76,
+        deliveredUnits: 34,
+        pendingUnits: 10,
+        closingRate: 0.447,
+        realCpaDollars: 6.18,
+        cpaTargetDollars: 7.86,
+        cpaBreakevenDollars: 12.14,
+        netProfitFcfa: 142000,
+        dollarRate: 700,
+        productsSummary: [],
+      },
+      {
+        weekKey: "2026-W43",
+        weekNumber: 43,
+        label: "Semaine 43 (20 - 26 Oct 2026)",
+        shortLabel: "Semaine 43",
+        startDate: "2026-10-20",
+        endDate: "2026-10-26",
+        isCurrent: false,
+        adSpendDollars: 140,
+        ordersCount: 52,
+        deliveredUnits: 24,
+        pendingUnits: 8,
+        closingRate: 0.461,
+        realCpaDollars: 5.83,
+        cpaTargetDollars: 7.86,
+        cpaBreakevenDollars: 12.14,
+        netProfitFcfa: 106000,
+        dollarRate: 700,
+        productsSummary: [],
+      },
+    ];
+
     it("détecte précisément l'Over-scaling sévère de la Semaine 46 (cas réel de la capture utilisateur)", () => {
-      const s46 = DEFAULT_WEEKLY_SCALING_HISTORY[0]; // S46: 355 $, 110 cmd, 32 livrées, 29.1% closing, profit -12 400 FCFA
-      const s45 = DEFAULT_WEEKLY_SCALING_HISTORY[1]; // S45: 280 $, 93 cmd, 33 livrées, 35.5% closing, profit +32 500 FCFA
+      const s46 = TEST_WEEKLY_SCALING_HISTORY[0];
+      const s45 = TEST_WEEKLY_SCALING_HISTORY[1];
 
       const analysis = analyzeWeeklyScaling(s46, s45);
 
@@ -157,8 +240,8 @@ describe("Prompt 05-G : Formules de scaling & Performance Produit", () => {
     });
 
     it("détecte un Scaling Sain et Rentable quand le budget et le profit progressent ensemble (S44 vs S43)", () => {
-      const s44 = DEFAULT_WEEKLY_SCALING_HISTORY[2]; // S44: 210 $, 34 livrées, profit +142 000 FCFA
-      const s43 = DEFAULT_WEEKLY_SCALING_HISTORY[3]; // S43: 140 $, 24 livrées, profit +106 000 FCFA
+      const s44 = TEST_WEEKLY_SCALING_HISTORY[2];
+      const s43 = TEST_WEEKLY_SCALING_HISTORY[3];
 
       const analysis = analyzeWeeklyScaling(s44, s43);
 
@@ -177,8 +260,8 @@ describe("Prompt 05-G : Formules de scaling & Performance Produit", () => {
     });
 
     it("détecte un palier de saturation / rendements décroissants (S45 vs S44)", () => {
-      const s45 = DEFAULT_WEEKLY_SCALING_HISTORY[1]; // S45: 280 $, 33 livrées, profit +32 500 FCFA
-      const s44 = DEFAULT_WEEKLY_SCALING_HISTORY[2]; // S44: 210 $, 34 livrées, profit +142 000 FCFA
+      const s45 = TEST_WEEKLY_SCALING_HISTORY[1];
+      const s44 = TEST_WEEKLY_SCALING_HISTORY[2];
 
       const analysis = analyzeWeeklyScaling(s45, s44);
 

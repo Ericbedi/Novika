@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, beforeAll } from "vitest";
 import {
   getProductPublicUrl,
   getStorePublicUrl,
@@ -11,6 +11,7 @@ import {
   normalizeProductIdentifier,
   findProductInShopRaw,
   getProductByShopAndSlugOrId,
+  saveShopProductsList,
 } from "./products-store";
 import { Product } from "@/server/data/types";
 import { saveStoreDomains, clearCustomDomainsMemory } from "./custom-domains";
@@ -205,6 +206,35 @@ describe("Prompt 17-K : Résolution et URLs publiques des produits sur la vitrin
   });
 
   describe("4. Résolution tolérante de route & Normalisation", () => {
+    beforeAll(() => {
+      saveShopProductsList("lome-glow", [
+        {
+          id: "prod_01",
+          slug: "cafe-bio-champignon-vitality",
+          title: "Café Bio Champignon Vitality",
+          shortCode: "cafe01",
+          status: "active",
+          productStatus: "active",
+          published_to_storefront: true,
+          salePrice: 15000,
+          price: 15000,
+          stock: 10,
+        } as any,
+        {
+          id: "prod_09",
+          slug: "produit-brouillon",
+          title: "Produit Brouillon Test",
+          shortCode: "draft9",
+          status: "draft",
+          productStatus: "draft",
+          published_to_storefront: false,
+          salePrice: 10000,
+          price: 10000,
+          stock: 5,
+        } as any,
+      ]);
+    });
+
     it("retrouve un produit par son id exact, slug exact ou short_code", () => {
       const resById = findProductInShopRaw("lome-glow", "prod_01");
       expect(resById.product).not.toBeNull();

@@ -30,56 +30,42 @@ export function ProductsNavTabs({ storeSlug }: ProductsNavTabsProps) {
   const isAgency = activeRole === "agency";
   const isRestricted = isCloser || isRider || isAgency;
 
-  const isFounderDemoStore = storeSlug === "lome-glow";
-
   const [tabCounts, setTabCounts] = useState({
-    products: isFounderDemoStore ? MOCK_PRODUCTS.length : 0,
-    reorderAlerts: isFounderDemoStore ? MOCK_REORDER_ITEMS.length : 0,
-    suppliers: isFounderDemoStore ? MOCK_SUPPLIERS.length : 0,
-    activeOrders: isFounderDemoStore
-      ? MOCK_PURCHASE_ORDERS.filter((po) => po.status === "ordered" || po.status === "shipped").length
-      : 0,
-    collections: isFounderDemoStore ? MOCK_COLLECTIONS.length : 0,
+    products: 0,
+    reorderAlerts: 0,
+    suppliers: 0,
+    activeOrders: 0,
+    collections: 0,
   });
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      if (isFounderDemoStore) {
-        setTabCounts({
-          products: MOCK_PRODUCTS.length,
-          reorderAlerts: MOCK_REORDER_ITEMS.length,
-          suppliers: MOCK_SUPPLIERS.length,
-          activeOrders: MOCK_PURCHASE_ORDERS.filter((po) => po.status === "ordered" || po.status === "shipped").length,
-          collections: MOCK_COLLECTIONS.length,
-        });
-      } else {
-        const safeParseArray = (raw: string | null): any[] => {
-          if (!raw) return [];
-          try {
-            const parsed = JSON.parse(raw);
-            return Array.isArray(parsed) ? parsed : [];
-          } catch {
-            return [];
-          }
-        };
+      const safeParseArray = (raw: string | null): any[] => {
+        if (!raw) return [];
+        try {
+          const parsed = JSON.parse(raw);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      };
 
-        const parsedProds = safeParseArray(localStorage.getItem(`novika_store_products_${storeSlug}`));
-        const parsedSuppliers = safeParseArray(localStorage.getItem(`novika_store_suppliers_${storeSlug}`));
-        const parsedPos = safeParseArray(localStorage.getItem(`novika_store_pos_${storeSlug}`));
-        const parsedCollections = safeParseArray(localStorage.getItem(`novika_store_collections_${storeSlug}`));
+      const parsedProds = safeParseArray(localStorage.getItem(`novika_store_products_${storeSlug}`));
+      const parsedSuppliers = safeParseArray(localStorage.getItem(`novika_store_suppliers_${storeSlug}`));
+      const parsedPos = safeParseArray(localStorage.getItem(`novika_store_pos_${storeSlug}`));
+      const parsedCollections = safeParseArray(localStorage.getItem(`novika_store_collections_${storeSlug}`));
 
-        const reorders = parsedProds.filter((p: any) => (p?.stock || 0) <= (p?.lowStockThreshold || 10)).length;
+      const reorders = parsedProds.filter((p: any) => (p?.stock || 0) <= (p?.lowStockThreshold || 10)).length;
 
-        setTabCounts({
-          products: parsedProds.length,
-          reorderAlerts: reorders,
-          suppliers: parsedSuppliers.length,
-          activeOrders: parsedPos.filter((po: any) => po?.status === "ordered" || po?.status === "shipped").length,
-          collections: parsedCollections.length,
-        });
-      }
+      setTabCounts({
+        products: parsedProds.length,
+        reorderAlerts: reorders,
+        suppliers: parsedSuppliers.length,
+        activeOrders: parsedPos.filter((po: any) => po?.status === "ordered" || po?.status === "shipped").length,
+        collections: parsedCollections.length,
+      });
     }
-  }, [storeSlug, isFounderDemoStore]);
+  }, [storeSlug]);
 
   const tabs = [
     {

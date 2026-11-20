@@ -57,8 +57,6 @@ export function DashboardClient({ storeSlug }: { storeSlug: string }) {
   const [period, setPeriod] = useState<PeriodType>("last7");
   const [isWizardOpen, setIsWizardOpen] = useState(false);
 
-  const isFounderDemo = storeSlug === "lome-glow";
-
   const emptyKpis: DashboardKpi = {
     visitors: { value: 0, delta: 0, isUpGood: true },
     totalSales: { value: 0, delta: 0, isUpGood: true },
@@ -69,7 +67,7 @@ export function DashboardClient({ storeSlug }: { storeSlug: string }) {
     todayDeliveriesCount: 0,
   };
 
-  const kpis = isFounderDemo ? (MOCK_KPIS_BY_PERIOD[period] || MOCK_KPIS_BY_PERIOD.last7) : emptyKpis;
+  const kpis = emptyKpis;
 
   const [orders] = useState<Order[]>(() => {
     if (typeof window !== "undefined") {
@@ -79,9 +77,8 @@ export function DashboardClient({ storeSlug }: { storeSlug: string }) {
           return JSON.parse(saved);
         } catch {}
       }
-      if (!isFounderDemo) return [];
     }
-    return isFounderDemo ? MOCK_ORDERS : [];
+    return [];
   });
 
   const emptyStatusDistribution: StatusDistributionItem[] = [
@@ -156,8 +153,8 @@ export function DashboardClient({ storeSlug }: { storeSlug: string }) {
       <ScrollReveal delay={100}>
         <LiveGlobeCard
           storeSlug={storeSlug}
-          storeName={activeStore.name}
-          currency={activeStore.currency}
+          storeName={activeStore?.name || storeSlug}
+          currency={activeStore?.currency || "XOF"}
           period={period}
           onPeriodChange={handlePeriodChange}
           periodLabels={periodLabels}
@@ -166,7 +163,7 @@ export function DashboardClient({ storeSlug }: { storeSlug: string }) {
       </ScrollReveal>
 
       {/* 3.B. Objectif du mois de CA encaissé (Barre segmentée + Allure) */}
-      {isFounderDemo && (
+      {MOCK_GOALS.length > 0 && (
         <ScrollReveal delay={120}>
           <RevenueGoalCard
             goal={MOCK_GOALS[0]}
@@ -295,7 +292,7 @@ export function DashboardClient({ storeSlug }: { storeSlug: string }) {
 
       {/* 5. Graphique Principal : Visiteurs / Ventes / Commandes / Livrées avec onglets */}
       <ScrollReveal delay={200}>
-        <MainPerformanceChart data={isFounderDemo ? MOCK_CHART_DAYS : emptyChartDays} />
+        <MainPerformanceChart data={emptyChartDays} />
       </ScrollReveal>
 
       {/* 6. Grille 2 Colonnes : Répartition des Statuts & Meilleurs Produits */}
@@ -303,7 +300,7 @@ export function DashboardClient({ storeSlug }: { storeSlug: string }) {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-5">
             <StatusDonutChart
-              items={isFounderDemo ? MOCK_STATUS_DISTRIBUTION : emptyStatusDistribution}
+              items={emptyStatusDistribution}
               totalOrders={kpis.ordersCount.value}
               className="h-full"
             />
@@ -311,7 +308,7 @@ export function DashboardClient({ storeSlug }: { storeSlug: string }) {
 
           <div className="lg:col-span-7">
             <TopProductsCard
-              products={isFounderDemo ? MOCK_TOP_PRODUCTS : []}
+              products={[]}
               storeSlug={storeSlug}
               className="h-full"
             />
@@ -321,7 +318,7 @@ export function DashboardClient({ storeSlug }: { storeSlug: string }) {
 
       {/* 7. Graphique « Budget, coûts, bénéfice et livraisons » avec cases à cocher et pastilles de couleur cliquables */}
       <ScrollReveal delay={300}>
-        <ProfitDeliveryChart data={isFounderDemo ? MOCK_CHART_DAYS : emptyChartDays} />
+        <ProfitDeliveryChart data={emptyChartDays} />
       </ScrollReveal>
 
       {/* 8. Tableau des Dernières Commandes (Desktop & Mobile First) */}

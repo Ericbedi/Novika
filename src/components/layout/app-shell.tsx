@@ -90,17 +90,30 @@ export function AppShell({
   );
 }
 
+const DEFAULT_EMPTY_STORE: Store = {
+  id: "store_empty",
+  name: "Nouvelle Boutique",
+  slug: "",
+  country: "TG",
+  countryName: "Togo",
+  flag: "🇹🇬",
+  currency: "XOF",
+  whatsappNumber: "",
+  role: "owner",
+};
+
 function AppShellInner({
   children,
-  initialStoreSlug = "lome-glow",
+  initialStoreSlug = "",
 }: {
   children: React.ReactNode;
   initialStoreSlug?: string;
 }) {
   const [storesList, setStoresList] = useState<Store[]>(MOCK_STORES);
-  const [activeStore, setActiveStore] = useState<Store>(
-    MOCK_STORES.find((s) => s.slug === initialStoreSlug) || MOCK_STORES[0]
-  );
+  const [activeStore, setActiveStore] = useState<Store>(() => {
+    const found = MOCK_STORES.find((s) => s.slug === initialStoreSlug);
+    return found || MOCK_STORES[0] || DEFAULT_EMPTY_STORE;
+  });
   const [currentUser, setCurrentUser] = useState(CURRENT_USER);
   const [activeRole, setActiveRoleState] = useState<UserRole>("owner");
   const [isUserVerified, setIsUserVerified] = useState(true);
@@ -224,6 +237,7 @@ function AppShellInner({
 
   // Supabase Realtime: Écoute des nouvelles commandes COD pour notification sonore instantanée
   useEffect(() => {
+    if (!activeStore?.slug) return;
     try {
       const supabase = createClient();
       const channel = supabase
@@ -249,7 +263,7 @@ function AppShellInner({
     } catch (err) {
       console.warn("[Supabase Realtime] Erreur souscription commandes:", err);
     }
-  }, [activeStore.slug]);
+  }, [activeStore?.slug]);
 
   const setActiveRole = (role: UserRole) => {
     setActiveRoleState(role);
@@ -258,8 +272,8 @@ function AppShellInner({
     }
   };
 
-  const storeSlug = activeStore.slug;
-  const basePath = `/app/${storeSlug}`;
+  const storeSlug = activeStore?.slug || "";
+  const basePath = storeSlug ? `/app/${storeSlug}` : "/app";
 
   // Permissions par rôle
   const isOwnerOrAdmin = activeRole === "owner" || activeRole === "admin";
@@ -631,7 +645,7 @@ function AppShellInner({
                         {USER_ROLE_LABELS[activeRole]}
                       </span>
                       <span className="text-[#888880]">·</span>
-                      <span className="text-[#666660] truncate">{activeStore.name}</span>
+                      <span className="text-[#666660] truncate">{activeStore?.name || "Aucune boutique"}</span>
                     </div>
                   </div>
 
@@ -919,7 +933,32 @@ function AppShellInner({
               </div>
             )}
 
-            {children}
+            {storesList.length === 0 ? (
+              <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-6 space-y-5">
+                <div className="w-16 h-16 rounded-3xl bg-amber-50 border border-amber-200/80 text-amber-700 flex items-center justify-center shadow-xs">
+                  <StoreIcon className="h-8 w-8" />
+                </div>
+                <div className="space-y-1.5 max-w-md">
+                  <h2 className="text-xl font-black text-[#111111]">
+                    Aucune boutique pour l&apos;instant
+                  </h2>
+                  <p className="text-xs text-[#666660] leading-relaxed">
+                    Créez votre première boutique pour commencer à ajouter vos produits réels et vendre en Afrique de l&apos;Ouest avec paiement à la livraison.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  id="btn-create-first-store"
+                  onClick={() => setIsCreateStoreOpen(true)}
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-[#111111] hover:bg-black text-[#FAF8F5] text-xs font-bold transition-all shadow-md cursor-pointer active:scale-95"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Créer ma première boutique</span>
+                </button>
+              </div>
+            ) : (
+              children
+            )}
           </main>
         </div>
       </div>

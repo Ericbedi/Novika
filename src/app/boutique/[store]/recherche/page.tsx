@@ -19,6 +19,7 @@ import { getShopBlogPosts } from "@/lib/blog-store";
 import { ProductImage } from "@/components/ui/ProductImage";
 import { formatFcfa } from "@/lib/money";
 import { isProductVisibleOnStorefront } from "@/lib/stock-settings-store";
+import { resolveStorefrontData } from "@/lib/storefront-resolver";
 
 export default function SearchPage({
   params,
@@ -26,7 +27,7 @@ export default function SearchPage({
   params: Promise<{ store: string }>;
 }) {
   const { store: storeSlug } = use(params);
-  const store = MOCK_STORES.find((s) => s.slug === storeSlug) || MOCK_STORES[0];
+  const store = resolveStorefrontData(storeSlug).store;
 
   const [query, setQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "products" | "blog" | "pages">("all");

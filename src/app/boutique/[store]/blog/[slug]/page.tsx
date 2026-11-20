@@ -21,6 +21,7 @@ import { getShopProducts } from "@/lib/products-store";
 import { ProductImage } from "@/components/ui/ProductImage";
 import { sanitizeHtml } from "@/lib/html-sanitizer";
 import { formatFcfa } from "@/lib/money";
+import { resolveStorefrontData } from "@/lib/storefront-resolver";
 
 export default function BlogPostDetailPage({
   params,
@@ -28,7 +29,7 @@ export default function BlogPostDetailPage({
   params: Promise<{ store: string; slug: string }>;
 }) {
   const { store: storeSlug, slug: postSlug } = use(params);
-  const store = MOCK_STORES.find((s) => s.slug === storeSlug) || MOCK_STORES[0];
+  const store = resolveStorefrontData(storeSlug).store;
 
   const post = getBlogPostBySlug({
     shopSlug: storeSlug,

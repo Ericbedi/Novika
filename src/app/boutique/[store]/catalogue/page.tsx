@@ -23,6 +23,7 @@ import { ProductImage } from "@/components/ui/ProductImage";
 import { isProductVisibleOnStorefront } from "@/lib/stock-settings-store";
 import { getProductPublicUrl } from "@/lib/storefront-urls";
 import { getShopProducts } from "@/lib/products-store";
+import { resolveStorefrontData } from "@/lib/storefront-resolver";
 
 export default function CataloguePage({
   params,
@@ -30,8 +31,9 @@ export default function CataloguePage({
   params: Promise<{ store: string }>;
 }) {
   const { store: storeSlug } = use(params);
-  const store = MOCK_STORES.find((s) => s.slug === storeSlug) || MOCK_STORES[0];
-  const storefront = MOCK_STOREFRONT_LOME;
+  const resolved = resolveStorefrontData(storeSlug);
+  const store = resolved.store;
+  const storefront = resolved.storefront;
 
   const isFounderDemo = storeSlug === "lome-glow";
 
