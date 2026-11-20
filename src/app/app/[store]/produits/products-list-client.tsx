@@ -85,6 +85,7 @@ import {
   IndicatorPeriod,
   ProductDashboardIndicators,
 } from "@/lib/product-indicators";
+import { getProductPublicUrl } from "@/lib/storefront-urls";
 
 interface ProductsListClientProps {
   storeSlug: string;
@@ -118,7 +119,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
           if (Array.isArray(parsed)) {
             return parsed.filter((p) => p && typeof p === "object");
           }
-        } catch {}
+        } catch { }
       }
       if (!isFounderDemoStore) return [];
     }
@@ -132,7 +133,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
         try {
           const parsed = JSON.parse(savedOrders);
           if (Array.isArray(parsed)) return parsed;
-        } catch {}
+        } catch { }
       }
     }
     return isFounderDemoStore ? MOCK_ORDERS : [];
@@ -150,7 +151,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
         try {
           const parsed = JSON.parse(savedOrders);
           if (Array.isArray(parsed)) ords = parsed;
-        } catch {}
+        } catch { }
       }
       if (ords.length === 0 && isFounderDemoStore) {
         ords = MOCK_ORDERS;
@@ -188,7 +189,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
       try {
         const saved = localStorage.getItem(`novika_product_columns_${storeSlug}`);
         if (saved) return JSON.parse(saved);
-      } catch {}
+      } catch { }
     }
     return {
       supplier: false,
@@ -1183,10 +1184,10 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
                   ? v.id === "trash"
                     ? "bg-rose-700 text-white shadow-xs"
                     : v.id === "out_of_stock"
-                    ? "bg-red-700 text-white shadow-xs"
-                    : v.id === "low_stock"
-                    ? "bg-amber-700 text-white shadow-xs"
-                    : "bg-[#111111] text-white shadow-xs"
+                      ? "bg-red-700 text-white shadow-xs"
+                      : v.id === "low_stock"
+                        ? "bg-amber-700 text-white shadow-xs"
+                        : "bg-[#111111] text-white shadow-xs"
                   : "bg-white border border-[#E6E0D4] text-[#666660] hover:text-[#111111] hover:bg-[#F3EFE6]"
               )}
             >
@@ -1353,17 +1354,17 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
               {quickView === "trash"
                 ? "La corbeille est vide"
                 : products.length === 0
-                ? "Ajoutez votre premier produit"
-                : "Aucun produit ne correspond à vos filtres"}
+                  ? "Ajoutez votre premier produit"
+                  : "Aucun produit ne correspond à vos filtres"}
             </h3>
             <p className="text-xs text-[#7A7A7A] max-w-sm mx-auto mt-1 leading-relaxed">
               {quickView === "trash"
                 ? "Aucun produit n'a été déplacé dans la corbeille."
                 : products.length === 0
-                ? "Commencez par ajouter votre premier produit pour alimenter votre vitrine et lancer vos campagnes publicitaires."
-                : searchQuery
-                ? `Aucun produit ne correspond à « ${searchQuery} ».`
-                : "Modifiez vos filtres pour afficher des produits."}
+                  ? "Commencez par ajouter votre premier produit pour alimenter votre vitrine et lancer vos campagnes publicitaires."
+                  : searchQuery
+                    ? `Aucun produit ne correspond à « ${searchQuery} ».`
+                    : "Modifiez vos filtres pour afficher des produits."}
             </p>
           </div>
 
@@ -1638,7 +1639,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
                           {/* Icône œil : aperçu vitrine */}
                           <a
                             id={`btn-product-preview-${product.id}`}
-                            href={`/boutique/${storeSlug}/produits/${product.slug || product.id}?preview=true`}
+                            href={getProductPublicUrl(product, storeSlug, { preview: true })}
                             target="_blank"
                             rel="noopener noreferrer"
                             title="Voir sur la vitrine"
@@ -1806,7 +1807,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
                   {/* Actions mobile */}
                   <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#F0EBE0]">
                     <a
-                      href={`/boutique/${storeSlug}/produits/${product.slug || product.id}?preview=true`}
+                      href={getProductPublicUrl(product, storeSlug, { preview: true })}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-3 py-1.5 rounded-lg border border-[#E6E0D4] bg-white text-xs font-semibold text-[#111111] flex items-center gap-1"
@@ -1931,7 +1932,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
 
                 <div className="flex items-center gap-1.5 pt-2 border-t border-[#F0EBE0]">
                   <a
-                    href={`/boutique/${storeSlug}/produits/${product.slug || product.id}?preview=true`}
+                    href={getProductPublicUrl(product, storeSlug, { preview: true })}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="p-2 rounded-lg border border-[#E6E0D4] text-[#111111] hover:bg-[#FAF8F5]"
@@ -2304,7 +2305,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
                   disabled={
                     hardDeleteConfirmInput.trim().toLowerCase() !== "supprimer" &&
                     hardDeleteConfirmInput.trim().toLowerCase() !==
-                      (hardDeleteTarget.name || hardDeleteTarget.title || "").trim().toLowerCase()
+                    (hardDeleteTarget.name || hardDeleteTarget.title || "").trim().toLowerCase()
                   }
                   onClick={handleHardDeleteConfirm}
                   className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-black shadow-xs transition-colors"

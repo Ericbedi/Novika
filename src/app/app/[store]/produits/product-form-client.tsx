@@ -78,6 +78,7 @@ import { DEFAULT_RECEIPT_CONTENT } from "@/lib/receipts-engine";
 import { MOCK_PRODUCTS } from "@/mock-data/products";
 import { MOCK_SUPPLIERS } from "@/mock-data/suppliers";
 import { MOCK_COLLECTIONS } from "@/mock-data/collections";
+import { getProductPublicUrl } from "@/lib/storefront-urls";
 import { MOCK_ORDERS } from "@/mock-data/orders";
 import { formatFcfa } from "@/lib/money";
 import { cn } from "@/lib/utils";
@@ -1015,7 +1016,7 @@ export function ProductFormClient({
           {initialProduct && (
             <a
               id="btn-product-preview-store"
-              href={`/boutique/${storeSlug}/produits/${initialProduct.slug || initialProduct.id}?preview=true`}
+              href={getProductPublicUrl(initialProduct, storeSlug, { preview: true })}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#E6E0D4] bg-white text-xs font-semibold text-[#111111] hover:bg-[#F3EFE6] transition-colors"

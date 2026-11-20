@@ -4,7 +4,7 @@
 > Avant toute intervention, ce document doit être lu et l'état des tests vérifié.
 
 Dernière mise à jour : 2026-11-20
-État global des tests : 27 suites passées, 308 tests passés avec succès (+ 3 tests Playwright E2E).
+État global des tests : 28 suites passées, 323 tests unitaires passés avec succès (+ 9 tests Playwright E2E).
 
 ---
 
@@ -130,4 +130,31 @@ Dernière mise à jour : 2026-11-20
 - **Tests** :
   - `src/lib/prompt-17j-product-edit.test.ts` (13 tests)
   - `tests/prompt-17j-product-edit.spec.ts` (3 tests E2E)
+
+---
+
+## 10. Résolution Canonique des Produits Vitrine & URLs Unifiées (Prompt 17-K)
+- **Description** :
+  - Générateur d'URL unique `getProductPublicUrl(product, shop, options)` utilisé PARTOUT (listes, aperçus, fiches, catalogue, sections de thèmes, liens courts). Aucune URL construite manuellement. Prise en compte prioritaire des domaines personnalisés actifs (ex. `https://kelio.com/produits/{slug}`).
+  - Migration non destructive : slugs et codes courts uniques de 6 caractères (`shortCode` / `short_code`) générés automatiquement sans altérer les existants.
+  - Résolution tolérante : la route produit accepte indifféremment l'`id`, le `slug` ou le `short_code` (insensible à la casse et aux accents). Redirection automatique 301 vers l'URL canonique `/produits/{slug}`.
+  - Gestion des statuts de publication : les produits actifs sont publiés par défaut (`published_to_storefront: true`). Les produits en brouillon ou non publiés affichent l'écran dédié « Produit indisponible » (sans erreur 404 générique et sans suggestion de concurrents).
+  - Mode prévisualisation administrateur : jeton de prévisualisation signé (1h de validité) ou `?preview=true` affichant la fiche produit avec bandeau d'alerte supérieur et balise `noindex, nofollow`.
+  - Page 404 personnalisée aux couleurs de la boutique : affiche le logo, le nom de la boutique, un bouton de retour à l'accueil et au catalogue, ainsi qu'un diagnostic technique réservé à l'administrateur connecté.
+  - Route singulière `/boutique/[store]/produit/[id]` redirigeant automatiquement en 301 vers la route canonique plurielle `/boutique/[store]/produits/[id]`.
+- **Fichiers clés** :
+  - `src/lib/storefront-urls.ts`
+  - `src/lib/products-store.ts`
+  - `src/server/data/types.ts`
+  - `src/app/boutique/[store]/produits/[id]/page.tsx`
+  - `src/app/boutique/[store]/produit/[id]/page.tsx`
+  - `src/app/app/[store]/produits/products-list-client.tsx`
+  - `src/app/app/[store]/produits/product-form-client.tsx`
+  - `src/app/boutique/[store]/catalogue/page.tsx`
+  - `src/components/storefront/theme-sections/FeaturedProductSection.tsx`
+  - `src/components/storefront/theme-sections/FeaturedProductsSection.tsx`
+- **Tests** :
+  - `src/lib/prompt-17k-product-storefront.test.ts` (15 tests unitaires)
+  - `tests/prompt-17k-product-storefront.spec.ts` (6 tests Playwright E2E)
+
 

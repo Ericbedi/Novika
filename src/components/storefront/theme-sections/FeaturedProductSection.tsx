@@ -10,6 +10,7 @@ import { formatFcfa } from "@/lib/money";
 import { Star, ShieldCheck, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isProductVisibleOnStorefront } from "@/lib/stock-settings-store";
+import { getProductPublicUrl } from "@/lib/storefront-urls";
 
 interface FeaturedProductSectionProps {
   settings: FeaturedProductSettings;
@@ -108,7 +109,7 @@ export function FeaturedProductSection({
 
         <div className="pt-2">
           <Link
-            href={`/boutique/${storeSlug}/produit/${targetSlug}`}
+            href={getProductPublicUrl(product, storeSlug)}
             className={cn(
               "inline-flex items-center justify-center gap-2 px-8 py-3.5 text-xs sm:text-sm font-black transition-transform active:scale-95 shadow-md",
               btnRadiusClass

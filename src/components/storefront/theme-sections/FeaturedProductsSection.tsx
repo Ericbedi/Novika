@@ -10,6 +10,7 @@ import { formatFcfa } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { ProductImage } from "@/components/ui/ProductImage";
 import { isProductVisibleOnStorefront } from "@/lib/stock-settings-store";
+import { getProductPublicUrl } from "@/lib/storefront-urls";
 
 interface FeaturedProductsSectionProps {
   settings: FeaturedProductsSettings;
@@ -122,7 +123,7 @@ export function FeaturedProductsSection({
                 }}
               >
                 <Link
-                  href={`/boutique/${storeSlug}/produit/${targetSlugOrId}`}
+                  href={getProductPublicUrl(product, storeSlug)}
                   className="relative block aspect-square overflow-hidden bg-black/[0.03]"
                 >
                   <ProductImage
@@ -153,7 +154,7 @@ export function FeaturedProductsSection({
                 <div className="p-3 sm:p-4 flex flex-col justify-between flex-1 space-y-3">
                   <div className="space-y-1">
                     <Link
-                      href={`/boutique/${storeSlug}/produit/${targetSlugOrId}`}
+                      href={getProductPublicUrl(product, storeSlug)}
                       className="block text-xs sm:text-sm font-black tracking-tight leading-snug line-clamp-2 hover:underline"
                     >
                       {product.title || product.name}
@@ -178,7 +179,7 @@ export function FeaturedProductsSection({
                   </div>
 
                   <Link
-                    href={`/boutique/${storeSlug}/produit/${product.id}`}
+                    href={getProductPublicUrl(product, storeSlug)}
                     className={cn(
                       "inline-flex items-center gap-1 px-3 py-1.5 text-[11px] font-black transition-all shadow-xs hover:scale-105 active:scale-95 shrink-0",
                       btnRadiusClass

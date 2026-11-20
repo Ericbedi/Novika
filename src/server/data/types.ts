@@ -211,6 +211,9 @@ export interface Product {
   name: string;
   title?: string;
   slug: string;
+  shortCode?: string; // Prompt 17-K : Code court alphanumérique (ex. 6 caractères) unique par boutique
+  short_code?: string; // Alias pour compatibilité snake_case
+  published_to_storefront?: boolean; // Prompt 17-K : État explicite de publication sur la vitrine
   description: string;
   missingFields?: string[];
   category: string;

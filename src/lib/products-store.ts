@@ -107,17 +107,116 @@ export function purgeExpiredTrash(shopSlug: string, maxDays: number = 30): numbe
   return purgedCount;
 }
 
+const SHORT_CODE_CHARS = "abcdefghjkmnpqrstuvwxyz23456789";
+
+/**
+ * Génère un code court alphanumérique de 6 caractères unique (Prompt 17-K).
+ */
+export function generateShortCode(existingCodes: Set<string> = new Set()): string {
+  let code = "";
+  let attempts = 0;
+  do {
+    code = "";
+    for (let i = 0; i < 6; i++) {
+      const idx = Math.floor(Math.random() * SHORT_CODE_CHARS.length);
+      code += SHORT_CODE_CHARS[idx];
+    }
+    attempts++;
+  } while (existingCodes.has(code) && attempts < 1000);
+  existingCodes.add(code);
+  return code;
+}
+
+/**
+ * Migration non destructive : garantit slug + shortCode + published_to_storefront (Prompt 17-K).
+ * Ne modifie JAMAIS un slug ou un short_code déjà existant.
+ */
+export function ensureProductSlugAndShortCode(
+  product: Product,
+  existingProducts: Product[] = []
+): Product {
+  const p = { ...product };
+
+  // 1. Slug non destructif
+  if (!p.slug || !p.slug.trim()) {
+    const baseSlug = (p.title || p.name || "produit")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "produit";
+
+    const existingSlugs = new Set(
+      existingProducts
+        .filter((other) => other.id !== p.id)
+        .map((other) => other.slug?.toLowerCase())
+        .filter(Boolean)
+    );
+
+    if (!existingSlugs.has(baseSlug)) {
+      p.slug = baseSlug;
+    } else {
+      let counter = 2;
+      while (existingSlugs.has(`${baseSlug}-${counter}`)) {
+        counter++;
+      }
+      p.slug = `${baseSlug}-${counter}`;
+    }
+  }
+
+  // 2. Short code non destructif (6 caractères)
+  const existingShort = p.shortCode || p.short_code;
+  if (!existingShort || !existingShort.trim()) {
+    const existingCodes = new Set(
+      existingProducts
+        .filter((other) => other.id !== p.id)
+        .map((other) => other.shortCode || other.short_code)
+        .filter(Boolean) as string[]
+    );
+    const newCode = generateShortCode(existingCodes);
+    p.shortCode = newCode;
+    p.short_code = newCode;
+  } else {
+    if (!p.shortCode) p.shortCode = existingShort;
+    if (!p.short_code) p.short_code = existingShort;
+  }
+
+  // 3. published_to_storefront : true par défaut pour les produits actifs
+  if (p.published_to_storefront === undefined) {
+    const isActive =
+      p.productStatus === "active" ||
+      (p.status === "in_stock" && p.productStatus !== "draft" && p.productStatus !== "archived") ||
+      p.status === "active";
+    p.published_to_storefront = isActive && !p.hiddenFromCatalog;
+  }
+
+  return p;
+}
+
+/**
+ * Normalise un identifiant (id, slug, shortCode) : minuscules, sans accents.
+ */
+export function normalizeProductIdentifier(input: string): string {
+  if (!input) return "";
+  return input
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
 /**
  * Récupération brute de tous les produits stockés (y compris corbeille).
  */
 export function getShopProductsRaw(shopSlug: string): Product[] {
+  let list: Product[] = [];
   if (typeof window !== "undefined") {
     try {
       const saved = localStorage.getItem(getShopStorageKey(shopSlug));
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          list = parsed;
         }
       }
     } catch (e) {
@@ -125,15 +224,35 @@ export function getShopProductsRaw(shopSlug: string): Product[] {
     }
   }
 
-  if (memoryStoreProducts.has(shopSlug)) {
-    return memoryStoreProducts.get(shopSlug)!;
+  if (list.length === 0) {
+    if (memoryStoreProducts.has(shopSlug)) {
+      list = memoryStoreProducts.get(shopSlug)!;
+    } else if (shopSlug === "lome-glow") {
+      list = MOCK_PRODUCTS;
+    }
   }
 
-  if (shopSlug === "lome-glow") {
-    return MOCK_PRODUCTS;
+  // Migration non destructive automatique (Prompt 17-K)
+  let hasMissing = false;
+  for (const p of list) {
+    if (!p.slug || !p.shortCode || !p.short_code || p.published_to_storefront === undefined) {
+      hasMissing = true;
+      break;
+    }
   }
 
-  return [];
+  if (hasMissing && list.length > 0) {
+    const migrated = list.map((p) => ensureProductSlugAndShortCode(p, list));
+    memoryStoreProducts.set(shopSlug, migrated);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(getShopStorageKey(shopSlug), JSON.stringify(migrated));
+      } catch {}
+    }
+    return migrated;
+  }
+
+  return list;
 }
 
 /**
@@ -174,7 +293,61 @@ export function getTrashProducts(shopSlug: string): Product[] {
 }
 
 /**
- * Récupère un produit spécifique dans une boutique par son id ou son slug.
+ * Recherche détaillée et tolérante d'un produit dans une boutique (Prompt 17-K).
+ * Accepte id, slug ou short_code (minuscules, sans accents, sans tirets superflus).
+ */
+export function findProductInShopRaw(
+  shopSlug: string,
+  slugOrId: string
+): {
+  product: Product | null;
+  isDraft: boolean;
+  isUnpublished: boolean;
+  isDeleted: boolean;
+  matchedBy: "id" | "slug" | "short_code" | null;
+} {
+  if (!shopSlug || !slugOrId) {
+    return { product: null, isDraft: false, isUnpublished: false, isDeleted: false, matchedBy: null };
+  }
+
+  const products = getShopProductsRaw(shopSlug);
+  const target = normalizeProductIdentifier(slugOrId);
+
+  let matchedBy: "id" | "slug" | "short_code" | null = null;
+  const found = products.find((p) => {
+    if (p.id && normalizeProductIdentifier(p.id) === target) {
+      matchedBy = "id";
+      return true;
+    }
+    if (p.slug && normalizeProductIdentifier(p.slug) === target) {
+      matchedBy = "slug";
+      return true;
+    }
+    const short = p.shortCode || p.short_code;
+    if (short && normalizeProductIdentifier(short) === target) {
+      matchedBy = "short_code";
+      return true;
+    }
+    return false;
+  });
+
+  if (!found) {
+    return { product: null, isDraft: false, isUnpublished: false, isDeleted: false, matchedBy: null };
+  }
+
+  const isDeleted = Boolean(found.deletedAt);
+  const isDraft = found.productStatus === "draft" || found.status === "draft";
+  const isUnpublished =
+    found.published_to_storefront === false ||
+    found.hiddenFromCatalog === true ||
+    isDraft ||
+    found.productStatus === "archived";
+
+  return { product: found, isDraft, isUnpublished, isDeleted, matchedBy };
+}
+
+/**
+ * Récupère un produit spécifique dans une boutique par son id ou son slug (et short_code, Prompt 17-K).
  * Retourne null si le produit n'existe pas, est dans la corbeille, ou n'est pas actif (sauf allowDraft).
  * JAMAIS de repli sur un autre produit.
  */
@@ -189,16 +362,8 @@ export function getProductByShopAndSlugOrId({
   allowDraft?: boolean;
   includeDeleted?: boolean;
 }): Product | null {
-  if (!shopSlug || !slugOrId) return null;
-
-  const products = getShopProductsRaw(shopSlug);
-  const target = slugOrId.trim().toLowerCase();
-
-  const found = products.find((p) => {
-    const idMatch = p.id && p.id.toLowerCase() === target;
-    const slugMatch = p.slug && p.slug.toLowerCase() === target;
-    return idMatch || slugMatch;
-  });
+  const result = findProductInShopRaw(shopSlug, slugOrId);
+  const found = result.product;
 
   if (!found) {
     return null; // Zéro repli sur un autre produit
@@ -212,11 +377,13 @@ export function getProductByShopAndSlugOrId({
 
   // Vérifier la publication pour les accès publics
   if (!allowDraft) {
+    const isExplicitlyPublished = found.published_to_storefront !== false;
     const isActive =
-      found.productStatus === "active" ||
-      (found.status === "in_stock" && found.productStatus !== "draft" && found.productStatus !== "archived") ||
-      (!found.productStatus && !found.status); // rétro-compatibilité
-    if (!isActive) {
+      (found.productStatus === "active" ||
+        (found.status === "in_stock" && found.productStatus !== "draft" && found.productStatus !== "archived") ||
+        (!found.productStatus && !found.status)) &&
+      !found.hiddenFromCatalog;
+    if (!isExplicitlyPublished || !isActive) {
       return null;
     }
   }

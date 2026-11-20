@@ -21,6 +21,7 @@ import { Product } from "@/server/data/types";
 import { Lock } from "lucide-react";
 import { ProductImage } from "@/components/ui/ProductImage";
 import { isProductVisibleOnStorefront } from "@/lib/stock-settings-store";
+import { getProductPublicUrl } from "@/lib/storefront-urls";
 
 export default function CataloguePage({
   params,
@@ -264,6 +265,8 @@ export default function CataloguePage({
             const prodTargetSlugOrId = prod.slug || prod.id;
             const prodImageSrc = (prod.images && prod.images[0]) || (prod as any).image || "";
 
+            const prodUrl = getProductPublicUrl(prod, storeSlug);
+
             return (
               <div
                 key={prod.id}
@@ -272,7 +275,7 @@ export default function CataloguePage({
                 <div className="space-y-3">
                   {/* Photo Produit & Badges */}
                   <Link
-                    href={`/boutique/${storeSlug}/produit/${prodTargetSlugOrId}`}
+                    href={prodUrl}
                     className="relative block h-52 rounded-2xl bg-[#FAF8F5] overflow-hidden border border-black/[0.04]"
                   >
                     <ProductImage
@@ -313,7 +316,7 @@ export default function CataloguePage({
                       {prod.category}
                     </span>
                     <Link
-                      href={`/boutique/${storeSlug}/produit/${prodTargetSlugOrId}`}
+                      href={prodUrl}
                       className="text-xs sm:text-sm font-black text-[#111111] hover:text-emerald-700 transition-colors line-clamp-2 mt-0.5"
                     >
                       {prod.name}
@@ -343,7 +346,7 @@ export default function CataloguePage({
                   </button>
                 ) : (
                   <Link
-                    href={`/boutique/${storeSlug}/produit/${prod.id}`}
+                    href={prodUrl}
                     className="w-full py-2.5 px-3 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-all text-center block shadow-2xs group-hover:bg-emerald-700 cursor-pointer"
                   >
                     Commander en Paiement Cash

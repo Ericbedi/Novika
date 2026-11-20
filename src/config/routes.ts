@@ -34,7 +34,7 @@ export const ROUTES = {
 
   // Vitrines Publiques
   storefront: (store: string) => `/boutique/${store}`,
-  storefrontProduct: (store: string, productId: string) => `/boutique/${store}/produit/${productId}`,
+  storefrontProduct: (store: string, productId: string) => `/boutique/${store}/produits/${productId}`,
 
   // Suivi Public
   tracking: (orderNumber: string) => `/suivi/${orderNumber}`,

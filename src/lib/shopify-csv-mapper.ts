@@ -679,6 +679,11 @@ export function convertDraftToProduct(
     warnings.push(`Produit importé en brouillon : champs manquants (${missingFields.join(", ")})`);
   }
 
+  const shortCode =
+    existingProduct?.shortCode ||
+    existingProduct?.short_code ||
+    Math.random().toString(36).slice(2, 8);
+
   return {
     id: existingProduct && strategy === "update" ? existingProduct.id : `prod_imp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     storeId: storeSlug,
@@ -688,6 +693,9 @@ export function convertDraftToProduct(
     name: draft.title,
     title: draft.title,
     slug: effectiveSlug,
+    shortCode,
+    short_code: shortCode,
+    published_to_storefront: calculatedStatus === "active",
     description: draft.descriptionHtml || draft.descriptionPlain || "Produit importé par fichier CSV.",
     originalRawDescription: draft.rawBodyHtml,
     importedAt: new Date().toISOString(),
