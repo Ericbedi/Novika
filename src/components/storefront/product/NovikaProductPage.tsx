@@ -14,6 +14,12 @@ import {
   Package,
   ShoppingBag,
   Check,
+  Sparkles,
+  Heart,
+  Zap,
+  Leaf,
+  Smile,
+  Flame,
 } from "lucide-react";
 import { addToCart, openCartDrawer } from "@/lib/cart-store";
 import { Product } from "@/server/data/types";
@@ -27,6 +33,32 @@ import { ProductDescription } from "@/components/products/product-description";
 import { formatFcfa } from "@/lib/money";
 import { ProductPageTemplateType } from "@/lib/theme-engine/types";
 import { cn } from "@/lib/utils";
+
+function BenefitIcon({ icon, className }: { icon?: string; className?: string }) {
+  switch (icon) {
+    case "sparkles":
+      return <Sparkles className={className} />;
+    case "shield":
+      return <ShieldCheck className={className} />;
+    case "heart":
+      return <Heart className={className} />;
+    case "zap":
+      return <Zap className={className} />;
+    case "star":
+      return <Star className={className} />;
+    case "leaf":
+      return <Leaf className={className} />;
+    case "smile":
+      return <Smile className={className} />;
+    case "flame":
+      return <Flame className={className} />;
+    case "clock":
+      return <Clock className={className} />;
+    case "check":
+    default:
+      return <Check className={className} />;
+  }
+}
 
 interface NovikaProductPageProps {
   product: Product;
@@ -92,7 +124,8 @@ export function NovikaProductPage({
   const currentOffer = quantityOffers.find((q) => q.quantity === selectedPackQuantity);
   const effectivePrice = currentOffer?.totalPrice || basePrice * selectedPackQuantity;
 
-  // Stock réel
+  // Stock réel & Suivi de stock (Prompt 17-L : si suivi désactivé, le produit n'est pas en rupture à tort)
+  const isStockTracked = product.trackStock !== false && product.trackQuantity !== false;
   const realStock =
     product.availableStock !== undefined
       ? product.availableStock
@@ -101,7 +134,7 @@ export function NovikaProductPage({
       : product.stock !== undefined
       ? product.stock
       : 0;
-  const isOutOfStock = realStock <= 0;
+  const isOutOfStock = isStockTracked && realStock <= 0;
 
   // Avis réels de commandes livrées
   const deliveredReviews = reviews.filter((r) => r.verifiedPurchase);
@@ -258,8 +291,54 @@ export function NovikaProductPage({
             </div>
           )}
 
-          {/* Offres et Packs groupés (Prompt 05-V) */}
-          {quantityOffers.length > 0 && (
+          {/* Nouveau bloc Bénéfices du produit (Prompt 17-L) */}
+          {product.benefits?.items &&
+            product.benefits.items.some((b) => b.title && b.title.trim()) && (
+              <div
+                data-testid="product-benefits-block"
+                className="rounded-3xl border border-black/[0.08] bg-[#FAF8F5] p-5 sm:p-6 space-y-3.5 shadow-2xs"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-xl bg-orange-100 text-[#C2410C] flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <h3 className="text-sm sm:text-base font-black text-[#111111]">
+                    {product.benefits.title || "Pourquoi vous allez l'aimer"}
+                  </h3>
+                </div>
+
+                <div className="space-y-2.5">
+                  {product.benefits.items
+                    .filter((b) => b.title && b.title.trim())
+                    .map((b) => (
+                      <div key={b.id} className="flex items-start gap-3">
+                        <div className="w-6 h-6 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/60 flex items-center justify-center shrink-0 mt-0.5">
+                          <BenefitIcon icon={b.icon} className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="space-y-0.5 min-w-0 flex-1">
+                          <h4 className="text-xs sm:text-sm font-black text-[#111111] leading-snug">
+                            {b.title}
+                          </h4>
+                          {b.description && (
+                            <p className="text-[11px] sm:text-xs text-[#666660] leading-relaxed">
+                              {b.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+
+                {product.benefits.footerNote && (
+                  <p className="text-[11px] sm:text-xs font-bold text-[#C2410C] pt-2.5 border-t border-black/[0.06] italic">
+                    {product.benefits.footerNote}
+                  </p>
+                )}
+              </div>
+            )}
+
+          {/* Offres de formules groupées (uniquement si activées et configurées par l'admin, Prompt 17-L) */}
+          {product.showQuantityOffers && quantityOffers.length > 0 ? (
             <div className="space-y-2.5">
               <label className="text-xs font-black text-[#111111] flex items-center gap-1.5">
                 <Package className="w-3.5 h-3.5 text-[#C2410C]" />
@@ -300,7 +379,7 @@ export function NovikaProductPage({
                               </span>
                             )}
                           </div>
-                          {offer.savingsAmount > 0 && (
+                          {offer.savingsAmount && offer.savingsAmount > 0 && (
                             <p className="text-[11px] font-bold text-emerald-700">
                               Économisez {formatFcfa(offer.savingsAmount)}
                             </p>
@@ -318,52 +397,78 @@ export function NovikaProductPage({
                 })}
               </div>
             </div>
+          ) : (
+            /* Sélecteur de quantité simple (− 1 +) si aucune formule (Prompt 17-L) */
+            <div className="space-y-1.5">
+              <label className="text-xs font-black text-[#111111] block">
+                Quantité :
+              </label>
+              <div className="inline-flex items-center rounded-2xl border-2 border-black/[0.1] bg-white p-1 shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => setSelectedPackQuantity((prev) => Math.max(1, prev - 1))}
+                  disabled={selectedPackQuantity <= 1 || isOutOfStock}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm text-[#111111] hover:bg-[#FAF8F5] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  aria-label="Diminuer la quantité"
+                >
+                  −
+                </button>
+                <span className="w-10 text-center text-xs font-black text-[#111111]">
+                  {selectedPackQuantity}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPackQuantity((prev) => prev + 1)}
+                  disabled={isOutOfStock || (isStockTracked && selectedPackQuantity >= realStock)}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm text-[#111111] hover:bg-[#FAF8F5] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  aria-label="Augmenter la quantité"
+                >
+                  +
+                </button>
+              </div>
+            </div>
           )}
 
-          {/* Action rapide : Ajouter au panier & Acheter maintenant (Prompt 12-b Phase 3 / Prompt 16-b) */}
-          <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
-            <button
-              type="button"
-              onClick={handleAddToCart}
-              disabled={isOutOfStock}
-              data-testid="btn-add-to-cart"
-              className={cn(
-                "w-full sm:flex-1 min-h-[46px] px-4 py-2.5 rounded-2xl border-2 text-xs font-black flex items-center justify-center gap-2 shadow-2xs transition-all",
-                isOutOfStock
-                  ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : "border-[#111111] bg-white hover:bg-[#FAF8F5] text-[#111111] cursor-pointer active:scale-98"
-              )}
-            >
-              {isOutOfStock ? (
-                <span>Rupture de stock</span>
-              ) : addedToCartAnim ? (
-                <>
-                  <Check className="w-4 h-4 text-emerald-600" />
-                  <span className="text-emerald-700">Ajouté au panier !</span>
-                </>
-              ) : (
-                <>
-                  <ShoppingBag className="w-4 h-4" />
-                  <span>Ajouter au panier</span>
-                </>
-              )}
-            </button>
-
+          {/* Action rapide : Ajouter au panier & Acheter maintenant (Prompt 17-L : un seul bouton si rupture) */}
+          <div className="pt-2">
             {isOutOfStock ? (
               <button
                 type="button"
                 disabled
-                className="w-full sm:flex-1 min-h-[46px] px-4 py-2.5 rounded-2xl bg-gray-200 text-gray-500 text-xs font-black flex items-center justify-center gap-2 cursor-not-allowed"
+                data-testid="btn-out-of-stock-single"
+                className="w-full min-h-[48px] px-6 py-3 rounded-2xl bg-gray-200 text-gray-500 text-xs font-black flex items-center justify-center gap-2 cursor-not-allowed"
               >
                 <span>Rupture de stock</span>
               </button>
             ) : (
-              <a
-                href="#cod-order-form"
-                className="w-full sm:flex-1 min-h-[46px] px-4 py-2.5 rounded-2xl bg-[#C2410C] hover:bg-[#a83609] text-white text-xs font-black flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer text-center"
-              >
-                <span>Acheter maintenant</span>
-              </a>
+              <div className="flex flex-col sm:flex-row items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  data-testid="btn-add-to-cart"
+                  className="w-full sm:flex-1 min-h-[46px] px-4 py-2.5 rounded-2xl border-2 border-[#111111] bg-white hover:bg-[#FAF8F5] text-[#111111] text-xs font-black flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer active:scale-98"
+                >
+                  {addedToCartAnim ? (
+                    <>
+                      <Check className="w-4 h-4 text-emerald-600" />
+                      <span className="text-emerald-700">Ajouté au panier !</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingBag className="w-4 h-4" />
+                      <span>Ajouter au panier</span>
+                    </>
+                  )}
+                </button>
+
+                <a
+                  href="#cod-order-form"
+                  data-testid="btn-buy-now"
+                  className="w-full sm:flex-1 min-h-[46px] px-4 py-2.5 rounded-2xl bg-[#C2410C] hover:bg-[#a83609] text-white text-xs font-black flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer text-center"
+                >
+                  <span>Je commande</span>
+                </a>
+              </div>
             )}
           </div>
 

@@ -412,41 +412,25 @@ export default function ProductCanonicalDetailPage({
   // CAS 4 : AFFICHAGE NORMAL DU PRODUIT (OU EN MODE APERÇU ADMINISTRATEUR)
   // =========================================================================
   const productPrice = product.price || product.salePrice || 0;
-  const productOffers: QuantityOffer[] = [
-    {
-      id: `q1_${product.id}`,
-      productId: product.id,
-      quantity: 1,
-      label: "1 Unité",
-      badge: "Découverte",
-      unitPrice: productPrice,
-      totalPrice: productPrice,
-      savingsAmount: 0,
-      isDefault: true,
-    },
-    {
-      id: `q2_${product.id}`,
-      productId: product.id,
-      quantity: 2,
-      label: "Pack Duo (2 Unités)",
-      badge: "Populaire · -15%",
-      unitPrice: Math.round(productPrice * 0.85),
-      totalPrice: Math.round(productPrice * 0.85 * 2),
-      savingsAmount: Math.round(productPrice * 2 - productPrice * 0.85 * 2),
-      isDefault: false,
-    },
-    {
-      id: `q3_${product.id}`,
-      productId: product.id,
-      quantity: 3,
-      label: "Pack Famille (3 Unités)",
-      badge: "Meilleure offre · -25%",
-      unitPrice: Math.round(productPrice * 0.75),
-      totalPrice: Math.round(productPrice * 0.75 * 3),
-      savingsAmount: Math.round(productPrice * 3 - productPrice * 0.75 * 3),
-      isDefault: false,
-    },
-  ];
+  // Prompt 17-L : Plus aucune formule automatique injectée en vitrine.
+  // Seules les offres créées par l'admin s'affichent si showQuantityOffers est activé.
+  const productOffers: QuantityOffer[] =
+    product.showQuantityOffers && Array.isArray(product.quantityOffers) && product.quantityOffers.length > 0
+      ? product.quantityOffers.map((qo) => ({
+          id: qo.id,
+          productId: product.id,
+          quantity: qo.quantity,
+          label: qo.quantity === 1 ? "1 Unité" : `${qo.quantity} Unités`,
+          unitPrice: qo.unitPrice || Math.round(qo.totalPrice / (qo.quantity || 1)),
+          totalPrice: qo.totalPrice,
+          badge: qo.badgeText || (qo as any).badge,
+          savingsAmount:
+            productPrice * qo.quantity > qo.totalPrice
+              ? productPrice * qo.quantity - qo.totalPrice
+              : 0,
+          isPopular: Boolean(qo.badgeText?.toLowerCase().includes("populaire")),
+        }))
+      : [];
 
   return (
     <>

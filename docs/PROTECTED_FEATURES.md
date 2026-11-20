@@ -157,4 +157,31 @@ Dernière mise à jour : 2026-11-20
   - `src/lib/prompt-17k-product-storefront.test.ts` (15 tests unitaires)
   - `tests/prompt-17k-product-storefront.spec.ts` (6 tests Playwright E2E)
 
+---
+
+## 11. Bloc « Bénéfices du produit », Retrait des formules automatiques & Bouton unique de rupture de stock (Prompt 17-L)
+- **Description** :
+  - **Retrait des formules automatiques** : Plus aucune formule (1 unité, duo -15%, famille -25%), étiquette ou réduction n'est injectée automatiquement sur la vitrine. Les offres de quantité créées par l'administrateur restent possibles et fonctionnelles, mais sont masquées par défaut grâce au paramètre `showQuantityOffers: false` (toggle « Afficher les offres sur la vitrine » dans le formulaire produit).
+  - **Sélecteur simple (− 1 +)** : Lorsque les offres sont désactivées ou inexistantes, un sélecteur de quantité ergonomique (− 1 +) est affiché sur la fiche produit vitrine.
+  - **Nouveau bloc « Bénéfices du produit »** :
+    - Carte d'administration dans `product-form-client.tsx` : titre personnalisable (défaut « Pourquoi vous allez l'aimer »), liste de 3 à 8 bénéfices avec sélecteur de 10 icônes sobres (`check`, `sparkles`, `shield`, `heart`, `zap`, `star`, `leaf`, `smile`, `flame`, `clock`), titre court, description facultative (1 phrase), boutons monter/descendre/supprimer, phrase de conclusion facultative (`footerNote`).
+    - Bouton « Générer avec l'IA » : endpoint sécurisé `/api/products/ai/generate-benefits` formulant 3 à 5 bénéfices concrets selon le nom, la description et la catégorie du produit, avec interdiction stricte de promesses médicales, faux chiffres ou garanties imaginaires.
+    - Aperçu en direct dans le formulaire.
+    - Rendu sur la vitrine (`NovikaProductPage.tsx`) au-dessus du formulaire de commande ; masquage total et propre sans conteneur vide si aucun bénéfice n'est renseigné.
+  - **Bouton unique de rupture de stock** :
+    - Rendu d'un SEUL bouton pleine largeur `Rupture de stock` (`[data-testid="btn-out-of-stock-single"]`) lorsque le produit est épuisé, éliminant tout doublon de boutons désactivés.
+    - Logique de stock affinée : un produit n'est en rupture que si le suivi de stock est actif (`trackStock !== false && trackQuantity !== false`) ET que le stock disponible est `<= 0`.
+- **Fichiers clés** :
+  - `src/server/data/types.ts` (`ProductBenefitItem`, `ProductBenefitsBlock`, `showQuantityOffers`, `benefits`)
+  - `src/app/api/products/ai/generate-benefits/route.ts`
+  - `src/components/storefront/product/NovikaProductPage.tsx`
+  - `src/app/boutique/[store]/produits/[id]/page.tsx`
+  - `src/app/app/[store]/produits/product-form-client.tsx`
+  - `src/mock-data/products.ts`
+  - `src/lib/storefront-urls.ts` (polyfilling sécurisé Base64/Base64URL pour client/serveur)
+- **Tests** :
+  - `src/lib/prompt-17l-benefits.test.ts` (9 tests unitaires)
+  - `tests/prompt-17l-benefits.spec.ts` (4 tests Playwright E2E)
+
+
 

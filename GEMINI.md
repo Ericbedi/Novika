@@ -369,3 +369,10 @@ Deux buckets publics ont été provisionnés avec limitation de taille et filtra
 * **Écoute instantanée** : Dans `src/components/layout/app-shell.tsx`, une souscription écoute les événements `INSERT` sur la table `orders` pour déclencher immédiatement le son `notificationSound.playOrderSound()` (`public/sounds/novika-order.mp3`).
 * **Suivi de commande live** : Dans `src/app/suivi/[token]/tracking-client.tsx`, les transitions de statut logistique sont reçues en direct pour faire avancer la frise sans rechargement.
 
+### Prompt 17-L : Bénéfices du produit, formules & rupture de stock
+* **Suppression des formules automatiques** : Masquage par défaut via `showQuantityOffers: false` (récupérable par switch d'administration).
+* **Sélecteur simple (− 1 +)** : Quantité sélectionnée unitairement quand aucune offre n'est configurée ou active.
+* **Bloc « Bénéfices du produit »** : Modifiable dans `product-form-client.tsx` (titre, jusqu'à 8 bénéfices avec icônes sobres, description courte, conclusion facultative).
+* **Générateur IA (`/api/products/ai/generate-benefits`)** : Génère 3 à 5 bénéfices concrets sans promesses médicales ni chiffres inventés.
+* **Bouton unique rupture de stock** : Rendu d'un bouton unique pleine largeur si le stock suivi est épuisé (`<= 0`).
+

@@ -39,6 +39,11 @@ import {
   RefreshCw,
   FileWarning,
   ShieldCheck,
+  Shield,
+  Heart,
+  Zap,
+  Leaf,
+  Smile,
   Pencil,
   ExternalLink,
   X,
@@ -66,6 +71,8 @@ import {
   ProductOption,
   ProductCustomField,
   ProductAuditEntry,
+  ProductBenefitItem,
+  ProductBenefitsBlock,
 } from "@/server/data/types";
 import {
   MAX_PRODUCT_IMAGES,
@@ -95,6 +102,45 @@ import { RichDescriptionEditor } from "@/components/products/rich-description-ed
 import { sanitizeProductDescription } from "@/lib/server-html-sanitizer";
 import { DescriptionComparisonModal } from "@/components/products/description-comparison-modal";
 import { metaPixelsStore, ShopPixel } from "@/lib/meta-pixels";
+
+const BENEFIT_ICON_OPTIONS = [
+  { value: "check", label: "Coche" },
+  { value: "sparkles", label: "Étincelle" },
+  { value: "shield", label: "Bouclier" },
+  { value: "heart", label: "Cœur" },
+  { value: "zap", label: "Éclair" },
+  { value: "star", label: "Étoile" },
+  { value: "leaf", label: "Feuille" },
+  { value: "smile", label: "Sourire" },
+  { value: "flame", label: "Flamme" },
+  { value: "clock", label: "Chronomètre" },
+] as const;
+
+function FormBenefitIcon({ icon, className }: { icon?: string; className?: string }) {
+  switch (icon) {
+    case "sparkles":
+      return <Sparkles className={className} />;
+    case "shield":
+      return <ShieldCheck className={className} />;
+    case "heart":
+      return <Heart className={className} />;
+    case "zap":
+      return <Zap className={className} />;
+    case "star":
+      return <Star className={className} />;
+    case "leaf":
+      return <Leaf className={className} />;
+    case "smile":
+      return <Smile className={className} />;
+    case "flame":
+      return <Flame className={className} />;
+    case "clock":
+      return <Clock className={className} />;
+    case "check":
+    default:
+      return <Check className={className} />;
+  }
+}
 
 interface ProductFormClientProps {
   storeSlug: string;
@@ -182,16 +228,16 @@ export function ProductFormClient({
   // 5) Aperçu sur les moteurs de recherche (SEO Google)
   const [seoTitle, setSeoTitle] = useState(
     initialProduct?.seo?.title ||
-      (name ? `${name} - Meilleur Prix` : "Acheter en ligne au meilleur prix")
+    (name ? `${name} - Meilleur Prix` : "Acheter en ligne au meilleur prix")
   );
   const [seoDescription, setSeoDescription] = useState(
     initialProduct?.seo?.description ||
-      "Commandez au meilleur prix avec livraison express et paiement sécurisé à la réception."
+    "Commandez au meilleur prix avec livraison express et paiement sécurisé à la réception."
   );
   const [seoSlug, setSeoSlug] = useState(
     initialProduct?.seo?.slug ||
-      initialProduct?.slug ||
-      (name ? name.toLowerCase().replace(/[^a-z0-9]+/g, "-") : "nouveau-produit")
+    initialProduct?.slug ||
+    (name ? name.toLowerCase().replace(/[^a-z0-9]+/g, "-") : "nouveau-produit")
   );
   const [isSeoCustomOpen, setIsSeoCustomOpen] = useState(false);
 
@@ -221,29 +267,110 @@ export function ProductFormClient({
   }, [compareAtPrice, salePrice]);
 
   // ========================================================
-  // COMMERCE : OFFRES PAR PRODUIT (Phase 17-C, 5)
+  // COMMERCE : OFFRES PAR PRODUIT (Phase 17-C, 5 & Prompt 17-L)
   // ========================================================
+  const [showQuantityOffers, setShowQuantityOffers] = useState<boolean>(
+    initialProduct?.showQuantityOffers ?? false
+  );
   const [quantityOffers, setQuantityOffers] = useState<QuantityOffer[]>(() => {
     if (initialProduct?.quantityOffers && initialProduct.quantityOffers.length > 0) {
       return initialProduct.quantityOffers;
     }
-    return [
-      {
-        id: "off-1",
-        quantity: 1,
-        unitPrice: initialProduct?.salePrice || 15000,
-        totalPrice: initialProduct?.salePrice || 15000,
-        badgeText: "Standard",
-      },
-      {
-        id: "off-2",
-        quantity: 2,
-        unitPrice: Math.round(((initialProduct?.salePrice || 15000) * 0.85) / 100) * 100,
-        totalPrice: Math.round(((initialProduct?.salePrice || 15000) * 0.85 * 2) / 100) * 100,
-        badgeText: "Le plus populaire (-15%)",
-      },
-    ];
+    return [];
   });
+
+  // ========================================================
+  // COMMERCE : BÉNÉFICES DU PRODUIT (Prompt 17-L)
+  // ========================================================
+  const [benefits, setBenefits] = useState<ProductBenefitsBlock>(() => {
+    return (
+      initialProduct?.benefits || {
+        title: "Pourquoi vous allez l'aimer",
+        items: [],
+        footerNote: "",
+      }
+    );
+  });
+  const [isGeneratingBenefits, setIsGeneratingBenefits] = useState(false);
+
+  // Génération IA des bénéfices du produit (Prompt 17-L)
+  const handleGenerateBenefitsAi = async () => {
+    if (!name.trim()) {
+      alert("Veuillez saisir au moins le nom du produit avant de lancer la génération IA.");
+      return;
+    }
+    setIsGeneratingBenefits(true);
+    try {
+      const res = await fetch("/api/products/ai/generate-benefits", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userRole: activeRole || "owner",
+          productName: name,
+          description: description,
+          category: category,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.benefits) && data.benefits.length > 0) {
+        setBenefits((prev) => ({
+          ...prev,
+          items: data.benefits,
+        }));
+        showToast(`${data.benefits.length} bénéfices générés avec succès avec l'IA !`);
+      } else {
+        alert(data.error || "Impossible de générer les bénéfices. Veuillez réessayer.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Erreur de connexion au générateur IA.");
+    } finally {
+      setIsGeneratingBenefits(false);
+    }
+  };
+
+  const handleAddBenefit = () => {
+    if ((benefits.items || []).length >= 8) {
+      alert("Vous avez atteint le maximum recommandé de 8 bénéfices.");
+      return;
+    }
+    const newItem: ProductBenefitItem = {
+      id: `b_${Date.now()}`,
+      icon: "check",
+      title: "",
+      description: "",
+    };
+    setBenefits((prev) => ({
+      ...prev,
+      items: [...(prev.items || []), newItem],
+    }));
+  };
+
+  const handleUpdateBenefit = (index: number, patch: Partial<ProductBenefitItem>) => {
+    setBenefits((prev) => ({
+      ...prev,
+      items: (prev.items || []).map((item, idx) => (idx === index ? { ...item, ...patch } : item)),
+    }));
+  };
+
+  const handleRemoveBenefit = (index: number) => {
+    setBenefits((prev) => ({
+      ...prev,
+      items: (prev.items || []).filter((_, idx) => idx !== index),
+    }));
+  };
+
+  const handleMoveBenefit = (index: number, direction: "up" | "down") => {
+    setBenefits((prev) => {
+      const items = [...(prev.items || [])];
+      const targetIndex = direction === "up" ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= items.length) return prev;
+      const temp = items[index];
+      items[index] = items[targetIndex];
+      items[targetIndex] = temp;
+      return { ...prev, items };
+    });
+  };
 
   // ========================================================
   // COMMERCE : STOCK & INVENTAIRE (Phase 17-C, 2)
@@ -296,7 +423,7 @@ export function ProductFormClient({
   const [hasVariants, setHasVariants] = useState<boolean>(() => {
     return Boolean(
       (initialProduct?.variants && initialProduct.variants.length > 0) ||
-        (initialProduct?.productOptions && initialProduct.productOptions.length > 0)
+      (initialProduct?.productOptions && initialProduct.productOptions.length > 0)
     );
   });
 
@@ -501,7 +628,7 @@ export function ProductFormClient({
   // ========================================================
   const [productStatus, setProductStatus] = useState<ProductStatus | "scheduled">(
     (initialProduct?.productStatus as any) ||
-      (initialProduct?.stock && initialProduct.stock > 0 ? "active" : "draft")
+    (initialProduct?.stock && initialProduct.stock > 0 ? "active" : "draft")
   );
   const [scheduledDate, setScheduledDate] = useState("");
 
@@ -603,7 +730,7 @@ export function ProductFormClient({
             }
           }
         }
-      } catch {}
+      } catch { }
     }
   }, [DRAFT_KEY, currentProductId, storeSlug, isEditing]);
 
@@ -621,6 +748,8 @@ export function ProductFormClient({
     sku,
     variants,
     quantityOffers,
+    showQuantityOffers,
+    benefits,
     customFields,
     productStatus,
     publishToStorefront,
@@ -904,6 +1033,8 @@ export function ProductFormClient({
       productOptions: hasVariants ? productOptions : undefined,
       variants: hasVariants ? variants : [],
       quantityOffers,
+      showQuantityOffers,
+      benefits,
       customFields,
       badgesConfig: initialProduct?.badgesConfig || {
         hasCountdown: false,
@@ -1615,37 +1746,300 @@ export function ProductFormClient({
           </div>
 
           {/* ======================================================== */}
-          {/* 7) OFFRES PAR PRODUIT (FORMULES DE QUANTITÉ COD) (Phase 17-C, 5) */}
+          {/* NOUVEAU BLOC : BÉNÉFICES DU PRODUIT (Prompt 17-L) */}
+          {/* ======================================================== */}
+          <div
+            className="rounded-3xl border border-[#E6E0D4] bg-white p-6 shadow-2xs space-y-5"
+            data-testid="card-product-benefits"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-[#F0EBE0]">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <h3 className="text-sm font-bold text-[#111111]">Bénéfices du produit</h3>
+                </div>
+                <p className="text-xs text-[#7A7A7A] mt-0.5">
+                  Points forts concrets affichés sur la fiche produit (3 à 8 recommandés). Remplace les formules automatiques.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  id="btn-ai-generate-benefits"
+                  data-testid="btn-ai-generate-benefits"
+                  onClick={handleGenerateBenefitsAi}
+                  disabled={isGeneratingBenefits}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 border border-purple-200 text-xs font-bold text-purple-700 hover:bg-purple-100 disabled:opacity-50 transition-colors shadow-2xs"
+                  title="Générer 3 à 5 bénéfices concrets avec l'IA sans promesses excessives"
+                >
+                  <Sparkles className={cn("w-3.5 h-3.5", isGeneratingBenefits && "animate-spin")} />
+                  <span>{isGeneratingBenefits ? "Génération en cours..." : "Générer avec l'IA"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  id="btn-add-benefit"
+                  data-testid="btn-add-benefit"
+                  onClick={handleAddBenefit}
+                  disabled={(benefits.items || []).length >= 8}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FAF8F5] border border-[#E6E0D4] text-xs font-bold text-[#111111] hover:bg-[#EFECE6] disabled:opacity-50 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Ajouter</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Titre du bloc */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-[#111111]">
+                Titre de la section sur la vitrine
+              </label>
+              <input
+                type="text"
+                data-testid="input-benefits-title"
+                value={benefits.title || ""}
+                onChange={(e) => setBenefits((prev) => ({ ...prev, title: e.target.value }))}
+                placeholder="Pourquoi vous allez l'aimer"
+                className="w-full px-3.5 py-2 text-xs font-semibold rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] text-[#111111] focus:outline-none focus:border-[#111111]"
+              />
+            </div>
+
+            {/* Liste des bénéfices */}
+            <div className="space-y-3">
+              {(benefits.items || []).length === 0 ? (
+                <div
+                  className="p-5 rounded-2xl border border-dashed border-[#E6E0D4] bg-[#FAF8F5] text-center space-y-2"
+                  data-testid="benefits-empty-state"
+                >
+                  <p className="text-xs text-[#7A7A7A]">
+                    Aucun bénéfice configuré. La section sera automatiquement masquée sur la vitrine.
+                  </p>
+                  <div className="flex items-center justify-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={handleGenerateBenefitsAi}
+                      className="inline-flex items-center gap-1 text-xs font-bold text-purple-700 hover:underline"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      <span>Générer automatiquement avec l'IA</span>
+                    </button>
+                    <span className="text-[#CCC]">•</span>
+                    <button
+                      type="button"
+                      onClick={handleAddBenefit}
+                      className="inline-flex items-center gap-1 text-xs font-bold text-[#111111] hover:underline"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Ajouter manuellement</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                (benefits.items || []).map((item, idx) => (
+                  <div
+                    key={item.id}
+                    data-testid={`benefit-item-${idx}`}
+                    className="p-3.5 rounded-2xl border border-[#E6E0D4] bg-[#FAF8F5] space-y-2.5 transition-all hover:border-[#D6D0C4]"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        {/* Sélecteur d'icône */}
+                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-[#E6E0D4] bg-white">
+                          <FormBenefitIcon icon={item.icon} className="w-3.5 h-3.5 text-emerald-700" />
+                          <select
+                            value={item.icon || "check"}
+                            data-testid={`select-benefit-icon-${idx}`}
+                            onChange={(e) => handleUpdateBenefit(idx, { icon: e.target.value as any })}
+                            className="text-xs font-semibold bg-transparent border-none focus:outline-none cursor-pointer"
+                          >
+                            {BENEFIT_ICON_OPTIONS.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <span className="text-[10px] font-bold text-[#999990]">#{idx + 1}</span>
+                      </div>
+
+                      {/* Contrôles d'ordre et suppression */}
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleMoveBenefit(idx, "up")}
+                          disabled={idx === 0}
+                          className="p-1 rounded-lg text-[#7A7A7A] hover:bg-white hover:text-black disabled:opacity-30"
+                          title="Monter"
+                        >
+                          <ArrowUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleMoveBenefit(idx, "down")}
+                          disabled={idx === (benefits.items || []).length - 1}
+                          className="p-1 rounded-lg text-[#7A7A7A] hover:bg-white hover:text-black disabled:opacity-30"
+                          title="Descendre"
+                        >
+                          <ArrowDown className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          data-testid={`btn-delete-benefit-${idx}`}
+                          onClick={() => handleRemoveBenefit(idx)}
+                          className="p-1 rounded-lg text-rose-600 hover:bg-rose-50 ml-1"
+                          title="Supprimer ce bénéfice"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div>
+                        <input
+                          type="text"
+                          data-testid={`input-benefit-title-${idx}`}
+                          value={item.title}
+                          onChange={(e) => handleUpdateBenefit(idx, { title: e.target.value })}
+                          placeholder="Titre court (ex: Énergie propre & durable)"
+                          className="w-full px-3 py-1.5 text-xs font-bold rounded-lg border border-[#E6E0D4] bg-white text-[#111111] focus:outline-none focus:border-black"
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="text"
+                          data-testid={`input-benefit-desc-${idx}`}
+                          value={item.description || ""}
+                          onChange={(e) => handleUpdateBenefit(idx, { description: e.target.value })}
+                          placeholder="Description courte facultative (1 phrase)"
+                          className="w-full px-3 py-1.5 text-xs rounded-lg border border-[#E6E0D4] bg-white text-[#4A4A4A] focus:outline-none focus:border-black"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Phrase de conclusion facultative */}
+            <div className="space-y-1.5 pt-1">
+              <label className="block text-xs font-bold text-[#111111]">
+                Phrase de conclusion facultative (sous les bénéfices)
+              </label>
+              <input
+                type="text"
+                data-testid="input-benefits-footer"
+                value={benefits.footerNote || ""}
+                onChange={(e) => setBenefits((prev) => ({ ...prev, footerNote: e.target.value }))}
+                placeholder="Ex: Satisfait ou remboursé sous 30 jours • Service client 7j/7"
+                className="w-full px-3.5 py-2 text-xs rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] text-[#111111] focus:outline-none focus:border-[#111111]"
+              />
+            </div>
+
+            {/* Aperçu en direct du rendu sur la vitrine */}
+            {(benefits.items || []).filter((b) => b.title.trim().length > 0).length > 0 && (
+              <div className="p-4 rounded-2xl bg-emerald-50/40 border border-emerald-200/60 space-y-2.5">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-800 uppercase tracking-wider">
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>Aperçu sur la vitrine</span>
+                </div>
+                <div className="bg-white rounded-xl p-3.5 border border-emerald-100 shadow-2xs space-y-2">
+                  <h4 className="text-xs font-black text-[#111111]">
+                    {benefits.title || "Pourquoi vous allez l'aimer"}
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                    {(benefits.items || [])
+                      .filter((b) => b.title.trim().length > 0)
+                      .map((b) => (
+                        <div key={b.id} className="flex items-start gap-2">
+                          <div className="w-5 h-5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/60 flex items-center justify-center shrink-0 mt-0.5">
+                            <FormBenefitIcon icon={b.icon} className="w-3 h-3" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[11px] font-bold text-[#111111] leading-tight">
+                              {b.title}
+                            </div>
+                            {b.description && (
+                              <div className="text-[10px] text-[#666660] leading-tight mt-0.5">
+                                {b.description}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                  {benefits.footerNote && (
+                    <div className="pt-2 border-t border-stone-100 text-[10px] font-semibold text-emerald-800 flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                      <span>{benefits.footerNote}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ======================================================== */}
+          {/* 7) OFFRES PAR PRODUIT (FORMULES DE QUANTITÉ COD) (Phase 17-C, 5 & Prompt 17-L) */}
           {/* ======================================================== */}
           <div className="rounded-3xl border border-[#E6E0D4] bg-white p-6 shadow-2xs space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-bold text-[#111111]">Offres groupées (Packs COD)</h3>
                 <p className="text-xs text-[#7A7A7A] mt-0.5">
                   Augmentez le panier moyen en incitant les clients à commander 2 ou 3 unités à la livraison.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  const nextQty = quantityOffers.length + 1;
-                  setQuantityOffers((prev) => [
-                    ...prev,
-                    {
-                      id: `off-${Date.now()}`,
-                      quantity: nextQty,
-                      unitPrice: Math.round((salePrice * 0.8) / 100) * 100,
-                      totalPrice: Math.round((salePrice * 0.8 * nextQty) / 100) * 100,
-                      badgeText: `Méga Pack (-20%)`,
-                    },
-                  ]);
-                }}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#FAF8F5] border border-[#E6E0D4] text-xs font-bold text-[#111111] hover:bg-[#EFECE6]"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Ajouter une formule</span>
-              </button>
+
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 cursor-pointer bg-[#FAF8F5] px-3 py-1.5 rounded-xl border border-[#E6E0D4]">
+                  <input
+                    type="checkbox"
+                    id="toggle-show-quantity-offers"
+                    data-testid="toggle-show-quantity-offers"
+                    checked={showQuantityOffers}
+                    onChange={(e) => setShowQuantityOffers(e.target.checked)}
+                    className="rounded border-[#E6E0D4] text-black focus:ring-black h-4 w-4"
+                  />
+                  <span className="text-xs font-bold text-[#111111]">
+                    Afficher sur la vitrine
+                  </span>
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextQty = quantityOffers.length + 1;
+                    setQuantityOffers((prev) => [
+                      ...prev,
+                      {
+                        id: `off-${Date.now()}`,
+                        quantity: nextQty,
+                        unitPrice: Math.round((salePrice * 0.8) / 100) * 100,
+                        totalPrice: Math.round((salePrice * 0.8 * nextQty) / 100) * 100,
+                        badgeText: `Méga Pack (-20%)`,
+                      },
+                    ]);
+                  }}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#FAF8F5] border border-[#E6E0D4] text-xs font-bold text-[#111111] hover:bg-[#EFECE6]"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Ajouter une formule</span>
+                </button>
+              </div>
             </div>
+
+            {!showQuantityOffers && (
+              <div className="p-3 rounded-2xl bg-amber-50/70 border border-amber-200/60 text-xs text-amber-900 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold">Formules masquées par défaut :</span> La vitrine affiche le sélecteur simple de quantité (− 1 +). Cochez « Afficher sur la vitrine » ci-dessus pour activer vos offres personnalisées.
+                </div>
+              </div>
+            )}
 
             <div className="space-y-3">
               {quantityOffers.map((offer, idx) => {

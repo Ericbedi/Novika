@@ -173,6 +173,25 @@ export interface QuantityOffer {
   unitPrice: number;
   totalPrice: number;
   badgeText?: string;
+  isDefault?: boolean;
+  savingsAmount?: number;
+  label?: string;
+  badge?: string;
+}
+
+// Prompt 17-L : Bénéfices du produit (modifiable et personnalisable)
+export interface ProductBenefitItem {
+  id: string;
+  icon?: string; // "check" | "sparkles" | "shield" | "heart" | "zap" | "star" | "leaf" | "smile" | "flame" | "clock"
+  title: string;
+  description?: string;
+}
+
+export interface ProductBenefitsBlock {
+  enabled?: boolean;
+  title?: string; // par défaut "Pourquoi vous allez l'aimer"
+  items: ProductBenefitItem[];
+  footerNote?: string;
 }
 
 export interface ProductBadgesConfig {
@@ -259,6 +278,8 @@ export interface Product {
   hiddenFromCatalog?: boolean; // Option discrétion : Masquer du catalogue public (accessible uniquement par lien direct / tunnel ads)
   variants: ProductVariant[];
   quantityOffers: QuantityOffer[];
+  showQuantityOffers?: boolean; // Prompt 17-L : Réglage d'affichage des offres de quantité (masqué par défaut)
+  benefits?: ProductBenefitsBlock; // Prompt 17-L : Bloc modifiable des bénéfices du produit
   badgesConfig?: ProductBadgesConfig;
   salesSummary?: {
     unitsSold: number;

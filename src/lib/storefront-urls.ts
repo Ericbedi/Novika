@@ -27,10 +27,22 @@ export function generatePreviewToken(productId: string, shopSlug: string): strin
     s: shopSlug,
     exp: Date.now() + 3600 * 1000, // 1h de validité
   };
+  const json = JSON.stringify(payload);
   if (typeof Buffer !== "undefined") {
-    return Buffer.from(JSON.stringify(payload)).toString("base64url");
+    try {
+      return Buffer.from(json)
+        .toString("base64")
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=+$/, "");
+    } catch {
+      // fallback
+    }
   }
-  return btoa(JSON.stringify(payload)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return btoa(unescape(encodeURIComponent(json)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
 }
 
 /**
@@ -39,13 +51,17 @@ export function generatePreviewToken(productId: string, shopSlug: string): strin
 export function verifyPreviewToken(token: string | null | undefined, productId: string, shopSlug: string): boolean {
   if (!token) return false;
   try {
+    let b64 = token.replace(/-/g, "+").replace(/_/g, "/");
+    while (b64.length % 4) b64 += "=";
     let jsonStr = "";
     if (typeof Buffer !== "undefined") {
-      jsonStr = Buffer.from(token, "base64url").toString("utf-8");
+      try {
+        jsonStr = Buffer.from(b64, "base64").toString("utf-8");
+      } catch {
+        jsonStr = decodeURIComponent(escape(atob(b64)));
+      }
     } else {
-      let b64 = token.replace(/-/g, "+").replace(/_/g, "/");
-      while (b64.length % 4) b64 += "=";
-      jsonStr = atob(b64);
+      jsonStr = decodeURIComponent(escape(atob(b64)));
     }
     const data = JSON.parse(jsonStr);
     if (data.p !== productId || data.s !== shopSlug) return false;

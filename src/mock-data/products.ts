@@ -60,6 +60,37 @@ export const MOCK_PRODUCTS: Product[] = [
       { id: "qo_2", quantity: 2, unitPrice: 12450, totalPrice: 24900, badgeText: "Le Plus Populaire" },
       { id: "qo_3", quantity: 3, unitPrice: 11633, totalPrice: 34900, badgeText: "Meilleure Économie (-35%)" },
     ],
+    showQuantityOffers: false,
+    benefits: {
+      title: "Pourquoi vous allez l'aimer",
+      footerNote: "Livraison rapide avec paiement sécurisé à la réception de votre colis.",
+      items: [
+        {
+          id: "b_1",
+          icon: "zap",
+          title: "Énergie propre et soutenue",
+          description: "Effet tonifiant sans nervosité ni chute d'énergie en milieu d'après-midi.",
+        },
+        {
+          id: "b_2",
+          icon: "leaf",
+          title: "100% Ingrédients d'origine naturelle",
+          description: "Extraits concentrés de champignons bienfaisants Lion's Mane et Chaga.",
+        },
+        {
+          id: "b_3",
+          icon: "smile",
+          title: "Facile et agréable à consommer",
+          description: "Goût délicat de café gourmand, prêt en 30 secondes dans une tasse d'eau chaude.",
+        },
+        {
+          id: "b_4",
+          icon: "shield",
+          title: "Qualité rigoureusement contrôlée",
+          description: "Conditionné sous emballage hermétique pour préserver toute sa fraîcheur.",
+        },
+      ],
+    },
     badgesConfig: {
       hasCountdown: true,
       countdownMinutes: 45,
