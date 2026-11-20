@@ -204,10 +204,15 @@ export interface StoreStockSettings {
 
 export interface Product {
   id: string;
+  storeId?: string;
+  shop_id?: string;
+  storeSlug?: string;
+  ownerEmail?: string;
   name: string;
   title?: string;
   slug: string;
   description: string;
+  missingFields?: string[];
   category: string;
   collection: string;
   collections?: string[];

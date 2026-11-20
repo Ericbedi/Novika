@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   Package,
   Plus,
@@ -63,7 +64,7 @@ import { cn } from "@/lib/utils";
 import { useApp } from "@/components/layout/app-shell";
 import { ProductsNavTabs } from "@/components/products/products-nav-tabs";
 import { CsvImportModal } from "@/components/products/csv-import-modal";
-import { sanitizeCellForCsv } from "@/lib/csv-import-engine";
+import { sanitizeCellForCsv, rollbackImportBatch } from "@/lib/csv-import-engine";
 import {
   softDeleteProduct,
   restoreProduct,
@@ -91,6 +92,9 @@ interface ProductsListClientProps {
 
 export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
   const { activeRole } = useApp();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const batchFilter = searchParams?.get("batchId");
   const isFounderDemoStore = storeSlug === "lome-glow";
 
   // Contrôle des droits (Prompt 17)
@@ -299,6 +303,11 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
   const filteredProducts = useMemo(() => {
     return products.filter((prod) => {
       if (!prod || typeof prod !== "object") return false;
+
+      // Filtre de lot d'importation (Prompt 17-I)
+      if (batchFilter && prod.importBatchId !== batchFilter) {
+        return false;
+      }
 
       // Gestion corbeille
       if (quickView === "trash") {
@@ -974,6 +983,42 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
 
         {/* Sous-menu Produits officiel Prompt 17 */}
         <ProductsNavTabs storeSlug={storeSlug} />
+
+        {/* Bannière de lot d'importation (Prompt 17-I) */}
+        {batchFilter && (
+          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-900 animate-in fade-in">
+            <div className="flex items-center gap-2.5">
+              <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+              <div>
+                <span className="font-black">Lot d'importation actif : </span>
+                <span>Affichage des {filteredProducts.length} produit(s) du lot #{batchFilter}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => router.push(`/app/${storeSlug}/produits`)}
+                className="px-3 py-1.5 rounded-xl bg-white border border-amber-200 hover:bg-amber-100 font-bold text-amber-900 transition-colors cursor-pointer"
+              >
+                Voir tout le catalogue
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm("Confirmez-vous l'annulation complète de ce lot d'import ? Tous les produits créés par ce lot seront retirés.")) {
+                    const res = rollbackImportBatch(batchFilter, products, storeSlug);
+                    setProducts(res.remainingProducts);
+                    router.push(`/app/${storeSlug}/produits`);
+                    showToast(`${res.rolledBackCount} produit(s) du lot retiré(s).`);
+                  }
+                }}
+                className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold transition-colors cursor-pointer"
+              >
+                Annuler ce lot d'import (24 h)
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ======================================================== */}

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   X,
   UploadCloud,
@@ -71,6 +72,7 @@ export function CsvImportModal({
   existingProducts,
   onImportSuccess,
 }: CsvImportModalProps) {
+  const router = useRouter();
   // Mode de navigation : "auto" (parcours glisser-déposer Prompt 11) ou "manual" (assistant 5 étapes de secours)
   const [isManualMappingOpen, setIsManualMappingOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4 | 5>(1);
@@ -957,6 +959,21 @@ export function CsvImportModal({
                     >
                       <Check className="w-4 h-4" />
                       <span>Publier tous les produits</span>
+                    </button>
+                  )}
+
+                  {!isRollbacked && importReport && (
+                    <button
+                      type="button"
+                      id="btn-view-imported-products"
+                      onClick={() => {
+                        onClose();
+                        router.push(`/app/${storeSlug}/produits?batchId=${importReport.batchId}`);
+                      }}
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-black text-xs font-black shadow-xs transition-colors cursor-pointer"
+                    >
+                      <Eye className="w-4 h-4" />
+                      <span>Voir les produits importés</span>
                     </button>
                   )}
 

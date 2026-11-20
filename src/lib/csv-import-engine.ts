@@ -32,6 +32,7 @@ import {
   DuplicateStrategy,
 } from "./shopify-csv-mapper";
 import { sanitizeHtml } from "./html-sanitizer";
+import { getShopProductsRaw, saveShopProductsList } from "./products-store";
 
 export const NOVIKA_SAMPLE_TEMPLATE =
   `\uFEFFidentifiant;titre;description;prix;prix_barre;cout;statut;collections;categorie;fournisseur;sku;option1_nom;option1_valeur;stock;pays_disponibles;image_1\n` +
@@ -490,6 +491,7 @@ export async function executeAutoCsvImport(params: {
   userRole: UserRole;
   existingProducts: Product[];
   duplicateStrategy?: DuplicateStrategy;
+  newProductsStatus?: "active" | "draft";
   currency?: string;
 }): Promise<FullImportReport> {
   const {
@@ -500,6 +502,7 @@ export async function executeAutoCsvImport(params: {
     userRole,
     existingProducts,
     duplicateStrategy = "skip",
+    newProductsStatus,
     currency = "XOF",
   } = params;
 
@@ -661,7 +664,7 @@ export async function executeAutoCsvImport(params: {
       }
     });
 
-    const newProd = convertDraftToProduct(draft, storeSlug, batchId, duplicateStrategy, existing);
+    const newProd = convertDraftToProduct(draft, storeSlug, batchId, duplicateStrategy, existing, newProductsStatus);
     importedProducts.push(newProd);
     importedVariantsCount += newProd.variants.length;
 
@@ -681,7 +684,37 @@ export async function executeAutoCsvImport(params: {
     fileCounts.variants === importedVariantsCount &&
     fileCounts.images === importedImagesCount;
 
-  // 4. Enregistrement du lot en mémoire / stockage
+  // 4. PERSISTANCE TRANSACTIONNELLE DES PRODUITS IMPORTÉS (Prompt 17-I)
+  const currentCatalog = getShopProductsRaw(storeSlug);
+  let updatedCatalog: Product[] = [];
+
+  if (duplicateStrategy === "update") {
+    const importedIds = new Set(importedProducts.map((p) => p.id));
+    const importedSlugs = new Set(importedProducts.map((p) => (p.slug || "").toLowerCase()));
+    const kept = currentCatalog.filter(
+      (p) => !importedIds.has(p.id) && !importedSlugs.has((p.slug || "").toLowerCase())
+    );
+    updatedCatalog = [...importedProducts, ...kept];
+  } else {
+    // Mode skip ou copy : on ajoute les nouveaux produits importés en tête
+    updatedCatalog = [...importedProducts, ...currentCatalog];
+  }
+
+  // Sauvegarde garantie dans la persistance de la boutique active
+  saveShopProductsList(storeSlug, updatedCatalog);
+
+  // Vérification automatique en fin d'import : relire en base / stockage
+  const reloadedCatalog = getShopProductsRaw(storeSlug);
+  const reloadedBatchProducts = reloadedCatalog.filter((p) => p.importBatchId === batchId);
+  const verifiedCount = reloadedBatchProducts.length;
+
+  if (verifiedCount !== importedProducts.length) {
+    console.warn(
+      `[Prompt 17-I] Discordance de vérification : ${importedProducts.length} annoncés, ${verifiedCount} relus en stockage.`
+    );
+  }
+
+  // 5. Enregistrement du lot en historique (Prompt 17-I - 24h d'annulation)
   const batchRecord: ImportBatch = {
     id: batchId,
     storeId: storeSlug,
@@ -697,8 +730,8 @@ export async function executeAutoCsvImport(params: {
     autoCreateSuppliers: true,
     targetCountries: ["TG", "CI", "SN", "BJ"],
     totalRows: parsed.rows.length,
-    createdCount: importedProducts.length,
-    updatedCount: duplicateStrategy === "update" ? importedProducts.length : 0,
+    createdCount: verifiedCount,
+    updatedCount: duplicateStrategy === "update" ? verifiedCount : 0,
     errorCount: 0,
     ignoredCount: mappedDrafts.length - importedProducts.length,
     createdBy: `usr_${userRole}`,
@@ -726,12 +759,12 @@ export async function executeAutoCsvImport(params: {
     totalRowsInFile: parsed.rows.length,
     fileCounts,
     importedCounts: {
-      products: importedProducts.length,
+      products: verifiedCount,
       variants: importedVariantsCount,
       images: importedImagesCount,
       failedImages: failedImagesCount,
     },
-    countsMatch,
+    countsMatch: countsMatch && verifiedCount === importedProducts.length,
     importedProducts,
     failedImagesList,
     productDetails,
@@ -741,16 +774,20 @@ export async function executeAutoCsvImport(params: {
 }
 
 /**
- * Annule un lot d'importation (Rollback sous 7 jours) sans toucher aux produits existants.
+ * Annule un lot d'importation (Rollback pendant 24 h / 7 jours) sans toucher aux produits existants.
  */
 export function rollbackImportBatch(
   batchId: string,
   currentProducts: Product[],
   storeSlug: string
 ): { remainingProducts: Product[]; rolledBackCount: number } {
-  const initialCount = currentProducts.length;
-  const remaining = currentProducts.filter((p) => p.importBatchId !== batchId);
+  const catalog = currentProducts && currentProducts.length > 0 ? currentProducts : getShopProductsRaw(storeSlug);
+  const initialCount = catalog.length;
+  const remaining = catalog.filter((p) => p.importBatchId !== batchId);
   const rolledBackCount = initialCount - remaining.length;
+
+  // Persistance immédiate du retrait
+  saveShopProductsList(storeSlug, remaining);
 
   if (typeof window !== "undefined") {
     try {

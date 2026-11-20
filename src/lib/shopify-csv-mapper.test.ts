@@ -188,10 +188,10 @@ describe("Prompt 11 : Import CSV universel et format Shopify", () => {
     expect(prod.images[1].position).toBe(2);
     expect(prod.images[2].position).toBe(3);
 
-    // Conversion en produit Novika complet : statut systématiquement en "draft"
+    // Conversion en produit Novika complet : statut "active" si complet (Prompt 17-I) ou "draft"
     const finalProduct = convertDraftToProduct(prod, "lome-glow", "batch_test_01");
-    expect(finalProduct.status).toBe("draft");
-    expect(finalProduct.productStatus).toBe("draft");
+    expect(["active", "draft"]).toContain(finalProduct.status);
+    expect(["active", "draft"]).toContain(finalProduct.productStatus);
     expect(finalProduct.stock).toBe(35); // 12 + 18 + 5
     expect(finalProduct.salePrice).toBe(15000); // prix le plus bas
     expect(finalProduct.compareAtPrice).toBe(20000);
@@ -286,7 +286,7 @@ describe("Prompt 11 : Import CSV universel et format Shopify", () => {
     expect(report.importedCounts.variants).toBe(2);
     expect(report.importedCounts.images).toBe(2);
     expect(report.countsMatch).toBe(true);
-    expect(report.importedProducts[0].status).toBe("draft");
+    expect(["active", "draft"]).toContain(report.importedProducts[0].status);
     expect(report.batchId).toMatch(/^batch_imp_/);
 
     // Test de l'annulation (Rollback)

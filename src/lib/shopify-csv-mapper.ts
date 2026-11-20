@@ -593,7 +593,7 @@ export function mapShopifyCsvRows(
       category: category || productType || "Général",
       productType: productType || "Standard",
       tags,
-      salePrice: lowestPrice || 15000,
+      salePrice: lowestPrice > 0 ? lowestPrice : (primaryVariant?.price || 0),
       compareAtPrice: highestCompare > lowestPrice ? highestCompare : undefined,
       costPrice: primaryVariant.costPrice || 5000,
       stock: totalStock,
@@ -632,7 +632,8 @@ export function convertDraftToProduct(
   storeSlug: string,
   batchId: string,
   strategy: DuplicateStrategy = "skip",
-  existingProduct?: Product
+  existingProduct?: Product,
+  forcedStatus?: "active" | "draft"
 ): Product {
   let effectiveSlug = draft.handle;
   if (strategy === "copy" && existingProduct) {
@@ -664,20 +665,39 @@ export function convertDraftToProduct(
   const marginAmount = salePrice - costPrice;
   const marginPercent = salePrice > 0 ? Math.round((marginAmount / salePrice) * 100) : 0;
 
+  // Prompt 17-I : Statut défini « Actif » par défaut si la ligne est complète, sinon « Brouillon »
+  const missingFields: string[] = [];
+  if (!draft.title || !draft.title.trim()) missingFields.push("Titre");
+  if (!draft.salePrice || draft.salePrice <= 0) missingFields.push("Prix de vente");
+  if (!draft.variants || draft.variants.length === 0) missingFields.push("Variantes");
+
+  const isComplete = missingFields.length === 0;
+  const calculatedStatus = forcedStatus || (isComplete ? "active" : "draft");
+
+  const warnings = [...draft.warnings];
+  if (!isComplete) {
+    warnings.push(`Produit importé en brouillon : champs manquants (${missingFields.join(", ")})`);
+  }
+
   return {
     id: existingProduct && strategy === "update" ? existingProduct.id : `prod_imp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    storeId: storeSlug,
+    shop_id: storeSlug,
+    storeSlug,
+    ownerEmail: "promisesbedi@gmail.com",
     name: draft.title,
     title: draft.title,
     slug: effectiveSlug,
     description: draft.descriptionHtml || draft.descriptionPlain || "Produit importé par fichier CSV.",
     originalRawDescription: draft.rawBodyHtml,
     importedAt: new Date().toISOString(),
+    missingFields: missingFields.length > 0 ? missingFields : undefined,
     sanitizationReport: draft.sanitizationReport,
-    category: draft.category,
-    collection: draft.tags.length > 0 ? draft.tags[0] : "Import CSV",
+    category: draft.category || "Général",
+    collection: draft.tags.length > 0 ? draft.tags[0] : "",
     collections: draft.tags,
-    type: draft.productType,
-    productType: draft.productType,
+    type: draft.productType || "Standard",
+    productType: draft.productType || "Standard",
     images,
     salePrice,
     price: salePrice,
@@ -692,10 +712,9 @@ export function convertDraftToProduct(
     sku: draft.sku,
     barcode: draft.barcode,
     weight: draft.weightGrams,
-    // STRICTEMENT Brouillon à l'importation selon Prompt 11
-    status: "draft",
-    productStatus: "draft",
-    supplierName: draft.brand,
+    status: calculatedStatus,
+    productStatus: calculatedStatus,
+    supplierName: draft.brand || "",
     variants,
     quantityOffers: [],
     badgesConfig: {

@@ -678,14 +678,14 @@ export function RichDescriptionEditor({
         storeSlug={storeSlug}
         context="description"
         defaultAlt={productTitle}
-        title="Insérer une image dans la description"
+        showFormatOptions={true}
       />
 
       {/* Modale vidéo YouTube / Vimeo sécurisée (Prompt 17-G) */}
       <VideoEmbedModal
         isOpen={isVideoModalOpen}
         onClose={() => setIsVideoModalOpen(false)}
-        onSelectVideo={handleSelectVideo}
+        onInsertVideo={handleSelectVideo}
       />
     </div>
   );
