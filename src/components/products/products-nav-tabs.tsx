@@ -12,6 +12,7 @@ import {
   AlertTriangle,
   ArrowUpDown,
   TrendingUp,
+  Image as ImageIcon,
 } from "lucide-react";
 import { useApp } from "@/components/layout/app-shell";
 import { MOCK_PRODUCTS, MOCK_SUPPLIERS, MOCK_PURCHASE_ORDERS, MOCK_COLLECTIONS, MOCK_REORDER_ITEMS } from "@/mock-data";
@@ -120,6 +121,12 @@ export function ProductsNavTabs({ storeSlug }: ProductsNavTabsProps) {
       label: "Performance produit",
       href: `/app/${storeSlug}/produits/performance`,
       icon: TrendingUp,
+    },
+    {
+      id: "mediatheque",
+      label: "Médiathèque",
+      href: `/app/${storeSlug}/mediatheque`,
+      icon: ImageIcon,
     },
     ...(!isRestricted
       ? [

@@ -33,12 +33,15 @@ import {
   HtmlSanitizeReport,
 } from "@/lib/server-html-sanitizer";
 import { ProductDescription } from "./product-description";
+import { ImagePicker, SelectedImageData } from "@/components/media/ImagePicker";
+import { VideoEmbedModal } from "@/components/media/VideoEmbedModal";
 import { cn } from "@/lib/utils";
 
 interface RichDescriptionEditorProps {
   value: string;
   onChange: (value: string) => void;
   productTitle?: string;
+  storeSlug?: string;
   onOpenAiGenerator?: () => void;
 }
 
@@ -46,11 +49,15 @@ export function RichDescriptionEditor({
   value,
   onChange,
   productTitle = "Nouveau produit",
+  storeSlug = "lome-glow",
   onOpenAiGenerator,
 }: RichDescriptionEditorProps) {
   const [mode, setMode] = useState<"visual" | "html" | "preview">("visual");
   const [tableMenuOpen, setTableMenuOpen] = useState(false);
   const [cleanFeedback, setCleanFeedback] = useState<string | null>(null);
+  const [isImagePickerOpen, setIsImagePickerOpen] = useState(false);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
 
   // Synchronisation du contenu dans l'éditeur visuel
@@ -98,48 +105,98 @@ export function RichDescriptionEditor({
     }
   };
 
+  // Remplacement de tout prompt() par le sélecteur d'image unifié (Prompt 17-G)
   const handleInsertImage = () => {
-    const url = prompt("Entrez l'URL de l'image (ex: https://.../photo.webp) :");
-    if (url && url.trim()) {
-      execCmd("insertImage", url.trim());
+    setIsImagePickerOpen(true);
+  };
+
+  const handleSelectImage = (imageData: SelectedImageData) => {
+    const { url, altText = productTitle, align = "center", width = "medium" } = imageData;
+    const widthClass = width === "small" ? "max-w-xs" : width === "medium" ? "max-w-md" : "w-full";
+    const alignClass = align === "left" ? "mr-auto text-left" : align === "right" ? "ml-auto text-right" : "mx-auto text-center";
+
+    const imageHtml = `<figure class="my-4 ${alignClass}"><img src="${url}" alt="${altText.replace(/"/g, "&quot;")}" class="${widthClass} rounded-xl shadow-xs inline-block" loading="lazy" /><figcaption class="text-xs text-stone-500 mt-1">${altText.replace(/</g, "&lt;")}</figcaption></figure><p><br></p>`;
+
+    if (mode === "visual") {
+      editorRef.current?.focus();
+      document.execCommand("insertHTML", false, imageHtml);
+      handleInput();
+    } else {
+      onChange(value + "\n" + imageHtml);
+    }
+    setIsImagePickerOpen(false);
+  };
+
+  // Remplacement de tout prompt() par la modale vidéo YouTube/Vimeo sécurisée (Prompt 17-G)
+  const handleInsertVideo = () => {
+    setIsVideoModalOpen(true);
+  };
+
+  const handleSelectVideo = (embedUrl: string) => {
+    const iframeHtml = `<div class="aspect-video w-full my-4 rounded-xl overflow-hidden shadow-xs"><iframe src="${embedUrl}" width="100%" height="315" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div><p><br></p>`;
+    if (mode === "visual") {
+      editorRef.current?.focus();
+      document.execCommand("insertHTML", false, iframeHtml);
+      handleInput();
+    } else {
+      onChange(value + "\n" + iframeHtml);
+    }
+    setIsVideoModalOpen(false);
+  };
+
+  // Support direct du glisser-déposer et du collage d'image dans l'éditeur (Prompt 17-G)
+  const handleDirectFileUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert("L'image dépasse la taille maximale autorisée de 5 Mo.");
+      return;
+    }
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("storeSlug", storeSlug);
+      formData.append("contextType", "description");
+      formData.append("altText", productTitle);
+
+      const res = await fetch("/api/media/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success && data.media?.url) {
+        handleSelectImage({
+          url: data.media.url,
+          altText: productTitle,
+          align: "center",
+          width: "medium",
+        });
+      }
+    } catch (e) {
+      console.error("Échec de l'upload direct :", e);
     }
   };
 
-  const handleInsertVideo = () => {
-    const url = prompt(
-      "Entrez le lien YouTube ou Vimeo (ex: https://www.youtube.com/watch?v=... ou https://vimeo.com/...) :"
-    );
-    if (!url || !url.trim()) return;
-
-    let embedUrl = "";
-    const cleanUrl = url.trim();
-
-    if (cleanUrl.includes("youtube.com/watch?v=")) {
-      const videoId = cleanUrl.split("v=")[1]?.split("&")[0];
-      if (videoId) embedUrl = `https://www.youtube.com/embed/${videoId}`;
-    } else if (cleanUrl.includes("youtu.be/")) {
-      const videoId = cleanUrl.split("youtu.be/")[1]?.split("?")[0];
-      if (videoId) embedUrl = `https://www.youtube.com/embed/${videoId}`;
-    } else if (cleanUrl.includes("vimeo.com/")) {
-      const videoId = cleanUrl.split("vimeo.com/")[1]?.split("?")[0];
-      if (videoId) embedUrl = `https://player.vimeo.com/video/${videoId}`;
-    } else if (
-      cleanUrl.startsWith("https://www.youtube.com/embed/") ||
-      cleanUrl.startsWith("https://player.vimeo.com/video/")
-    ) {
-      embedUrl = cleanUrl;
-    }
-
-    if (embedUrl) {
-      const iframeHtml = `<div class="aspect-video w-full my-4"><iframe src="${embedUrl}" width="100%" height="315" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div><p><br></p>`;
-      if (mode === "visual") {
-        document.execCommand("insertHTML", false, iframeHtml);
-        handleInput();
-      } else {
-        onChange(value + "\n" + iframeHtml);
+  const handleEditorPaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith("image/")) {
+        e.preventDefault();
+        const file = items[i].getAsFile();
+        if (file) handleDirectFileUpload(file);
+        return;
       }
-    } else {
-      alert("Veuillez fournir un lien YouTube ou Vimeo valide.");
+    }
+  };
+
+  const handleEditorDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDraggingOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      if (file.type.startsWith("image/")) {
+        handleDirectFileUpload(file);
+      }
     }
   };
 
@@ -568,7 +625,17 @@ export function RichDescriptionEditor({
           contentEditable
           onInput={handleInput}
           onBlur={handleInput}
-          className="p-4 min-h-[220px] max-h-[500px] overflow-y-auto text-sm text-[#111111] focus:outline-none"
+          onPaste={handleEditorPaste}
+          onDrop={handleEditorDrop}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDraggingOver(true);
+          }}
+          onDragLeave={() => setIsDraggingOver(false)}
+          className={cn(
+            "p-4 min-h-[220px] max-h-[500px] overflow-y-auto text-sm text-[#111111] focus:outline-none transition-all",
+            isDraggingOver && "bg-amber-50/50 ring-2 ring-dashed ring-amber-400"
+          )}
           data-testid="rich-description-content-editable"
         />
       )}
@@ -602,6 +669,24 @@ export function RichDescriptionEditor({
           <ProductDescription html={value} productTitle={productTitle} isStorefront={true} />
         </div>
       )}
+
+      {/* Modale unifiée d'import d'image (Prompt 17-G) */}
+      <ImagePicker
+        isOpen={isImagePickerOpen}
+        onClose={() => setIsImagePickerOpen(false)}
+        onSelectImage={handleSelectImage}
+        storeSlug={storeSlug}
+        context="description"
+        defaultAlt={productTitle}
+        title="Insérer une image dans la description"
+      />
+
+      {/* Modale vidéo YouTube / Vimeo sécurisée (Prompt 17-G) */}
+      <VideoEmbedModal
+        isOpen={isVideoModalOpen}
+        onClose={() => setIsVideoModalOpen(false)}
+        onSelectVideo={handleSelectVideo}
+      />
     </div>
   );
 }

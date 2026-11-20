@@ -1098,6 +1098,7 @@ export function ProductFormClient({
               value={description}
               onChange={(val) => setDescription(val)}
               productTitle={name || "Nouveau produit"}
+              storeSlug={storeSlug}
               onOpenAiGenerator={() => {
                 router.push(`/app/${storeSlug}/produits/nouveau-ia`);
               }}

@@ -23,6 +23,7 @@ import {
   TrendingUp,
   Filter,
   LucideIcon,
+  Image as ImageIcon,
 } from "lucide-react";
 import { UserRole } from "@/server/data/types";
 
@@ -305,6 +306,13 @@ export const getNavigationConfig = (basePath: string, role: UserRole = "owner"):
             pathSuffix: "/produits/collections",
             icon: FolderTree,
             allowedRoles: ["owner", "admin"],
+          },
+          {
+            id: "item-mediatheque",
+            name: "Médiathèque",
+            pathSuffix: "/mediatheque",
+            icon: ImageIcon,
+            allowedRoles: ["owner", "admin", "manager"],
           },
         ],
       },
