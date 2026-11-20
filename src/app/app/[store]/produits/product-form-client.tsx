@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -41,6 +41,20 @@ import {
   ShieldCheck,
   Pencil,
   ExternalLink,
+  X,
+  Upload,
+  FolderTree,
+  Radio,
+  SlidersHorizontal,
+  Calendar,
+  Share2,
+  Library,
+  Copy,
+  Archive,
+  AlertTriangle,
+  History,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import {
   Product,
@@ -49,26 +63,36 @@ import {
   ProductStatus,
   ProductMediaItem,
   OutOfStockProductOverride,
+  ProductOption,
+  ProductCustomField,
+  ProductAuditEntry,
 } from "@/server/data/types";
 import {
   MAX_PRODUCT_IMAGES,
   MAX_IMAGE_SIZE_BYTES,
   validateProductImageFile,
   stripExifAndProcessImage,
-  parseVideoUrl,
 } from "@/lib/image-utils";
-import { ProductImage, NeutralProductPlaceholder } from "@/components/ui/ProductImage";
 import { ProductReceiptContent } from "@/server/data/receipt-types";
 import { DEFAULT_RECEIPT_CONTENT } from "@/lib/receipts-engine";
 import { MOCK_PRODUCTS } from "@/mock-data/products";
 import { MOCK_SUPPLIERS } from "@/mock-data/suppliers";
 import { MOCK_COLLECTIONS } from "@/mock-data/collections";
+import { MOCK_ORDERS } from "@/mock-data/orders";
 import { formatFcfa } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/components/layout/app-shell";
 import { ProductsNavTabs } from "@/components/products/products-nav-tabs";
-import { canTrashProduct } from "@/config/permissions";
-import { softDeleteProduct } from "@/lib/products-store";
+import {
+  canTrashProduct,
+  canArchiveProduct,
+  canViewProductFinancials,
+  canManageProducts,
+} from "@/config/permissions";
+import { softDeleteProduct, getShopProductsRaw, saveShopProductsList } from "@/lib/products-store";
+import { RichDescriptionEditor } from "@/components/products/rich-description-editor";
+import { sanitizeHtml } from "@/lib/html-sanitizer";
+import { metaPixelsStore, ShopPixel } from "@/lib/meta-pixels";
 
 interface ProductFormClientProps {
   storeSlug: string;
@@ -82,22 +106,26 @@ export function ProductFormClient({
   isEditing = false,
 }: ProductFormClientProps) {
   const router = useRouter();
-  const { activeRole } = useApp();
+  const { activeRole, currentUser } = useApp();
   const isCloser = activeRole === "closer";
+  const canViewFinancials = canViewProductFinancials(activeRole);
+  const canManage = canManageProducts(activeRole);
 
-  // Form states
-  const [name, setName] = useState(initialProduct?.name || "");
-  const [description, setDescription] = useState(
-    initialProduct?.description || ""
-  );
-  const [category, setCategory] = useState(initialProduct?.category || "Santé & Nutrition");
-  const [productType, setProductType] = useState(initialProduct?.productType || "Standard");
-  const [collection, setCollection] = useState(initialProduct?.collection || "Général");
-  const [supplierId, setSupplierId] = useState(initialProduct?.supplierId || "sup_01");
-  const [tagsInput, setTagsInput] = useState(initialProduct?.tags ? initialProduct.tags.join(", ") : "");
-  const [template, setTemplate] = useState(initialProduct?.template || "Par défaut");
+  // Clé de brouillon automatique dans le navigateur (Prompt 17 - Phase 17-B)
+  const DRAFT_KEY = `novika_draft_product_${storeSlug}_${initialProduct?.id || "new"}`;
 
-  // Media (Prompt 15)
+  // ========================================================
+  // ÉTATS DE LA COLONNE PRINCIPALE (Phases 17-B, 17-C, 17-D)
+  // ========================================================
+
+  // 1) Titre (obligatoire)
+  const [name, setName] = useState(initialProduct?.name || initialProduct?.title || "");
+  const [titleError, setTitleError] = useState<string | null>(null);
+
+  // 2) Description (Éditeur riche & Nettoyage HTML strict)
+  const [description, setDescription] = useState(initialProduct?.description || "");
+
+  // 3) Supports multimédias (Galerie, images, vidéos, alt text, EXIF)
   const [mediaItems, setMediaItems] = useState<ProductMediaItem[]>(() => {
     if (initialProduct?.mediaItems && initialProduct.mediaItems.length > 0) {
       return initialProduct.mediaItems;
@@ -113,33 +141,512 @@ export function ProductFormClient({
     return [];
   });
 
-  const [mediaList, setMediaList] = useState<string[]>(
-    initialProduct?.images && initialProduct.images.length > 0
-      ? initialProduct.images
+  const [videoUrl, setVideoUrl] = useState<string>(initialProduct?.videoUrl || "");
+  const [showVideoInput, setShowVideoInput] = useState<boolean>(Boolean(initialProduct?.videoUrl));
+  const [editingAltItem, setEditingAltItem] = useState<{ id: string; alt: string } | null>(null);
+  const [mediaErrorMessage, setMediaErrorMessage] = useState<string | null>(null);
+  const [isMediaLibraryModalOpen, setIsMediaLibraryModalOpen] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 4) Catégorie (sélecteur avec recherche)
+  const [category, setCategory] = useState(initialProduct?.category || "Santé & Nutrition");
+  const [categorySearchQuery, setCategorySearchQuery] = useState("");
+  const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
+
+  const predefinedCategories = useMemo(() => {
+    return [
+      "Santé & Nutrition",
+      "Beauté & Cosmétiques",
+      "Soins du Visage",
+      "Perte de Poids & Minceur",
+      "Électronique & Gadgets",
+      "Mode & Accessoires",
+      "Maison & Cuisine",
+      "Bébés & Enfants",
+      "Sport & Fitness",
+    ];
+  }, []);
+
+  const filteredCategories = useMemo(() => {
+    if (!categorySearchQuery.trim()) return predefinedCategories;
+    return predefinedCategories.filter((c) =>
+      c.toLowerCase().includes(categorySearchQuery.toLowerCase().trim())
+    );
+  }, [predefinedCategories, categorySearchQuery]);
+
+  // 5) Aperçu sur les moteurs de recherche (SEO Google)
+  const [seoTitle, setSeoTitle] = useState(
+    initialProduct?.seo?.title ||
+      (name ? `${name} - Meilleur Prix` : "Acheter en ligne au meilleur prix")
+  );
+  const [seoDescription, setSeoDescription] = useState(
+    initialProduct?.seo?.description ||
+      "Commandez au meilleur prix avec livraison express et paiement sécurisé à la réception."
+  );
+  const [seoSlug, setSeoSlug] = useState(
+    initialProduct?.seo?.slug ||
+      initialProduct?.slug ||
+      (name ? name.toLowerCase().replace(/[^a-z0-9]+/g, "-") : "nouveau-produit")
+  );
+  const [isSeoCustomOpen, setIsSeoCustomOpen] = useState(false);
+
+  // ========================================================
+  // COMMERCE : PRIX, TAXE, MARGE (Phase 17-C, 1)
+  // ========================================================
+  const [salePrice, setSalePrice] = useState<number>(initialProduct?.salePrice || 0);
+  const [compareAtPrice, setCompareAtPrice] = useState<number | undefined>(
+    initialProduct?.compareAtPrice
+  );
+  const [unitPriceLabel, setUnitPriceLabel] = useState<string>(
+    initialProduct?.unitPriceLabel || ""
+  );
+  const [chargeTax, setChargeTax] = useState<boolean>(initialProduct?.chargeTax ?? false);
+  const [showExtraPricing, setShowExtraPricing] = useState<boolean>(
+    Boolean(initialProduct?.compareAtPrice || initialProduct?.unitPriceLabel || initialProduct?.chargeTax)
+  );
+
+  const [costPrice, setCostPrice] = useState<number>(initialProduct?.costPrice || 0);
+
+  // Validation du prix de comparaison
+  const compareAtPriceError = useMemo(() => {
+    if (compareAtPrice !== undefined && compareAtPrice > 0 && compareAtPrice <= salePrice) {
+      return "Le prix de comparaison (avant réduction) doit être strictement supérieur au prix de vente.";
+    }
+    return null;
+  }, [compareAtPrice, salePrice]);
+
+  // ========================================================
+  // COMMERCE : OFFRES PAR PRODUIT (Phase 17-C, 5)
+  // ========================================================
+  const [quantityOffers, setQuantityOffers] = useState<QuantityOffer[]>(() => {
+    if (initialProduct?.quantityOffers && initialProduct.quantityOffers.length > 0) {
+      return initialProduct.quantityOffers;
+    }
+    return [
+      {
+        id: "off-1",
+        quantity: 1,
+        unitPrice: initialProduct?.salePrice || 15000,
+        totalPrice: initialProduct?.salePrice || 15000,
+        badgeText: "Standard",
+      },
+      {
+        id: "off-2",
+        quantity: 2,
+        unitPrice: Math.round(((initialProduct?.salePrice || 15000) * 0.85) / 100) * 100,
+        totalPrice: Math.round(((initialProduct?.salePrice || 15000) * 0.85 * 2) / 100) * 100,
+        badgeText: "Le plus populaire (-15%)",
+      },
+    ];
+  });
+
+  // ========================================================
+  // COMMERCE : STOCK & INVENTAIRE (Phase 17-C, 2)
+  // ========================================================
+  const [trackStock, setTrackStock] = useState<boolean>(initialProduct?.trackStock ?? true);
+  const [inventoryLocation, setInventoryLocation] = useState<string>(
+    initialProduct?.inventoryLocation || "Emplacement de la boutique (Principal)"
+  );
+  const [physicalStock, setPhysicalStock] = useState<number>(
+    initialProduct?.physicalStock ?? initialProduct?.stock ?? 15
+  );
+  const [reservedStock, setReservedStock] = useState<number>(
+    initialProduct?.reservedStock ?? 0
+  );
+  const availableStock = Math.max(0, physicalStock - reservedStock);
+
+  const [sku, setSku] = useState(initialProduct?.sku || "");
+  const [barcode, setBarcode] = useState(initialProduct?.barcode || "");
+  const [lowStockThreshold, setLowStockThreshold] = useState<number>(
+    initialProduct?.lowStockThreshold ?? 10
+  );
+  const [continueSellingWhenOutOfStock, setContinueSellingWhenOutOfStock] = useState<boolean>(
+    initialProduct?.continueSellingWhenOutOfStock ?? false
+  );
+  const [outOfStockVisibilityOverride, setOutOfStockVisibilityOverride] =
+    useState<OutOfStockProductOverride>(
+      initialProduct?.outOfStockVisibilityOverride || "store_default"
+    );
+  const [showStockDetails, setShowStockDetails] = useState(false);
+
+  // ========================================================
+  // COMMERCE : EXPÉDITION (Phase 17-C, 3)
+  // ========================================================
+  const [isPhysical, setIsPhysical] = useState<boolean>(initialProduct?.isPhysical ?? true);
+  const [weightKg, setWeightKg] = useState<number>(initialProduct?.weightKg || 0.2);
+  const [packageLengthCm, setPackageLengthCm] = useState<number>(
+    initialProduct?.dimensions?.lengthCm || 15
+  );
+  const [packageWidthCm, setPackageWidthCm] = useState<number>(
+    initialProduct?.dimensions?.widthCm || 10
+  );
+  const [packageHeightCm, setPackageHeightCm] = useState<number>(
+    initialProduct?.dimensions?.heightCm || 5
+  );
+  const [showPackageDimensions, setShowPackageDimensions] = useState(false);
+
+  // ========================================================
+  // COMMERCE : VARIANTES (Phase 17-C, 4)
+  // ========================================================
+  const [hasVariants, setHasVariants] = useState<boolean>(() => {
+    return Boolean(
+      (initialProduct?.variants && initialProduct.variants.length > 0) ||
+        (initialProduct?.productOptions && initialProduct.productOptions.length > 0)
+    );
+  });
+
+  const [productOptions, setProductOptions] = useState<ProductOption[]>(() => {
+    if (initialProduct?.productOptions && initialProduct.productOptions.length > 0) {
+      return initialProduct.productOptions;
+    }
+    if (initialProduct?.variants && initialProduct.variants.length > 0) {
+      return [
+        {
+          id: "opt-1",
+          name: "Format",
+          values: Array.from(new Set(initialProduct.variants.map((v) => v.name || v.title || "Standard"))),
+        },
+      ];
+    }
+    return [];
+  });
+
+  const [newOptionValueInputs, setNewOptionValueInputs] = useState<Record<string, string>>({});
+  const [variants, setVariants] = useState<ProductVariant[]>(
+    initialProduct?.variants && initialProduct.variants.length > 0
+      ? initialProduct.variants
       : []
   );
 
-  const [videoUrl, setVideoUrl] = useState<string>(initialProduct?.videoUrl || "");
-  const [showVideoInput, setShowVideoInput] = useState<boolean>(Boolean(initialProduct?.videoUrl));
-  const [selectedMediaIds, setSelectedMediaIds] = useState<string[]>([]);
-  const [editingAltItem, setEditingAltItem] = useState<{ id: string; alt: string } | null>(null);
-  const [uploadQueue, setUploadQueue] = useState<
-    Array<{
-      id: string;
-      fileName: string;
-      progress: number;
-      error?: string;
-      file?: File;
-    }>
-  >([]);
-  const [draggedMediaIndex, setDraggedMediaIndex] = useState<number | null>(null);
-  const [replaceTargetIndex, setReplaceTargetIndex] = useState<number | null>(null);
-  const [confirmedImageRights, setConfirmedImageRights] = useState<boolean>(true);
-  const [mediaErrorMessage, setMediaErrorMessage] = useState<string | null>(null);
+  // Modification groupée des variantes
+  const [bulkPriceInput, setBulkPriceInput] = useState<number | "">("");
+  const [bulkStockInput, setBulkStockInput] = useState<number | "">("");
+  const [showBulkEditModal, setShowBulkEditModal] = useState(false);
 
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const replaceFileInputRef = React.useRef<HTMLInputElement>(null);
+  // Générateur automatique de variantes cartésiennes quand options changent
+  const generateVariantsFromOptions = (options: ProductOption[]) => {
+    if (options.length === 0) {
+      setVariants([]);
+      return;
+    }
 
+    const validOptions = options.filter((o) => o.values.length > 0);
+    if (validOptions.length === 0) {
+      setVariants([]);
+      return;
+    }
+
+    // Produit cartésien récursif
+    const cartesian = (arrays: string[][]): string[][] => {
+      return arrays.reduce<string[][]>(
+        (acc, curr) => acc.flatMap((c) => curr.map((n) => [...c, n])),
+        [[]]
+      );
+    };
+
+    const combinations = cartesian(validOptions.map((o) => o.values)).slice(0, 100);
+
+    const generated: ProductVariant[] = combinations.map((comb, idx) => {
+      const varName = comb.join(" / ");
+      const existing = variants.find((v) => v.name === varName);
+      return (
+        existing || {
+          id: `var-${Date.now()}-${idx}`,
+          name: varName,
+          title: varName,
+          price: salePrice,
+          costPrice: costPrice,
+          stock: 10,
+          sku: `${sku || "VAR"}-${comb.map((c) => c.substring(0, 3).toUpperCase()).join("-")}`,
+          barcode: "",
+          image: mediaItems[0]?.url || "",
+          optionValues: validOptions.map((opt, optIdx) => ({
+            optionName: opt.name,
+            value: comb[optIdx],
+          })),
+        }
+      );
+    });
+
+    setVariants(generated);
+  };
+
+  const handleAddOption = () => {
+    if (productOptions.length >= 3) {
+      alert("Vous pouvez ajouter un maximum de 3 options de variantes.");
+      return;
+    }
+    const newOpt: ProductOption = {
+      id: `opt-${Date.now()}`,
+      name: productOptions.length === 0 ? "Taille" : productOptions.length === 1 ? "Couleur" : "Matière",
+      values: [],
+    };
+    const next = [...productOptions, newOpt];
+    setProductOptions(next);
+  };
+
+  const handleRemoveOption = (optId: string) => {
+    if (confirm("Supprimer cette option et toutes ses variantes associées ?")) {
+      const next = productOptions.filter((o) => o.id !== optId);
+      setProductOptions(next);
+      generateVariantsFromOptions(next);
+    }
+  };
+
+  const handleAddOptionValue = (optId: string, val: string) => {
+    const clean = val.trim();
+    if (!clean) return;
+    const next = productOptions.map((opt) => {
+      if (opt.id === optId) {
+        if (!opt.values.includes(clean)) {
+          return { ...opt, values: [...opt.values, clean] };
+        }
+      }
+      return opt;
+    });
+    setProductOptions(next);
+    setNewOptionValueInputs((prev) => ({ ...prev, [optId]: "" }));
+    generateVariantsFromOptions(next);
+  };
+
+  const handleRemoveOptionValue = (optId: string, valToRemove: string) => {
+    const next = productOptions.map((opt) => {
+      if (opt.id === optId) {
+        return { ...opt, values: opt.values.filter((v) => v !== valToRemove) };
+      }
+      return opt;
+    });
+    setProductOptions(next);
+    generateVariantsFromOptions(next);
+  };
+
+  const handleBulkApply = () => {
+    setVariants((prev) =>
+      prev.map((v) => ({
+        ...v,
+        price: bulkPriceInput !== "" ? Number(bulkPriceInput) : v.price,
+        stock: bulkStockInput !== "" ? Number(bulkStockInput) : v.stock,
+      }))
+    );
+    setShowBulkEditModal(false);
+    showToast("Modifications groupées appliquées aux variantes.");
+  };
+
+  // ========================================================
+  // CHAMPS PERSONNALISÉS / METAFIELDS (Phase 17-D, 1)
+  // ========================================================
+  const [customFields, setCustomFields] = useState<ProductCustomField[]>(
+    initialProduct?.customFields || []
+  );
+  const [showAddCustomFieldModal, setShowAddCustomFieldModal] = useState(false);
+  const [newFieldKey, setNewFieldKey] = useState("");
+  const [newFieldLabel, setNewFieldLabel] = useState("");
+  const [newFieldType, setNewFieldType] = useState<
+    "short_text" | "long_text" | "number" | "choice" | "boolean"
+  >("short_text");
+
+  const predefinedMetafieldTemplates = [
+    { label: "Ingrédients & Composition", key: "ingredients", type: "long_text" as const },
+    { label: "Mode d'emploi & Posologie", key: "usage_instructions", type: "long_text" as const },
+    { label: "Précautions d'emploi", key: "precautions", type: "long_text" as const },
+    { label: "Garantie & Authenticité", key: "warranty", type: "short_text" as const },
+  ];
+
+  const handleAddPredefinedTemplate = (tpl: (typeof predefinedMetafieldTemplates)[0]) => {
+    if (customFields.some((f) => f.key === tpl.key)) {
+      alert("Ce champ personnalisé est déjà présent sur la fiche.");
+      return;
+    }
+    setCustomFields((prev) => [
+      ...prev,
+      {
+        id: `cf-${Date.now()}`,
+        key: tpl.key,
+        label: tpl.label,
+        type: tpl.type,
+        value: "",
+        isPinned: true,
+      },
+    ]);
+  };
+
+  const handleCreateCustomField = () => {
+    const cleanLabel = newFieldLabel.trim();
+    if (!cleanLabel) return;
+    const cleanKey =
+      newFieldKey.trim() || cleanLabel.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+    setCustomFields((prev) => [
+      ...prev,
+      {
+        id: `cf-${Date.now()}`,
+        key: cleanKey,
+        label: cleanLabel,
+        type: newFieldType,
+        value: "",
+        isPinned: true,
+      },
+    ]);
+    setNewFieldLabel("");
+    setNewFieldKey("");
+    setShowAddCustomFieldModal(false);
+  };
+
+  // ========================================================
+  // ÉTATS DU PANNEAU LATÉRAL (Prompt 17 - Phase 17-B)
+  // ========================================================
+  const [productStatus, setProductStatus] = useState<ProductStatus | "scheduled">(
+    (initialProduct?.productStatus as any) ||
+      (initialProduct?.stock && initialProduct.stock > 0 ? "active" : "draft")
+  );
+  const [scheduledDate, setScheduledDate] = useState("");
+
+  const [publishToStorefront, setPublishToStorefront] = useState<boolean>(
+    initialProduct ? !initialProduct.hiddenFromCatalog : true
+  );
+  const [publishToMetaCatalog, setPublishToMetaCatalog] = useState<boolean>(true);
+
+  const [productType, setProductType] = useState(
+    initialProduct?.productType || initialProduct?.type || "Standard"
+  );
+  const [supplierId, setSupplierId] = useState(initialProduct?.supplierId || "sup_01");
+
+  const [collectionsList, setCollectionsList] = useState<string[]>(() => {
+    return MOCK_COLLECTIONS.map((c) => c.title);
+  });
+  const [selectedCollection, setSelectedCollection] = useState(
+    initialProduct?.collection || "Général"
+  );
+  const [newCollectionInput, setNewCollectionInput] = useState("");
+  const [showNewCollectionForm, setShowNewCollectionForm] = useState(false);
+
+  const [tags, setTags] = useState<string[]>(initialProduct?.tags || ["Promo", "Nouveauté"]);
+  const [tagInput, setTagInput] = useState("");
+
+  const [themeTemplate, setThemeTemplate] = useState(
+    initialProduct?.template || "Modèle par défaut : Produit"
+  );
+
+  const [shopPixels, setShopPixels] = useState<ShopPixel[]>([]);
+  const [selectedPixelIds, setSelectedPixelIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const pixels = metaPixelsStore.getPixels(storeSlug);
+      setShopPixels(pixels);
+      const activeForProduct = pixels
+        .filter((p) => p.isActive && (p.applyToAllProducts || (initialProduct && p.productIds.includes(initialProduct.id))))
+        .map((p) => p.id);
+      setSelectedPixelIds(activeForProduct);
+    }
+  }, [storeSlug, initialProduct]);
+
+  // ========================================================
+  // AUDIT & HISTORIQUE DES MODIFICATIONS (Phase 17-D, 3)
+  // ========================================================
+  const [auditTrail, setAuditTrail] = useState<ProductAuditEntry[]>(
+    initialProduct?.auditTrail || [
+      {
+        id: "aud-01",
+        action: isEditing ? "Mise à jour du produit" : "Création initiale de la fiche",
+        performedBy: currentUser?.name || "Admin",
+        timestamp: new Date().toISOString(),
+      },
+    ]
+  );
+  const [showAuditTrail, setShowAuditTrail] = useState(false);
+
+  // Nombre de commandes liées à ce produit (Phase 17-D, 2)
+  const productOrderCount = useMemo(() => {
+    if (!initialProduct?.id) return 0;
+    return MOCK_ORDERS.filter((o) =>
+      o.items.some((item) => item.productId === initialProduct.id)
+    ).length;
+  }, [initialProduct]);
+
+  // ========================================================
+  // BROUILLON & AVERTISSEMENTS (Phase 17-B)
+  // ========================================================
+  const [isDirty, setIsDirty] = useState<boolean>(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && !isEditing) {
+      try {
+        const savedDraft = localStorage.getItem(DRAFT_KEY);
+        if (savedDraft) {
+          const parsed = JSON.parse(savedDraft);
+          if (parsed && typeof parsed === "object") {
+            if (parsed.name) setName(parsed.name);
+            if (parsed.description) setDescription(parsed.description);
+            if (parsed.category) setCategory(parsed.category);
+            if (parsed.salePrice) setSalePrice(parsed.salePrice);
+            if (parsed.costPrice) setCostPrice(parsed.costPrice);
+            showToast("Brouillon automatiquement restauré.");
+          }
+        }
+      } catch {}
+    }
+  }, [DRAFT_KEY, isEditing]);
+
+  useEffect(() => {
+    setIsDirty(true);
+  }, [
+    name,
+    description,
+    category,
+    salePrice,
+    compareAtPrice,
+    costPrice,
+    trackStock,
+    physicalStock,
+    sku,
+    variants,
+    quantityOffers,
+    customFields,
+    productStatus,
+    publishToStorefront,
+    tags,
+  ]);
+
+  useEffect(() => {
+    setIsDirty(false);
+  }, []);
+
+  useEffect(() => {
+    if (isDirty && typeof window !== "undefined") {
+      const draftData = {
+        name,
+        description,
+        category,
+        salePrice,
+        costPrice,
+        updatedAt: Date.now(),
+      };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData));
+    }
+  }, [isDirty, name, description, category, salePrice, costPrice, DRAFT_KEY]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = "Vous avez des modifications non enregistrées. Voulez-vous vraiment quitter ?";
+        return e.returnValue;
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
+
+  // ========================================================
+  // GESTIONNAIRES MÉDIAS & COLLECTIONS & TAGS
+  // ========================================================
   const handleImageFiles = async (files: FileList | File[]) => {
     setMediaErrorMessage(null);
     const fileArray = Array.from(files);
@@ -147,89 +654,21 @@ export function ProductFormClient({
 
     const availableSlots = MAX_PRODUCT_IMAGES - mediaItems.length;
     if (availableSlots <= 0) {
-      setMediaErrorMessage(`Limite maximale atteinte (${MAX_PRODUCT_IMAGES} images max).`);
+      setMediaErrorMessage(`Limite maximale atteinte (${MAX_PRODUCT_IMAGES} visuels max).`);
       return;
     }
 
     const filesToProcess = fileArray.slice(0, availableSlots);
-    if (fileArray.length > availableSlots) {
-      setMediaErrorMessage(
-        `Seuls les ${availableSlots} premiers fichiers ont été acceptés (maximum 20 images).`
-      );
-    }
-
-    // Ajouter à la queue d'upload avec progression
-    const newQueueItems = filesToProcess.map((f, i) => ({
-      id: `queue-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 6)}`,
-      fileName: f.name,
-      progress: 20,
-      file: f,
-    }));
-    setUploadQueue((prev) => [...prev, ...newQueueItems]);
-
-    for (const qItem of newQueueItems) {
-      const file = qItem.file!;
+    for (const file of filesToProcess) {
       const validation = validateProductImageFile(file);
-
       if (!validation.valid) {
-        setUploadQueue((prev) =>
-          prev.map((item) =>
-            item.id === qItem.id
-              ? { ...item, progress: 100, error: validation.error || "Fichier invalide" }
-              : item
-          )
-        );
+        setMediaErrorMessage(validation.error || "Fichier invalide.");
         continue;
       }
 
-      setUploadQueue((prev) =>
-        prev.map((item) => (item.id === qItem.id ? { ...item, progress: 65 } : item))
-      );
-
       try {
         const cleanDataUrl = await stripExifAndProcessImage(file);
-
-        setUploadQueue((prev) => prev.filter((item) => item.id !== qItem.id));
-
-        setMediaItems((prev) => {
-          const nextIndex = prev.length;
-          const updated: ProductMediaItem[] = [
-            ...prev,
-            {
-              id: `img-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-              url: cleanDataUrl,
-              alt: `${name.trim() || "Produit"} - Vue ${nextIndex + 1}`,
-              isPrimary: prev.length === 0,
-            },
-          ];
-          setMediaList(updated.map((m) => m.url));
-          return updated;
-        });
-      } catch (err: any) {
-        setUploadQueue((prev) =>
-          prev.map((item) =>
-            item.id === qItem.id
-              ? { ...item, progress: 100, error: err?.message || "Erreur de traitement" }
-              : item
-          )
-        );
-      }
-    }
-  };
-
-  const handleRetryUpload = async (queueId: string) => {
-    const queueItem = uploadQueue.find((q) => q.id === queueId);
-    if (!queueItem || !queueItem.file) return;
-
-    setUploadQueue((prev) =>
-      prev.map((item) => (item.id === queueId ? { ...item, progress: 40, error: undefined } : item))
-    );
-
-    try {
-      const cleanDataUrl = await stripExifAndProcessImage(queueItem.file);
-      setUploadQueue((prev) => prev.filter((item) => item.id !== queueId));
-      setMediaItems((prev) => {
-        const updated: ProductMediaItem[] = [
+        setMediaItems((prev) => [
           ...prev,
           {
             id: `img-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
@@ -237,577 +676,341 @@ export function ProductFormClient({
             alt: `${name.trim() || "Produit"} - Vue ${prev.length + 1}`,
             isPrimary: prev.length === 0,
           },
-        ];
-        setMediaList(updated.map((m) => m.url));
-        return updated;
-      });
-    } catch (err: any) {
-      setUploadQueue((prev) =>
-        prev.map((item) =>
-          item.id === queueId
-            ? { ...item, progress: 100, error: err?.message || "Échec du nouvel essai" }
-            : item
-        )
-      );
+        ]);
+      } catch (err: any) {
+        setMediaErrorMessage(err?.message || "Erreur de traitement de l'image.");
+      }
     }
   };
 
-  const handleRemoveQueueItem = (queueId: string) => {
-    setUploadQueue((prev) => prev.filter((item) => item.id !== queueId));
-  };
-
-  const handleReplaceFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0 || replaceTargetIndex === null) return;
-    const file = e.target.files[0];
-    const validation = validateProductImageFile(file);
-    if (!validation.valid) {
-      setMediaErrorMessage(validation.error || "Fichier invalide");
-      return;
-    }
-
-    try {
-      const cleanDataUrl = await stripExifAndProcessImage(file);
-      setMediaItems((prev) => {
-        const next = [...prev];
-        if (next[replaceTargetIndex]) {
-          next[replaceTargetIndex] = {
-            ...next[replaceTargetIndex],
-            url: cleanDataUrl,
-          };
-        }
-        setMediaList(next.map((m) => m.url));
-        return next;
-      });
-    } catch {
-      setMediaErrorMessage("Erreur lors du remplacement de l'image.");
-    } finally {
-      setReplaceTargetIndex(null);
-      if (replaceFileInputRef.current) replaceFileInputRef.current.value = "";
-    }
-  };
-
-  const setAsPrimary = (index: number) => {
-    if (index === 0 || index >= mediaItems.length) return;
+  const handleSetPrimaryMedia = (index: number) => {
     setMediaItems((prev) => {
-      const item = prev[index];
-      const without = prev.filter((_, i) => i !== index);
-      const next = [{ ...item, isPrimary: true }, ...without.map((m) => ({ ...m, isPrimary: false }))];
-      setMediaList(next.map((m) => m.url));
-      return next;
+      const target = prev[index];
+      const rest = prev.filter((_, i) => i !== index);
+      return [{ ...target, isPrimary: true }, ...rest.map((m) => ({ ...m, isPrimary: false }))];
     });
   };
 
-  const moveMedia = (fromIndex: number, toIndex: number) => {
-    if (fromIndex < 0 || toIndex < 0 || fromIndex >= mediaItems.length || toIndex >= mediaItems.length) return;
-    setMediaItems((prev) => {
-      const copy = [...prev];
-      const [moved] = copy.splice(fromIndex, 1);
-      copy.splice(toIndex, 0, moved);
-      const reindexed = copy.map((m, idx) => ({ ...m, isPrimary: idx === 0 }));
-      setMediaList(reindexed.map((m) => m.url));
-      return reindexed;
-    });
-  };
-
-  const deleteMedia = (index: number) => {
-    setMediaItems((prev) => {
-      const next = prev.filter((_, i) => i !== index).map((m, idx) => ({ ...m, isPrimary: idx === 0 }));
-      setMediaList(next.map((m) => m.url));
-      return next;
-    });
-  };
-
-  const deleteSelectedMedia = () => {
-    if (selectedMediaIds.length === 0) return;
-    setMediaItems((prev) => {
-      const next = prev.filter((m) => !selectedMediaIds.includes(m.id)).map((m, idx) => ({ ...m, isPrimary: idx === 0 }));
-      setMediaList(next.map((m) => m.url));
-      return next;
-    });
-    setSelectedMediaIds([]);
-  };
-
-  const toggleSelectMedia = (id: string) => {
-    setSelectedMediaIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+  const handleDeleteMedia = (index: number) => {
+    setMediaItems((prev) =>
+      prev.filter((_, i) => i !== index).map((m, idx) => ({ ...m, isPrimary: idx === 0 }))
     );
   };
 
-  const toggleSelectAllMedia = () => {
-    if (selectedMediaIds.length === mediaItems.length) {
-      setSelectedMediaIds([]);
-    } else {
-      setSelectedMediaIds(mediaItems.map((m) => m.id));
-    }
-  };
-
-  const updateMediaVariant = (index: number, variantId: string) => {
-    setMediaItems((prev) => {
-      const next = [...prev];
-      if (next[index]) {
-        next[index] = { ...next[index], variantId: variantId || undefined };
-      }
-      return next;
-    });
-  };
-
-  const saveAltText = (id: string, newAlt: string) => {
+  const handleSaveAltText = (id: string, newAlt: string) => {
     setMediaItems((prev) =>
       prev.map((m) => (m.id === id ? { ...m, alt: newAlt } : m))
     );
     setEditingAltItem(null);
+    showToast("Texte alternatif mis à jour.");
   };
 
-  // Pricing
-  const [salePrice, setSalePrice] = useState<number>(initialProduct?.salePrice || 0);
-  const [compareAtPrice, setCompareAtPrice] = useState<number | undefined>(
-    initialProduct?.compareAtPrice
-  );
-  const [costPrice, setCostPrice] = useState<number>(initialProduct?.costPrice || 0);
-  const [chargeTax, setChargeTax] = useState<boolean>(initialProduct?.chargeTax ?? false);
-
-  // Inventory tracking
-  const [trackStock, setTrackStock] = useState<boolean>(initialProduct?.trackStock ?? true);
-  const [sku, setSku] = useState(initialProduct?.sku || "");
-  const [barcode, setBarcode] = useState(initialProduct?.barcode || "");
-  const [lowStockThreshold, setLowStockThreshold] = useState<number>(
-    initialProduct?.lowStockThreshold ?? 10
-  );
-  const [outOfStockVisibilityOverride, setOutOfStockVisibilityOverride] =
-    useState<OutOfStockProductOverride>(
-      initialProduct?.outOfStockVisibilityOverride || "store_default"
-    );
-
-  // Physical product & shipping
-  const [isPhysical, setIsPhysical] = useState<boolean>(initialProduct?.isPhysical ?? true);
-  const [weightKg, setWeightKg] = useState<number>(initialProduct?.weightKg || 0.2);
-
-  // Variants
-  const [hasVariants, setHasVariants] = useState<boolean>(
-    (initialProduct?.variants && initialProduct.variants.length > 1) ?? false
-  );
-  const [variants, setVariants] = useState<ProductVariant[]>(
-    initialProduct?.variants && initialProduct.variants.length > 0
-      ? initialProduct.variants
-      : []
-  );
-
-  // Quantity offers (COD packs)
-  const [quantityOffers, setQuantityOffers] = useState<QuantityOffer[]>(
-    initialProduct?.quantityOffers && initialProduct.quantityOffers.length > 0
-      ? initialProduct.quantityOffers
-      : []
-  );
-
-  // Status & Publishing
-  const [productStatus, setProductStatus] = useState<ProductStatus>(
-    initialProduct?.productStatus || (initialProduct?.stock && initialProduct.stock > 0 ? "active" : "draft")
-  );
-  const [hiddenFromCatalog, setHiddenFromCatalog] = useState<boolean>(
-    initialProduct?.hiddenFromCatalog ?? false
-  );
-  const [publishedChannels, setPublishedChannels] = useState<string[]>(
-    initialProduct?.publishedChannels || ["Boutique en ligne", "WhatsApp Catalogue", "TikTok Ads"]
-  );
-
-  // SEO Preview
-  const [seoTitle, setSeoTitle] = useState(
-    initialProduct?.seo?.title || (name ? `${name} - Meilleur Prix en Afrique` : "Acheter en ligne")
-  );
-  const [seoDescription, setSeoDescription] = useState(
-    initialProduct?.seo?.description ||
-      "Commandez au meilleur prix avec livraison express et paiement sécurisé à la réception partout en Afrique de l'Ouest."
-  );
-  const [seoSlug, setSeoSlug] = useState(
-    initialProduct?.seo?.slug || (name ? name.toLowerCase().replace(/[^a-z0-9]+/g, "-") : "produit-cod")
-  );
-
-  // Sales summary (from initial or realistic mock)
-  const salesSummary = initialProduct?.salesSummary || {
-    unitsSold: 284,
-    unitsDelivered: 236,
-    deliveryRate: 83.1,
-    netSales: 5876400,
-  };
-
-  // Unsaved changes detection
-  const [isDirty, setIsDirty] = useState<boolean>(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  // Synchronisation avec les données enregistrées dans le store local si produit personnalisé
-  useEffect(() => {
-    if (typeof window !== "undefined" && isEditing && initialProduct?.id) {
-      try {
-        const saved = localStorage.getItem(`novika_store_products_${storeSlug}`);
-        if (saved) {
-          const list = JSON.parse(saved);
-          if (Array.isArray(list)) {
-            const found = list.find((p) => p && (p.id === initialProduct.id || p.slug === initialProduct.id));
-            if (found) {
-              if (found.name || found.title) setName(found.name || found.title);
-              if (found.description !== undefined) setDescription(found.description);
-              if (found.category) setCategory(found.category);
-              if (found.productType || found.type) setProductType(found.productType || found.type);
-              if (found.collection) setCollection(found.collection);
-              if (found.supplierId) setSupplierId(found.supplierId);
-              if (found.images && Array.isArray(found.images) && found.images.length > 0) setMediaList(found.images);
-              if (found.salePrice !== undefined) setSalePrice(found.salePrice);
-              if (found.compareAtPrice !== undefined) setCompareAtPrice(found.compareAtPrice);
-              if (found.costPrice !== undefined) setCostPrice(found.costPrice);
-              if (found.sku !== undefined) setSku(found.sku);
-              if (found.barcode !== undefined) setBarcode(found.barcode);
-              if (found.variants && Array.isArray(found.variants) && found.variants.length > 0) {
-                setVariants(found.variants);
-                setHasVariants(found.variants.length > 1);
-              }
-              if (found.productStatus) setProductStatus(found.productStatus);
-              if (found.hiddenFromCatalog !== undefined) setHiddenFromCatalog(Boolean(found.hiddenFromCatalog));
-            }
-          }
-        }
-      } catch {}
+  const handleSelectFromLibrary = (url: string) => {
+    if (mediaItems.length >= MAX_PRODUCT_IMAGES) {
+      setMediaErrorMessage(`Limite de ${MAX_PRODUCT_IMAGES} visuels atteinte.`);
+      return;
     }
-  }, [storeSlug, isEditing, initialProduct?.id]);
-
-  // Onglets du formulaire : Général vs Contenu du reçu
-  const [activeFormTab, setActiveFormTab] = useState<"general" | "receipt">("general");
-  const [receiptLanguage, setReceiptLanguage] = useState<string>("fr");
-  const [receiptContent, setReceiptContent] = useState<ProductReceiptContent>(
-    initialProduct?.receiptContent || {
-      ...DEFAULT_RECEIPT_CONTENT,
-      shortWhatsAppLine: "Pensez à bien refermer l'emballage après chaque usage.",
-    }
-  );
-
-  // Vérification de la catégorie pour avertissement santé
-  const isHealthCategory = useMemo(() => {
-    const c = `${category} ${productType}`.toLowerCase();
-    return (
-      c.includes("santé") ||
-      c.includes("nutrition") ||
-      c.includes("complément") ||
-      c.includes("minceur") ||
-      c.includes("détox") ||
-      c.includes("soin")
-    );
-  }, [category, productType]);
-
-  // Génération de brouillon IA pour le contenu du reçu
-  const handleGenerateAiReceiptDraft = () => {
-    setReceiptContent((prev) => ({
-      ...prev,
-      usageInstructions: `Prendre 1 dose chaque matin avec un grand verre d'eau. Respecter la posologie indiquée sur la boîte.`,
-      precautions: isHealthCategory
-        ? `Complément alimentaire naturel. Ne remplace pas une alimentation équilibrée. Tenir hors de portée des jeunes enfants. En cas de traitement en cours, demander l'avis d'un professionnel.`
-        : `Usage externe uniquement. Conserver dans un endroit sec à l'abri de la lumière.`,
-      warranty: `Garantie d'authenticité et de conformité fabricant 14 jours.`,
-      returnTerms: `Échange gratuit sous 48h ouvrées si le sceau de sécurité est intact et le colis retourné au livreur.`,
-      careAdvice: `À conserver dans son emballage d'origine fermé, à température ambiante (< 28°C).`,
-      thankYouNote: `Merci chaleureusement pour votre commande sur notre boutique ! Nous mettons tout en œuvre pour vous offrir des produits authentiques et un service de livraison irréprochable.`,
-      shortWhatsAppLine: `Bien agiter avant emploi et conserver à l'abri de la chaleur.`,
-      includeReviewLink: true,
-    }));
-    setIsDirty(true);
-    setToastMessage("Brouillon IA généré et validé sans allégation médicale !");
-    setTimeout(() => setToastMessage(null), 3500);
-  };
-
-  // Monitor modifications
-  useEffect(() => {
-    setIsDirty(true);
-  }, [
-    name,
-    description,
-    category,
-    productType,
-    collection,
-    supplierId,
-    tagsInput,
-    template,
-    salePrice,
-    compareAtPrice,
-    costPrice,
-    chargeTax,
-    trackStock,
-    sku,
-    barcode,
-    lowStockThreshold,
-    isPhysical,
-    weightKg,
-    variants,
-    quantityOffers,
-    productStatus,
-    publishedChannels,
-    seoTitle,
-    seoDescription,
-    seoSlug,
-  ]);
-
-  // Reset dirty flag on initial mount
-  useEffect(() => {
-    setIsDirty(false);
-  }, []);
-
-  // Calculated live margins
-  const marginFcfa = salePrice - costPrice;
-  const marginPct = salePrice > 0 ? ((marginFcfa / salePrice) * 100).toFixed(1) : "0.0";
-
-  // Handlers for variants
-  const handleAddVariant = () => {
-    const nextIdx = variants.length + 1;
-    setVariants((prev) => [
+    setMediaItems((prev) => [
       ...prev,
       {
-        id: `var_${Date.now()}`,
-        name: `Option #${nextIdx}`,
-        price: salePrice,
-        costPrice: costPrice,
-        stock: 20,
-        sku: `${sku || "VAR"}-${nextIdx}`,
-        barcode: "",
+        id: `lib-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+        url,
+        alt: `${name || "Produit"} - Médiathèque`,
+        isPrimary: prev.length === 0,
       },
     ]);
+    setIsMediaLibraryModalOpen(false);
+    showToast("Image ajoutée depuis la médiathèque.");
   };
 
-  const handleUpdateVariant = (id: string, field: keyof ProductVariant, val: any) => {
-    setVariants((prev) =>
-      prev.map((v) => (v.id === id ? { ...v, [field]: val } : v))
+  const handleCreateCollectionOnTheFly = () => {
+    const clean = newCollectionInput.trim();
+    if (!clean) return;
+    if (!collectionsList.includes(clean)) {
+      setCollectionsList((prev) => [...prev, clean]);
+    }
+    setSelectedCollection(clean);
+    setNewCollectionInput("");
+    setShowNewCollectionForm(false);
+    showToast(`Collection « ${clean} » créée et assignée.`);
+  };
+
+  const handleAddTag = (newTag: string) => {
+    const clean = newTag.trim();
+    if (clean && !tags.includes(clean)) {
+      setTags((prev) => [...prev, clean]);
+      setTagInput("");
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTags((prev) => prev.filter((t) => t !== tagToRemove));
+  };
+
+  const togglePixel = (pixelId: string) => {
+    setSelectedPixelIds((prev) =>
+      prev.includes(pixelId) ? prev.filter((id) => id !== pixelId) : [...prev, pixelId]
     );
   };
 
-  const handleDeleteVariant = (id: string) => {
-    if (variants.length <= 1) return;
-    setVariants((prev) => prev.filter((v) => v.id !== id));
+  // ========================================================
+  // ACTIONS AVANCÉES DU PRODUIT (Phase 17-D, 2)
+  // ========================================================
+  const handleDuplicateProduct = () => {
+    if (!confirm("Voulez-vous dupliquer cette fiche produit ?")) return;
+    const duplicated: Product = {
+      ...initialProduct!,
+      id: `prod_${Date.now()}`,
+      name: `${name} (Copie)`,
+      title: `${name} (Copie)`,
+      slug: `${seoSlug}-copie`,
+      status: "draft",
+      productStatus: "draft",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      salesSummary: { unitsSold: 0, unitsDelivered: 0, deliveryRate: 0, netSales: 0 },
+    };
+    const all = getShopProductsRaw(storeSlug);
+    saveShopProductsList(storeSlug, [duplicated, ...all]);
+    showToast("Produit dupliqué avec succès en brouillon.");
+    router.push(`/app/${storeSlug}/produits`);
   };
 
-  // Handlers for quantity offers
-  const handleAddOffer = () => {
-    const nextQty = quantityOffers.length + 1;
-    setQuantityOffers((prev) => [
-      ...prev,
-      {
-        id: `qo_${Date.now()}`,
-        quantity: nextQty,
-        unitPrice: Math.round(salePrice * 0.9),
-        totalPrice: Math.round(salePrice * 0.9 * nextQty),
-        badgeText: `Pack ${nextQty}`,
-      },
-    ]);
+  const handleArchiveProduct = () => {
+    if (!confirm("Voulez-vous archiver ce produit ? Il ne sera plus visible sur la vitrine.")) return;
+    setProductStatus("archived");
+    if (initialProduct?.id) {
+      const all = getShopProductsRaw(storeSlug);
+      const updated = all.map((p) =>
+        p.id === initialProduct.id ? { ...p, status: "archived" as const, productStatus: "archived" as const } : p
+      );
+      saveShopProductsList(storeSlug, updated);
+      showToast("Produit archivé avec succès.");
+      router.push(`/app/${storeSlug}/produits`);
+    }
   };
 
-  const handleUpdateOffer = (id: string, field: keyof QuantityOffer, val: any) => {
-    setQuantityOffers((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, [field]: val } : o))
-    );
+  const handleDeleteProduct = () => {
+    if (productOrderCount > 0) {
+      alert(
+        `Suppression impossible : Ce produit a déjà ${productOrderCount} commande(s) enregistrée(s). Pour préserver l'historique comptable et les statistiques, vous devez l'archiver au lieu de le supprimer.`
+      );
+      return;
+    }
+
+    if (confirm("Déplacer ce produit dans la corbeille ? Il sera restaurable pendant 30 jours.")) {
+      if (initialProduct?.id) {
+        softDeleteProduct(storeSlug, initialProduct.id);
+        showToast("Produit déplacé dans la corbeille.");
+        router.push(`/app/${storeSlug}/produits`);
+      }
+    }
   };
 
-  const handleDeleteOffer = (id: string) => {
-    setQuantityOffers((prev) => prev.filter((o) => o.id !== id));
-  };
-
-  // Toggle channel
-  const toggleChannel = (channel: string) => {
-    setPublishedChannels((prev) =>
-      prev.includes(channel) ? prev.filter((c) => c !== channel) : [...prev, channel]
-    );
-  };
-
-  // Save handler
+  // ========================================================
+  // ENREGISTREMENT ET VALIDATION ZOD / CLIENT
+  // ========================================================
   const handleSave = () => {
-    if (!confirmedImageRights) {
-      alert("Veuillez confirmer que vous avez les droits d'utilisation sur les visuels avant d'enregistrer.");
+    const cleanName = name.trim();
+    if (!cleanName) {
+      setTitleError("Le titre du produit est obligatoire.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    setTitleError(null);
+
+    if (compareAtPriceError) {
+      alert(compareAtPriceError);
       return;
     }
 
     const newId = initialProduct?.id || `prod_${Date.now()}`;
-    const productSlug = seoSlug || (name.trim() || "produit").toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    const numSalePrice = Number(salePrice) || 0;
-    const numCostPrice = Number(costPrice) || 0;
-    const numCompare = compareAtPrice ? Number(compareAtPrice) : undefined;
-    const numStock = variants.length > 0 ? variants.reduce((s, v) => s + (v.stock || 0), 0) : 10;
-    const numLowStock = Number(lowStockThreshold) || 10;
+    const productSlug =
+      seoSlug.trim() || cleanName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
+    const sanitizedDesc = sanitizeHtml(description).cleanHtml;
 
     const currentImages =
       mediaItems.length > 0
         ? mediaItems.map((m) => m.url)
-        : mediaList.length > 0
-        ? mediaList
         : ["/products/mushroom-coffee.png"];
 
-    const savedProduct: Product = {
+    const finalProduct: Product = {
       id: newId,
-      name: name.trim() || "Nouveau produit",
-      title: name.trim() || "Nouveau produit",
+      name: cleanName,
+      title: cleanName,
       slug: productSlug,
-      description,
+      description: sanitizedDesc,
       category,
-      collection,
+      collection: selectedCollection,
+      collections: [selectedCollection],
       productType,
       images: currentImages,
       mediaItems: mediaItems.length > 0 ? mediaItems : undefined,
       videoUrl: videoUrl.trim() || undefined,
-      salePrice: numSalePrice,
-      price: numSalePrice,
-      compareAtPrice: numCompare,
-      costPrice: numCostPrice,
-      marginAmount: numSalePrice - numCostPrice,
-      marginPercent: numSalePrice > 0 ? Math.round(((numSalePrice - numCostPrice) / numSalePrice) * 100) : 0,
+      salePrice: Math.round(Number(salePrice) || 0),
+      price: Math.round(Number(salePrice) || 0),
+      compareAtPrice: compareAtPrice ? Math.round(Number(compareAtPrice)) : undefined,
+      unitPriceLabel: unitPriceLabel.trim() || undefined,
+      costPrice: Math.round(Number(costPrice) || 0),
+      marginAmount: Math.round((Number(salePrice) || 0) - (Number(costPrice) || 0)),
+      marginPercent:
+        Number(salePrice) > 0
+          ? Math.round((((Number(salePrice) || 0) - (Number(costPrice) || 0)) / Number(salePrice)) * 100)
+          : 0,
       chargeTax,
+      trackQuantity: trackStock,
       trackStock,
       sku: sku || `SKU-${Date.now().toString().slice(-6)}`,
       barcode,
-      lowStockThreshold: numLowStock,
+      lowStockThreshold: Number(lowStockThreshold) || 10,
       isPhysical,
       weightKg,
-      stock: numStock,
-      availableStock: numStock,
-      physicalStock: numStock,
-      reservedStock: 0,
-      status: productStatus,
-      productStatus,
-      hiddenFromCatalog,
+      dimensions: {
+        lengthCm: packageLengthCm,
+        widthCm: packageWidthCm,
+        heightCm: packageHeightCm,
+      },
+      continueSellingWhenOutOfStock,
+      inventoryLocation,
+      stock: variants.length > 0 ? variants.reduce((s, v) => s + (v.stock || 0), 0) : availableStock,
+      availableStock: variants.length > 0 ? variants.reduce((s, v) => s + (v.stock || 0), 0) : availableStock,
+      physicalStock: variants.length > 0 ? variants.reduce((s, v) => s + (v.stock || 0), 0) : physicalStock,
+      reservedStock,
+      status: (productStatus as ProductStatus) || "active",
+      productStatus: (productStatus as ProductStatus) || "active",
+      hiddenFromCatalog: !publishToStorefront,
       outOfStockVisibilityOverride,
-      stockStatus: numStock === 0 ? "out_of_stock" : numStock <= numLowStock ? "low_stock" : "in_stock",
       supplierId,
-      variants,
+      productOptions: hasVariants ? productOptions : undefined,
+      variants: hasVariants ? variants : [],
       quantityOffers,
+      customFields,
       badgesConfig: initialProduct?.badgesConfig || {
         hasCountdown: false,
-        countdownMinutes: 60,
-        hasComparePrice: false,
-        hasLowStockWarning: false,
-        lowStockThreshold: 10,
-        hasQuantityPacks: false,
+        countdownMinutes: 30,
+        hasComparePrice: Boolean(compareAtPrice),
+        hasLowStockWarning: true,
+        lowStockThreshold: Number(lowStockThreshold) || 10,
+        hasQuantityPacks: quantityOffers.length > 0,
       },
-      receiptContent,
-      salesVelocity: initialProduct?.salesVelocity || 0,
-      daysOfStock: numStock > 0 ? 30 : 0,
-      abcClass: "A",
-      publishedChannels,
+      tags,
+      template: themeTemplate,
+      publishedChannels: [
+        publishToStorefront ? "Vitrine de la boutique" : null,
+        publishToMetaCatalog ? "Catalogue Meta" : null,
+      ].filter(Boolean) as string[],
       seo: {
-        title: seoTitle,
+        title: seoTitle || cleanName,
         description: seoDescription,
         slug: productSlug,
       },
+      auditTrail: [
+        {
+          id: `aud-${Date.now()}`,
+          action: isEditing ? "Mise à jour des prix, stock et variantes" : "Création du produit",
+          performedBy: currentUser?.name || "Admin",
+          timestamp: new Date().toISOString(),
+        },
+        ...auditTrail,
+      ],
       createdAt: initialProduct?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
+    const allProducts = getShopProductsRaw(storeSlug);
+    let updatedList: Product[];
+    if (isEditing) {
+      updatedList = allProducts.map((p) => (p.id === newId ? finalProduct : p));
+    } else {
+      updatedList = [finalProduct, ...allProducts];
+    }
+    saveShopProductsList(storeSlug, updatedList);
+
     if (typeof window !== "undefined") {
-      const storageKey = `novika_store_products_${storeSlug}`;
-      const saved = localStorage.getItem(storageKey);
-      let list: Product[] = [];
-      if (saved) {
-        try {
-          list = JSON.parse(saved);
-        } catch {}
-      }
-      if (isEditing) {
-        list = list.map((p) => (p.id === newId ? savedProduct : p));
-      } else {
-        list = [savedProduct, ...list];
-      }
-      localStorage.setItem(storageKey, JSON.stringify(list));
+      localStorage.removeItem(DRAFT_KEY);
     }
 
     setIsDirty(false);
-    setToastMessage("Fiche produit enregistrée avec succès ! Redirection...");
-    setTimeout(() => {
-      router.push(`/app/${storeSlug}/produits`);
-    }, 800);
+    showToast("Produit enregistré avec succès !");
+    router.push(`/app/${storeSlug}/produits`);
   };
 
-  const handleDeleteProduct = () => {
-    if (!initialProduct) return;
-    if (!canTrashProduct(activeRole)) {
-      alert("Action non autorisée pour votre rôle.");
-      return;
+  const handleCancel = () => {
+    if (isDirty) {
+      if (!confirm("Voulez-vous abandonner vos modifications non enregistrées ?")) return;
     }
-    const confirmed = window.confirm(
-      `Êtes-vous sûr de vouloir déplacer « ${name || "ce produit"} » dans la corbeille ? Il sera immédiatement masqué de votre vitrine.`
-    );
-    if (!confirmed) return;
-
-    softDeleteProduct(storeSlug, initialProduct.id, activeRole);
     router.push(`/app/${storeSlug}/produits`);
   };
 
   return (
-    <div className="space-y-6 pb-28">
-      {/* Navigation 5 Onglets */}
+    <div className="space-y-6 pb-24">
+      {/* Toast de confirmation */}
+      {toastMessage && (
+        <div
+          id="product-form-toast"
+          className="fixed top-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl bg-[#111111] text-white text-xs font-bold shadow-2xl animate-in slide-in-from-top-2 duration-200"
+        >
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Navigation sous-menu Produits */}
       <ProductsNavTabs storeSlug={storeSlug} />
 
-      {/* Barre supérieure : Retour & Titre */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* ======================================================== */}
+      {/* BARRE EN HAUT : RETOUR, TITRE & ACTIONS FIXES */}
+      {/* ======================================================== */}
+      <div
+        id="product-form-top-bar"
+        className="sticky top-0 z-30 bg-[#FAF8F5]/95 backdrop-blur-md py-3 -mx-4 px-4 sm:-mx-6 sm:px-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#E6E0D4] shadow-2xs"
+      >
         <div className="flex items-center gap-3">
           <Link
             href={`/app/${storeSlug}/produits`}
-            className="p-2 rounded-xl bg-white border border-[#E6E0D4] hover:bg-[#F3EFE6] transition-colors text-[#111111]"
-            title="Retour à la liste"
+            className="p-2.5 rounded-xl bg-white border border-[#E6E0D4] hover:bg-[#F3EFE6] transition-colors text-[#111111]"
+            title="Retour à la liste des produits"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#666660]">
-                {isEditing ? "Édition Produit" : "Nouveau Produit"}
-              </span>
-              <span
-                className={cn(
-                  "text-[10px] px-2 py-0.5 rounded-full font-bold",
-                  productStatus === "active"
-                    ? "bg-emerald-100 text-emerald-800"
-                    : productStatus === "draft"
-                    ? "bg-amber-100 text-amber-800"
-                    : "bg-stone-200 text-stone-700"
-                )}
-              >
-                {productStatus === "active" ? "Actif" : productStatus === "draft" ? "Brouillon" : "Archivé"}
-              </span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-[#111111] tracking-tight">
-              {name || "Nouveau produit"}
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#7A7A7A]">
+              {isEditing ? "Modification du produit" : "Nouveau produit"}
+            </span>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-[#111111] tracking-tight line-clamp-1">
+              {name || "Ajouter un produit"}
             </h1>
           </div>
         </div>
 
         <div className="flex items-center gap-2.5">
-          {/* Bouton Voir sur la boutique avec Icône d'œil */}
-          <div className="relative">
+          {initialProduct && (
             <a
-              id="btn-product-view-public"
-              href={
-                productStatus === "active"
-                  ? `/boutique/${storeSlug}/produit/${initialProduct?.id || "prod_01"}`
-                  : `/boutique/${storeSlug}/apercu/produit/${initialProduct?.id || "prod_01"}`
-              }
+              id="btn-product-preview-store"
+              href={`/boutique/${storeSlug}/produits/${initialProduct.slug || initialProduct.id}`}
               target="_blank"
               rel="noopener noreferrer"
-              title={
-                isDirty
-                  ? "Enregistrez pour voir les changements"
-                  : productStatus === "active"
-                  ? "Voir sur la boutique"
-                  : "Brouillon : l'aperçu est privé"
-              }
-              aria-label={`Voir ${name || "le produit"} sur la boutique (s'ouvre dans un nouvel onglet)`}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-black/[0.1] bg-white text-xs font-bold text-[#111111] hover:bg-black/[0.04] transition-all shadow-2xs min-h-[36px]"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#E6E0D4] bg-white text-xs font-semibold text-[#111111] hover:bg-[#F3EFE6] transition-colors"
             >
-              <Eye className="w-4 h-4 text-[#666660]" />
-              <span>Voir sur la boutique</span>
+              <Eye className="w-3.5 h-3.5 text-[#666660]" />
+              <span>Aperçu vitrine</span>
             </a>
-            {isDirty && (
-              <span
-                id="badge-unsaved-warning"
-                className="absolute -bottom-5 right-0 text-[10px] text-amber-800 font-bold whitespace-nowrap bg-amber-50 px-2 py-0.5 rounded border border-amber-200 shadow-2xs"
-              >
-                Enregistrez pour voir les changements
-              </span>
-            )}
-          </div>
+          )}
 
           <button
+            type="button"
+            onClick={handleCancel}
+            className="px-4 py-2 rounded-xl border border-[#E6E0D4] bg-white text-xs font-semibold text-[#666660] hover:bg-[#F3EFE6] transition-colors"
+          >
+            Annuler
+          </button>
+
+          <button
+            type="button"
+            id="btn-save-product-top"
             onClick={handleSave}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black transition-all shadow-sm cursor-pointer min-h-[36px]"
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-all shadow-sm"
           >
             <Save className="w-4 h-4" />
             <span>Enregistrer</span>
@@ -815,1211 +1018,1450 @@ export function ProductFormClient({
         </div>
       </div>
 
-      {/* Toast de confirmation */}
-      {toastMessage && (
-        <div className="fixed top-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-lg animate-in fade-in slide-in-from-top-4">
-          <CheckCircle2 className="w-4 h-4" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
-
-      {/* SÉLECTEUR D'ONGLETS : FICHE PRODUIT vs CONTENU DU REÇU */}
-      <div className="flex items-center gap-2 border-b border-black/[0.08] pb-1 pt-2">
-        <button
-          type="button"
-          id="tab-btn-product-general"
-          onClick={() => setActiveFormTab("general")}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer",
-            activeFormTab === "general"
-              ? "bg-[#111111] text-[#FAF8F5] shadow-xs"
-              : "text-[#666660] hover:text-[#111111] hover:bg-black/[0.03]"
-          )}
-        >
-          <Package className="w-4 h-4" />
-          <span>Fiche Produit (Général & Tarifs)</span>
-        </button>
-
-        <button
-          type="button"
-          id="tab-product-receipt-content"
-          onClick={() => setActiveFormTab("receipt")}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer relative",
-            activeFormTab === "receipt"
-              ? "bg-[#111111] text-[#FAF8F5] shadow-xs"
-              : "text-[#666660] hover:text-[#111111] hover:bg-black/[0.03]"
-          )}
-        >
-          <ReceiptIcon className="w-4 h-4" />
-          <span>Contenu du reçu</span>
-          <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-emerald-100 text-emerald-800">
-            Nouveau
-          </span>
-        </button>
-      </div>
-
-      {/* ONGLET 1 : FICHE PRODUIT STANDARD (DISPOSITION 2 COLONNES STYLE SHOPIFY) */}
-      {activeFormTab === "general" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* ======================================================== */}
+      {/* DISPOSITION 2 COLONNES (STYLE SHOPIFY / NOVIKA) */}
+      {/* ======================================================== */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* ======================================================== */}
-        {/* COLONNE PRINCIPALE (2 Tiers) */}
+        {/* COLONNE PRINCIPALE (lg:col-span-2) */}
         {/* ======================================================== */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Bloc 1 : Titre et Description */}
-          <div className="rounded-[20px] border border-black/[0.08] bg-[#FAF8F5] p-5 shadow-2xs space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-[#111111] mb-1">
+          {/* 1) TITRE DU PRODUIT */}
+          <div className="rounded-3xl border border-[#E6E0D4] bg-white p-6 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-bold text-[#111111]">
                 Titre du produit <span className="text-rose-500">*</span>
               </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  if (!isEditing) {
-                    setSeoTitle(`${e.target.value} - Meilleur Prix`);
-                    setSeoSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-"));
-                  }
-                }}
-                placeholder="Ex: Café Bio Champignon Vitality (Pack 2 boîtes)"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] bg-white text-sm font-semibold text-[#111111] placeholder:text-[#999990] focus:outline-none focus:border-[#111111]"
-              />
+              {name.trim().length > 0 && (
+                <span className="text-[11px] text-[#7A7A7A]">
+                  {name.trim().length} caractères
+                </span>
+              )}
             </div>
-
-            <div>
-              <label className="block text-xs font-bold text-[#111111] mb-1">
-                Description (Éditeur riche)
-              </label>
-              <div className="border border-black/[0.08] rounded-xl overflow-hidden bg-white">
-                <div className="flex items-center gap-1 p-2 border-b border-black/[0.06] bg-[#F5F2EA] text-xs font-bold text-[#666660]">
-                  <button type="button" className="px-2 py-1 rounded hover:bg-black/5 font-bold">B</button>
-                  <button type="button" className="px-2 py-1 rounded hover:bg-black/5 italic">I</button>
-                  <button type="button" className="px-2 py-1 rounded hover:bg-black/5 underline">U</button>
-                  <span className="w-px h-4 bg-black/10 mx-1" />
-                  <button type="button" className="px-2 py-1 rounded hover:bg-black/5">• Liste</button>
-                  <button type="button" className="px-2 py-1 rounded hover:bg-black/5">1. Num</button>
-                  <span className="w-px h-4 bg-black/10 mx-1" />
-                  <button type="button" className="px-2 py-1 rounded hover:bg-black/5">🔗 Lien</button>
-                  <button type="button" className="px-2 py-1 rounded hover:bg-black/5">📷 Média</button>
-                </div>
-                <textarea
-                  rows={6}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full p-3.5 text-xs text-[#111111] focus:outline-none resize-y placeholder:text-[#999990]"
-                  placeholder="Décrivez les bénéfices clés, ingrédients, mode d'utilisation et réassurance COD..."
-                />
-              </div>
-            </div>
+            <input
+              type="text"
+              id="input-product-title"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (titleError) setTitleError(null);
+                if (!isEditing && !seoTitle) {
+                  setSeoTitle(`${e.target.value} - Meilleur Prix`);
+                  setSeoSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-"));
+                }
+              }}
+              placeholder="Ex: Sérum Éclat Vitamine C & Niacinamide"
+              className={cn(
+                "w-full px-4 py-3 rounded-2xl border text-sm font-semibold text-[#111111] placeholder:text-[#999990] bg-[#FAF8F5] focus:outline-none focus:bg-white focus:border-[#111111] transition-colors",
+                titleError ? "border-rose-400 bg-rose-50/50" : "border-[#E6E0D4]"
+              )}
+            />
+            {titleError && (
+              <p className="text-xs text-rose-600 font-semibold flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{titleError}</span>
+              </p>
+            )}
           </div>
 
-          {/* Bloc 2 : Médias (Images & Vidéos) - Prompt 15 */}
-          <div className="rounded-[20px] border border-black/[0.08] bg-[#FAF8F5] p-5 shadow-2xs space-y-4">
-            {/* Hidden file inputs */}
+          {/* 2) DESCRIPTION */}
+          <div className="rounded-3xl border border-[#E6E0D4] bg-white p-6 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="block text-xs font-bold text-[#111111]">
+                  Description
+                </label>
+                <p className="text-xs text-[#7A7A7A] mt-0.5">
+                  Bénéfices du produit, conseils d'utilisation et réassurance pour le paiement à la livraison.
+                </p>
+              </div>
+            </div>
+
+            <RichDescriptionEditor
+              value={description}
+              onChange={(val) => setDescription(val)}
+              onOpenAiGenerator={() => {
+                router.push(`/app/${storeSlug}/produits/nouveau-ia`);
+              }}
+            />
+          </div>
+
+          {/* 3) SUPPORTS MULTIMÉDIAS */}
+          <div className="rounded-3xl border border-[#E6E0D4] bg-white p-6 shadow-2xs space-y-4">
             <input
               ref={fileInputRef}
               type="file"
               multiple
-              accept="image/jpeg,image/png,image/webp,image/avif"
+              accept="image/jpeg,image/png,image/webp,image/gif,video/mp4"
               className="hidden"
               onChange={(e) => {
                 if (e.target.files) handleImageFiles(e.target.files);
                 e.target.value = "";
               }}
             />
-            <input
-              ref={replaceFileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/avif"
-              className="hidden"
-              onChange={handleReplaceFileChange}
-            />
 
-            {/* En-tête Médias & Compteur */}
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-bold text-[#111111]">Médias du produit</h3>
-                  <span
-                    data-testid="media-counter"
-                    className={cn(
-                      "px-2 py-0.5 rounded-full text-[11px] font-bold tracking-wide",
-                      mediaItems.length >= MAX_PRODUCT_IMAGES
-                        ? "bg-amber-600 text-white"
-                        : "bg-[#111111] text-white"
-                    )}
-                  >
-                    {mediaItems.length} / {MAX_PRODUCT_IMAGES} images
+                  <h3 className="text-sm font-bold text-[#111111]">Supports multimédias</h3>
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#FAF8F5] border border-[#E6E0D4] text-[#111111]">
+                    {mediaItems.length} / {MAX_PRODUCT_IMAGES}
                   </span>
                 </div>
-                <p className="text-xs text-[#666660] mt-0.5">
-                  Glissez-déposez jusqu'à {MAX_PRODUCT_IMAGES} visuels (JPG, PNG, WebP, max 5 Mo). La première image est l'image principale.
+                <p className="text-xs text-[#7A7A7A] mt-0.5">
+                  La première image est la photo principale de la fiche vitrine et du panier.
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
                 <button
                   type="button"
+                  id="btn-upload-media-file"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] text-xs font-semibold text-[#111111] hover:bg-[#EFECE6] transition-colors"
+                >
+                  <Upload className="w-3.5 h-3.5 text-[#666660]" />
+                  <span>Importer</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsMediaLibraryModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] text-xs font-semibold text-[#111111] hover:bg-[#EFECE6] transition-colors"
+                >
+                  <Library className="w-3.5 h-3.5 text-[#666660]" />
+                  <span>Médiathèque</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => setShowVideoInput(!showVideoInput)}
                   className={cn(
-                    "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-colors cursor-pointer",
-                    showVideoInput || videoUrl
-                      ? "border-[#111111] bg-[#111111] text-white"
-                      : "border-black/[0.08] bg-white text-[#111111] hover:bg-black/[0.03]"
+                    "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-colors",
+                    videoUrl
+                      ? "border-emerald-500 bg-emerald-50 text-emerald-800 font-bold"
+                      : "border-[#E6E0D4] bg-[#FAF8F5] text-[#111111] hover:bg-[#EFECE6]"
                   )}
                 >
                   <Video className="w-3.5 h-3.5" />
-                  <span>{showVideoInput || videoUrl ? "Vidéo active" : "Ajouter vidéo"}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    const url = prompt("Entrez l'URL de l'image (ex: https://.../image.webp) :");
-                    if (url && url.trim()) {
-                      if (mediaItems.length >= MAX_PRODUCT_IMAGES) {
-                        alert(`Limite de ${MAX_PRODUCT_IMAGES} images atteinte.`);
-                        return;
-                      }
-                      setMediaItems((prev) => {
-                        const updated: ProductMediaItem[] = [
-                          ...prev,
-                          {
-                            id: `img-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-                            url: url.trim(),
-                            alt: `${name.trim() || "Produit"} - Vue ${prev.length + 1}`,
-                            isPrimary: prev.length === 0,
-                          },
-                        ];
-                        setMediaList(updated.map((m) => m.url));
-                        return updated;
-                      });
-                    }
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-black/[0.08] bg-white text-xs font-bold text-[#111111] hover:bg-black/[0.03] cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Ajouter URL</span>
+                  <span>{videoUrl ? "Vidéo active" : "Ajouter vidéo"}</span>
                 </button>
               </div>
             </div>
 
-            {/* Avertissement réglementaire & conformité publicitaire (Non bloquant) */}
-            <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-50/90 border border-amber-200/80 text-amber-900 text-xs">
-              <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-              <div className="space-y-0.5">
-                <span className="font-bold">Recommandation conformité & plateformes publicitaires :</span>
-                <p className="text-[11px] text-amber-800 leading-relaxed">
-                  Vérifiez que vos visuels respectent les règles des plateformes publicitaires et la loi (allégations de santé, avant/après non trompeurs, droits d'auteur).
-                </p>
-              </div>
-            </div>
-
-            {/* Message d'erreur média ponctuel */}
-            {mediaErrorMessage && (
-              <div className="flex items-center justify-between p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs">
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                  <span>{mediaErrorMessage}</span>
+            {showVideoInput && (
+              <div className="p-3 rounded-2xl bg-[#FAF8F5] border border-[#E6E0D4] space-y-2 animate-in fade-in">
+                <label className="block text-xs font-bold text-[#111111]">
+                  Lien vidéo (YouTube ou Vimeo)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="https://www.youtube.com/watch?v=... ou https://vimeo.com/..."
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
+                    className="flex-1 px-3 py-2 text-xs rounded-xl border border-[#E6E0D4] bg-white focus:outline-none"
+                  />
+                  {videoUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setVideoUrl("")}
+                      className="px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl"
+                    >
+                      Effacer
+                    </button>
+                  )}
                 </div>
+              </div>
+            )}
+
+            {mediaErrorMessage && (
+              <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-center justify-between">
+                <span>{mediaErrorMessage}</span>
                 <button
                   type="button"
                   onClick={() => setMediaErrorMessage(null)}
-                  className="text-rose-600 hover:text-rose-900 font-bold ml-2"
+                  className="font-bold text-rose-900 ml-2"
                 >
                   Fermer
                 </button>
               </div>
             )}
 
-            {/* Barre d'action groupée (si sélection multiple) */}
-            {selectedMediaIds.length > 0 && (
-              <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#111111] text-white text-xs animate-in fade-in duration-150">
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={toggleSelectAllMedia}
-                    className="hover:underline font-bold"
-                  >
-                    {selectedMediaIds.length === mediaItems.length
-                      ? "Tout désélectionner"
-                      : "Tout sélectionner"}
-                  </button>
-                  <span className="opacity-40">|</span>
-                  <span className="font-medium">
-                    {selectedMediaIds.length} image(s) sélectionnée(s)
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={deleteSelectedMedia}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold transition-colors cursor-pointer"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Supprimer la sélection</span>
-                </button>
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (e.dataTransfer.files) handleImageFiles(e.dataTransfer.files);
+              }}
+              className="border-2 border-dashed border-[#E6E0D4] hover:border-[#111111] bg-[#FAF8F5] rounded-3xl p-8 text-center cursor-pointer transition-colors group"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-white border border-[#E6E0D4] flex items-center justify-center mx-auto text-[#7A7A7A] group-hover:text-[#111111] group-hover:border-[#111111] transition-colors mb-3">
+                <UploadCloud className="w-6 h-6" />
               </div>
-            )}
+              <p className="text-sm font-bold text-[#111111]">
+                Glissez-déposez vos fichiers ici, ou cliquez pour parcourir
+              </p>
+              <p className="text-xs text-[#7A7A7A] mt-1">
+                Formats acceptés : JPG, PNG, WebP, GIF, MP4 (max 5 Mo par fichier). Métadonnées EXIF retirées automatiquement.
+              </p>
+            </div>
 
-            {/* Queue d'upload avec progression & statut d'erreur */}
-            {uploadQueue.length > 0 && (
-              <div className="space-y-2">
-                {uploadQueue.map((q) => (
+            {mediaItems.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3 pt-2">
+                {mediaItems.map((item, idx) => (
                   <div
-                    key={q.id}
+                    key={item.id}
                     className={cn(
-                      "p-3 rounded-xl border flex items-center justify-between gap-3 text-xs",
-                      q.error
-                        ? "bg-rose-50/70 border-rose-200 text-rose-900"
-                        : "bg-white border-black/[0.08] text-[#111111]"
+                      "group relative rounded-2xl border border-[#E6E0D4] bg-white overflow-hidden aspect-square flex items-center justify-center shadow-2xs transition-all",
+                      item.isPrimary && "ring-2 ring-[#111111]"
                     )}
                   >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-bold truncate max-w-xs">{q.fileName}</span>
-                        <span className="font-mono text-[10px] text-[#666660]">
-                          {q.error ? "Échec" : `${q.progress}%`}
-                        </span>
-                      </div>
-                      <div className="w-full h-1.5 bg-black/[0.06] rounded-full overflow-hidden">
-                        <div
-                          className={cn(
-                            "h-full transition-all duration-300",
-                            q.error ? "bg-rose-500" : "bg-[#111111]"
-                          )}
-                          style={{ width: `${q.progress}%` }}
-                        />
-                      </div>
-                      {q.error && (
-                        <p className="text-[11px] text-rose-600 mt-1">{q.error}</p>
-                      )}
-                    </div>
+                    <img
+                      src={item.url}
+                      alt={item.alt || name}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
 
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {q.error && (
+                    {item.isPrimary && (
+                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#111111] text-white shadow-xs">
+                        Principale
+                      </span>
+                    )}
+
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
+                      <div className="flex justify-end gap-1">
                         <button
                           type="button"
-                          onClick={() => handleRetryUpload(q.id)}
-                          className="px-2.5 py-1 rounded-lg bg-rose-600 text-white font-bold text-[11px] hover:bg-rose-700 flex items-center gap-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingAltItem({ id: item.id, alt: item.alt || "" });
+                          }}
+                          className="p-1 rounded-lg bg-white/20 hover:bg-white text-white hover:text-black transition-colors"
+                          title="Modifier le texte alternatif (Alt)"
                         >
-                          <RefreshCw className="w-3 h-3" />
-                          <span>Réessayer</span>
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteMedia(idx);
+                          }}
+                          className="p-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white transition-colors"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      {!item.isPrimary && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSetPrimaryMedia(idx);
+                          }}
+                          className="w-full py-1 text-[10px] font-bold rounded-lg bg-white text-black hover:bg-[#FAF8F5] transition-colors"
+                        >
+                          Définir principale
                         </button>
                       )}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveQueueItem(q.id)}
-                        className="p-1 rounded-lg text-[#666660] hover:text-rose-600"
-                        title="Annuler"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
                     </div>
                   </div>
                 ))}
               </div>
             )}
+          </div>
 
-            {/* Grille des médias (Glisser-déposer desktop, boutons monter/descendre mobile, remplacement, variantes) */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5">
-              {mediaItems.map((med, idx) => {
-                const isSelected = selectedMediaIds.includes(med.id);
-                const isPrimary = idx === 0;
+          {/* 4) CATÉGORIE DU PRODUIT */}
+          <div className="rounded-3xl border border-[#E6E0D4] bg-white p-6 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="block text-xs font-bold text-[#111111]">
+                  Catégorie du catalogue
+                </label>
+                <p className="text-xs text-[#7A7A7A] mt-0.5">
+                  Aide à classer le produit et à alimenter le catalogue Meta.
+                </p>
+              </div>
+            </div>
 
+            <div className="relative">
+              <input
+                type="text"
+                id="input-product-category"
+                value={category}
+                onFocus={() => setIsCategoryPickerOpen(true)}
+                onChange={(e) => {
+                  setCategory(e.target.value);
+                  setCategorySearchQuery(e.target.value);
+                  setIsCategoryPickerOpen(true);
+                }}
+                placeholder="Ex: Soins du Visage, Santé & Nutrition..."
+                className="w-full px-4 py-2.5 rounded-2xl border border-[#E6E0D4] bg-[#FAF8F5] text-xs font-semibold text-[#111111] focus:outline-none focus:border-[#111111]"
+              />
+
+              {isCategoryPickerOpen && (
+                <div className="absolute top-full left-0 right-0 mt-1.5 p-2 rounded-2xl border border-[#E6E0D4] bg-white shadow-xl z-30 max-h-48 overflow-y-auto">
+                  <div className="text-[10px] uppercase font-bold text-[#7A7A7A] px-2 py-1">
+                    Suggestions de catégories
+                  </div>
+                  {filteredCategories.map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => {
+                        setCategory(cat);
+                        setIsCategoryPickerOpen(false);
+                      }}
+                      className={cn(
+                        "w-full text-left px-3 py-1.5 rounded-xl text-xs font-medium transition-colors hover:bg-[#FAF8F5] flex items-center justify-between",
+                        category === cat ? "bg-[#FAF8F5] font-bold text-[#111111]" : "text-[#4A4A4A]"
+                      )}
+                    >
+                      <span>{cat}</span>
+                      {category === cat && <Check className="w-3.5 h-3.5 text-black" />}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setIsCategoryPickerOpen(false)}
+                    className="w-full text-center py-1 mt-1 text-[11px] text-[#7A7A7A] hover:underline"
+                  >
+                    Fermer la liste
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 5) APERÇU SUR LES MOTEURS DE RECHERCHE */}
+          <div className="rounded-3xl border border-[#E6E0D4] bg-white p-6 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-[#111111]">Aperçu sur les moteurs de recherche</h3>
+                <p className="text-xs text-[#7A7A7A] mt-0.5">
+                  Rendu en direct de votre produit dans les résultats de recherche Google.
+                </p>
+              </div>
+              <button
+                type="button"
+                id="btn-edit-seo"
+                onClick={() => setIsSeoCustomOpen(!isSeoCustomOpen)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] text-xs font-semibold text-[#111111] hover:bg-[#EFECE6] transition-colors"
+              >
+                <Pencil className="w-3.5 h-3.5 text-[#666660]" />
+                <span>{isSeoCustomOpen ? "Fermer l'édition" : "Modifier le référencement"}</span>
+              </button>
+            </div>
+
+            <div className="rounded-2xl border border-[#E6E0D4] bg-white p-4 space-y-1.5 font-sans">
+              <div className="flex items-center gap-2 text-xs text-[#202124]">
+                <div className="w-4 h-4 rounded-full bg-emerald-600 flex items-center justify-center text-white text-[9px] font-bold">
+                  N
+                </div>
+                <div className="flex items-center gap-1 truncate text-[11px] text-[#5f6368]">
+                  <span>https://novika.store</span>
+                  <span>›</span>
+                  <span>boutique</span>
+                  <span>›</span>
+                  <span>{storeSlug}</span>
+                  <span>›</span>
+                  <span className="font-semibold">{seoSlug || "mon-produit"}</span>
+                </div>
+              </div>
+
+              <h4 className="text-base text-[#1a0dab] font-medium hover:underline cursor-pointer line-clamp-1">
+                {seoTitle || name || "Titre du produit - Boutique officielle"}
+              </h4>
+
+              <p className="text-xs text-[#4d5156] line-clamp-2 leading-relaxed">
+                {seoDescription ||
+                  "Commandez en ligne avec livraison express et paiement sécurisé à la réception partout en Afrique de l'Ouest."}
+              </p>
+            </div>
+
+            {isSeoCustomOpen && (
+              <div className="space-y-3 pt-2 border-t border-[#E6E0D4] animate-in fade-in">
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-xs font-bold text-[#111111]">Titre de la page</label>
+                    <span className="text-[10px] text-[#7A7A7A]">{seoTitle.length} / 70 max</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={seoTitle}
+                    onChange={(e) => setSeoTitle(e.target.value)}
+                    placeholder="Titre pour les moteurs de recherche"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] text-[#111111] focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-xs font-bold text-[#111111]">Méta-description</label>
+                    <span className="text-[10px] text-[#7A7A7A]">{seoDescription.length} / 160 max</span>
+                  </div>
+                  <textarea
+                    rows={3}
+                    value={seoDescription}
+                    onChange={(e) => setSeoDescription(e.target.value)}
+                    placeholder="Description attrayante pour le moteur de recherche..."
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] text-[#111111] focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#111111] mb-1">Adresse URL simplifiée (Slug)</label>
+                  <input
+                    type="text"
+                    value={seoSlug}
+                    onChange={(e) => setSeoSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, ""))}
+                    placeholder="mon-produit-phare"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] text-[#111111] focus:outline-none font-mono"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ======================================================== */}
+          {/* 6) CARTE PRIX (Phase 17-C, 1) */}
+          {/* ======================================================== */}
+          <div className="rounded-3xl border border-[#E6E0D4] bg-white p-6 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-[#111111]">Tarification</h3>
+                <p className="text-xs text-[#7A7A7A] mt-0.5">
+                  Montants en FCFA (sans décimales, entiers).
+                </p>
+              </div>
+              <span className="px-2.5 py-1 rounded-xl bg-[#FAF8F5] border border-[#E6E0D4] text-xs font-bold text-[#111111]">
+                FCFA
+              </span>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-[#111111] mb-1">
+                Prix de vente <span className="text-rose-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  step="1"
+                  id="input-product-price"
+                  value={salePrice}
+                  onChange={(e) => setSalePrice(Math.round(Number(e.target.value)))}
+                  className="w-full px-4 py-2.5 text-sm font-black rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] text-[#111111] focus:outline-none focus:bg-white"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-[#7A7A7A]">
+                  FCFA
+                </span>
+              </div>
+            </div>
+
+            {/* Ligne repliable : Prix d'affichage supplémentaires */}
+            <div className="border-t border-[#F0EBE0] pt-2">
+              <button
+                type="button"
+                onClick={() => setShowExtraPricing(!showExtraPricing)}
+                className="flex items-center gap-1.5 text-xs font-bold text-[#111111] hover:underline"
+              >
+                <span>Prix d'affichage supplémentaires</span>
+                {showExtraPricing ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+
+              {showExtraPricing && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 animate-in fade-in">
+                  <div>
+                    <label className="block text-xs font-bold text-[#111111] mb-1">
+                      Prix de comparaison (barré avant réduction)
+                    </label>
+                    <input
+                      type="number"
+                      step="1"
+                      id="input-compare-at-price"
+                      value={compareAtPrice || ""}
+                      onChange={(e) =>
+                        setCompareAtPrice(e.target.value ? Math.round(Number(e.target.value)) : undefined)
+                      }
+                      placeholder="Ex: 25000"
+                      className={cn(
+                        "w-full px-3 py-2 text-xs font-semibold rounded-xl border bg-[#FAF8F5] text-[#111111] focus:outline-none",
+                        compareAtPriceError ? "border-rose-400 bg-rose-50/50" : "border-[#E6E0D4]"
+                      )}
+                    />
+                    {compareAtPriceError && (
+                      <p className="text-[11px] text-rose-600 font-semibold mt-1">
+                        {compareAtPriceError}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#111111] mb-1">
+                      Prix unitaire d'affichage (optionnel)
+                    </label>
+                    <input
+                      type="text"
+                      value={unitPriceLabel}
+                      onChange={(e) => setUnitPriceLabel(e.target.value)}
+                      placeholder="Ex: 5 000 FCFA pour 100 ml"
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] text-[#111111] focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2 pt-1">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={chargeTax}
+                        onChange={(e) => setChargeTax(e.target.checked)}
+                        className="rounded border-[#E6E0D4] text-black focus:ring-black"
+                      />
+                      <span className="text-xs font-semibold text-[#4A4A4A]">
+                        Facturer la taxe sur ce produit (activé seulement si la boutique gère une TVA légale)
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Ligne Coût / Bénéfice / Marge (Admin/Co-admin uniquement) */}
+            {canViewFinancials ? (
+              <div className="pt-3 border-t border-[#F0EBE0] bg-[#FAF8F5] -mx-6 -mb-6 p-6 rounded-b-3xl grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <span className="text-[10px] text-[#7A7A7A] block font-bold uppercase tracking-wider">
+                    Coût par article (Prix de revient)
+                  </span>
+                  <input
+                    type="number"
+                    step="1"
+                    id="input-product-cost"
+                    value={costPrice}
+                    onChange={(e) => setCostPrice(Math.round(Number(e.target.value)))}
+                    className="w-full mt-1 px-3 py-1.5 text-xs font-bold rounded-lg border border-[#E6E0D4] bg-white text-[#111111]"
+                  />
+                </div>
+                <div>
+                  <span className="text-[10px] text-[#7A7A7A] block font-bold uppercase tracking-wider">
+                    Bénéfice estimé
+                  </span>
+                  <div className="text-sm font-extrabold text-emerald-700 py-1.5">
+                    +{formatFcfa(salePrice - costPrice)}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-[10px] text-[#7A7A7A] block font-bold uppercase tracking-wider">
+                    Marge brute
+                  </span>
+                  <div className="text-sm font-extrabold text-emerald-700 py-1.5">
+                    {salePrice > 0
+                      ? (((salePrice - costPrice) / salePrice) * 100).toFixed(1)
+                      : "0"}{" "}
+                    %
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 rounded-2xl bg-[#FAF8F5] text-xs text-[#7A7A7A] italic flex items-center gap-2">
+                <Lock className="w-3.5 h-3.5 text-[#7A7A7A]" />
+                <span>Les marges et coûts d'achat sont réservés à l'administration.</span>
+              </div>
+            )}
+          </div>
+
+          {/* ======================================================== */}
+          {/* 7) OFFRES PAR PRODUIT (FORMULES DE QUANTITÉ COD) (Phase 17-C, 5) */}
+          {/* ======================================================== */}
+          <div className="rounded-3xl border border-[#E6E0D4] bg-white p-6 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-[#111111]">Offres groupées (Packs COD)</h3>
+                <p className="text-xs text-[#7A7A7A] mt-0.5">
+                  Augmentez le panier moyen en incitant les clients à commander 2 ou 3 unités à la livraison.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const nextQty = quantityOffers.length + 1;
+                  setQuantityOffers((prev) => [
+                    ...prev,
+                    {
+                      id: `off-${Date.now()}`,
+                      quantity: nextQty,
+                      unitPrice: Math.round((salePrice * 0.8) / 100) * 100,
+                      totalPrice: Math.round((salePrice * 0.8 * nextQty) / 100) * 100,
+                      badgeText: `Méga Pack (-20%)`,
+                    },
+                  ]);
+                }}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#FAF8F5] border border-[#E6E0D4] text-xs font-bold text-[#111111] hover:bg-[#EFECE6]"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Ajouter une formule</span>
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {quantityOffers.map((offer, idx) => {
+                const regularTotal = salePrice * offer.quantity;
+                const savings = regularTotal > offer.totalPrice ? regularTotal - offer.totalPrice : 0;
                 return (
                   <div
-                    key={med.id}
-                    draggable
-                    onDragStart={() => setDraggedMediaIndex(idx)}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={() => {
-                      if (draggedMediaIndex !== null && draggedMediaIndex !== idx) {
-                        moveMedia(draggedMediaIndex, idx);
-                        setDraggedMediaIndex(null);
-                      }
-                    }}
-                    className={cn(
-                      "group relative rounded-2xl border bg-white flex flex-col justify-between overflow-hidden transition-all shadow-2xs select-none",
-                      isSelected
-                        ? "border-[#111111] ring-2 ring-[#111111]"
-                        : "border-black/[0.08] hover:border-black/20",
-                      draggedMediaIndex === idx && "opacity-40"
-                    )}
+                    key={offer.id}
+                    className="p-3.5 rounded-2xl border border-[#E6E0D4] bg-[#FAF8F5] grid grid-cols-1 sm:grid-cols-4 gap-3 items-center"
                   >
-                    {/* Zone Visuel Image */}
-                    <div className="relative aspect-square w-full bg-[#EFECE6] overflow-hidden">
-                      <ProductImage
-                        src={med.url}
-                        alt={med.alt || `${name} - Image ${idx + 1}`}
-                        fill
-                        fallbackLabel={`#${idx + 1}`}
-                        className="w-full h-full object-cover"
+                    <div>
+                      <span className="text-[10px] text-[#7A7A7A] block font-bold">Quantité</span>
+                      <input
+                        type="number"
+                        min="1"
+                        value={offer.quantity}
+                        onChange={(e) => {
+                          const q = Number(e.target.value);
+                          setQuantityOffers((prev) =>
+                            prev.map((o, i) => (i === idx ? { ...o, quantity: q } : o))
+                          );
+                        }}
+                        className="w-full px-2 py-1 text-xs font-bold rounded-lg border border-[#E6E0D4] bg-white"
                       />
-
-                      {/* Checkbox sélection */}
-                      <button
-                        type="button"
-                        onClick={() => toggleSelectMedia(med.id)}
-                        className="absolute top-2 left-2 z-10 p-1 rounded-lg bg-white/90 backdrop-blur-xs text-[#111111] shadow-xs cursor-pointer hover:bg-white"
-                        title={isSelected ? "Désélectionner" : "Sélectionner"}
-                      >
-                        {isSelected ? (
-                          <CheckSquare className="w-4 h-4 text-[#111111]" />
-                        ) : (
-                          <Square className="w-4 h-4 text-black/40" />
-                        )}
-                      </button>
-
-                      {/* Badge Image Principale */}
-                      {isPrimary && (
-                        <span className="absolute top-2 right-2 px-2 py-0.5 rounded-lg bg-[#111111] text-white text-[9px] font-bold shadow-xs z-10">
-                          Principale
-                        </span>
-                      )}
-
-                      {/* Bouton rapide "Définir principale" si non-principale */}
-                      {!isPrimary && (
-                        <button
-                          type="button"
-                          onClick={() => setAsPrimary(idx)}
-                          className="absolute top-2 right-2 px-2 py-0.5 rounded-lg bg-white/90 hover:bg-[#111111] hover:text-white text-[9px] font-bold text-[#111111] shadow-xs opacity-0 group-hover:opacity-100 transition-opacity z-10 cursor-pointer"
-                          title="Définir comme image principale"
-                        >
-                          ★ Définir principale
-                        </button>
-                      )}
-
-                      {/* Poignée de drag & drop au centre au hover */}
-                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                        <span className="px-2 py-1 rounded-md bg-black/70 text-white text-[10px] font-semibold flex items-center gap-1">
-                          <GripVertical className="w-3 h-3" />
-                          Glisser pour réordonner
-                        </span>
-                      </div>
                     </div>
 
-                    {/* Barre de contrôles sous l'image : Monter, Descendre, Remplacer, Alt, Supprimer */}
-                    <div className="p-2 space-y-2 bg-[#FAF8F5] border-t border-black/[0.06]">
-                      <div className="flex items-center justify-between text-xs">
-                        {/* Boutons Monter / Descendre (accessibles mobile & desktop) */}
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            disabled={idx === 0}
-                            onClick={() => moveMedia(idx, idx - 1)}
-                            className="p-1 rounded-md border border-black/[0.08] bg-white hover:bg-black/[0.04] disabled:opacity-30 disabled:pointer-events-none transition-colors"
-                            title="Monter d'un rang"
-                          >
-                            <ArrowUp className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            disabled={idx === mediaItems.length - 1}
-                            onClick={() => moveMedia(idx, idx + 1)}
-                            className="p-1 rounded-md border border-black/[0.08] bg-white hover:bg-black/[0.04] disabled:opacity-30 disabled:pointer-events-none transition-colors"
-                            title="Descendre d'un rang"
-                          >
-                            <ArrowDown className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                    <div>
+                      <span className="text-[10px] text-[#7A7A7A] block font-bold">Prix total du pack</span>
+                      <input
+                        type="number"
+                        step="1"
+                        value={offer.totalPrice}
+                        onChange={(e) => {
+                          const p = Number(e.target.value);
+                          setQuantityOffers((prev) =>
+                            prev.map((o, i) => (i === idx ? { ...o, totalPrice: p } : o))
+                          );
+                        }}
+                        className="w-full px-2 py-1 text-xs font-bold rounded-lg border border-[#E6E0D4] bg-white text-emerald-700"
+                      />
+                    </div>
 
-                        {/* Remplacer, Alt, Supprimer */}
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setReplaceTargetIndex(idx);
-                              replaceFileInputRef.current?.click();
-                            }}
-                            className="p-1 rounded-md border border-black/[0.08] bg-white hover:bg-black/[0.04] text-[#111111] transition-colors"
-                            title="Remplacer cette image"
-                          >
-                            <RefreshCw className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setEditingAltItem({ id: med.id, alt: med.alt || "" })}
-                            className="p-1 rounded-md border border-black/[0.08] bg-white hover:bg-black/[0.04] text-[#111111] transition-colors"
-                            title="Modifier le texte alternatif (SEO/Accessibilité)"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => deleteMedia(idx)}
-                            className="p-1 rounded-md border border-rose-200 bg-white hover:bg-rose-50 text-rose-600 transition-colors"
-                            title="Supprimer cette image"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
+                    <div>
+                      <span className="text-[10px] text-[#7A7A7A] block font-bold">Badge promotionnel</span>
+                      <input
+                        type="text"
+                        value={offer.badgeText || ""}
+                        onChange={(e) => {
+                          const t = e.target.value;
+                          setQuantityOffers((prev) =>
+                            prev.map((o, i) => (i === idx ? { ...o, badgeText: t } : o))
+                          );
+                        }}
+                        placeholder="Ex: Le plus populaire"
+                        className="w-full px-2 py-1 text-xs rounded-lg border border-[#E6E0D4] bg-white"
+                      />
+                    </div>
 
-                      {/* Association optionnelle avec une variante */}
-                      {variants.length > 0 && (
-                        <div className="pt-1 border-t border-black/[0.04]">
-                          <select
-                            value={med.variantId || ""}
-                            onChange={(e) => updateMediaVariant(idx, e.target.value)}
-                            className="w-full text-[10px] font-medium py-1 px-1.5 rounded-lg border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
-                          >
-                            <option value="">Toutes les variantes</option>
-                            {variants.map((v) => (
-                              <option key={v.id} value={v.id}>
-                                Liée à : {v.title || v.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
+                    <div className="flex items-center justify-between sm:justify-end gap-2 pt-2 sm:pt-4">
+                      {savings > 0 && (
+                        <span className="text-[11px] font-bold text-emerald-700">
+                          Éco. {formatFcfa(savings)}
+                        </span>
                       )}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setQuantityOffers((prev) => prev.filter((_, i) => i !== idx))
+                        }
+                        className="p-1 rounded-lg text-rose-600 hover:bg-rose-50"
+                        title="Supprimer cette offre"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                 );
               })}
+            </div>
+          </div>
 
-              {/* Zone de dépôt (Dropzone d'upload) */}
-              {mediaItems.length < MAX_PRODUCT_IMAGES && (
-                <div
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (e.dataTransfer.files) {
-                      handleImageFiles(e.dataTransfer.files);
-                    }
-                  }}
-                  onClick={() => fileInputRef.current?.click()}
-                  className="rounded-2xl border-2 border-dashed border-black/[0.15] hover:border-[#111111] bg-white/60 hover:bg-white aspect-square flex flex-col items-center justify-center p-3 text-center cursor-pointer transition-colors group"
-                >
-                  <div className="w-10 h-10 rounded-full bg-black/[0.04] group-hover:bg-[#111111] group-hover:text-white flex items-center justify-center transition-colors mb-2 text-[#888880]">
-                    <UploadCloud className="w-5 h-5" />
-                  </div>
-                  <span className="text-xs font-bold text-[#111111]">
-                    Glisser des photos
-                  </span>
-                  <span className="text-[10px] text-[#666660] mt-0.5">
-                    ou parcourir
-                  </span>
-                  <span className="text-[9px] text-[#888880] mt-1 font-mono">
-                    JPG, PNG, WebP · 5 Mo max
-                  </span>
-                </div>
-              )}
+          {/* ======================================================== */}
+          {/* 8) CARTE STOCK & INVENTAIRE (Phase 17-C, 2) */}
+          {/* ======================================================== */}
+          <div className="rounded-3xl border border-[#E6E0D4] bg-white p-6 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-[#111111]">Stock & Inventaire</h3>
+                <p className="text-xs text-[#7A7A7A] mt-0.5">
+                  Source unique des niveaux de stock synchronisée avec l'inventaire en direct.
+                </p>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  id="toggle-track-stock"
+                  checked={trackStock}
+                  onChange={(e) => setTrackStock(e.target.checked)}
+                  className="rounded border-[#E6E0D4] text-black focus:ring-black h-4 w-4"
+                />
+                <span className="text-xs font-bold text-[#111111]">Stock suivi</span>
+              </label>
             </div>
 
-            {/* Slide Vidéo optionnel (YouTube, Vimeo, MP4 direct) */}
-            {(showVideoInput || videoUrl) && (
-              <div className="p-4 rounded-xl border border-black/[0.08] bg-white space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Video className="w-4 h-4 text-[#111111]" />
-                    <label className="text-xs font-bold text-[#111111]">
-                      Vidéo de démonstration du produit (slide dans la galerie)
-                    </label>
+            {trackStock && (
+              <div className="space-y-4 pt-1">
+                {/* Emplacement de stockage */}
+                <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-[#E6E0D4] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-bold text-[#111111] block">
+                        {inventoryLocation}
+                      </span>
+                      <span className="text-[11px] text-[#7A7A7A]">
+                        Emplacement principal de traitement des commandes
+                      </span>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-xl text-xs font-extrabold bg-white border border-[#E6E0D4] text-emerald-800">
+                      {availableStock} dispo
+                    </span>
                   </div>
-                  {videoUrl && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setVideoUrl("");
-                        setShowVideoInput(false);
-                      }}
-                      className="text-xs text-rose-600 hover:underline"
-                    >
-                      Supprimer la vidéo
-                    </button>
+
+                  <div className="grid grid-cols-3 gap-2 pt-1 border-t border-[#E6E0D4]/60">
+                    <div>
+                      <span className="text-[10px] text-[#7A7A7A] block font-semibold">En main (Physique)</span>
+                      <input
+                        type="number"
+                        min="0"
+                        id="input-physical-stock"
+                        value={physicalStock}
+                        onChange={(e) => setPhysicalStock(Math.max(0, Number(e.target.value)))}
+                        className="w-full mt-0.5 px-2.5 py-1 text-xs font-bold rounded-lg border border-[#E6E0D4] bg-white"
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-[#7A7A7A] block font-semibold">Réservé (Commandes)</span>
+                      <div className="text-xs font-bold text-[#111111] py-1.5 px-2 bg-stone-100 rounded-lg">
+                        {reservedStock}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-[#7A7A7A] block font-semibold">Disponible à la vente</span>
+                      <div className="text-xs font-bold text-emerald-700 py-1.5 px-2 bg-emerald-50 rounded-lg border border-emerald-200">
+                        {availableStock}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ligne repliable : Plus de détails */}
+                <div className="border-t border-[#F0EBE0] pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowStockDetails(!showStockDetails)}
+                    className="flex items-center gap-1.5 text-xs font-bold text-[#111111] hover:underline"
+                  >
+                    <span>Plus de détails (SKU, code-barres, rupture)</span>
+                    {showStockDetails ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  </button>
+
+                  {showStockDetails && (
+                    <div className="space-y-3 pt-3 animate-in fade-in">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-[11px] font-bold text-[#111111] mb-1">SKU</label>
+                          <input
+                            type="text"
+                            value={sku}
+                            onChange={(e) => setSku(e.target.value)}
+                            placeholder="CF-MUSH-01"
+                            className="w-full px-3 py-2 text-xs rounded-xl border border-[#E6E0D4] bg-[#FAF8F5]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-[#111111] mb-1">Code-barres (EAN/UPC)</label>
+                          <input
+                            type="text"
+                            value={barcode}
+                            onChange={(e) => setBarcode(e.target.value)}
+                            placeholder="69382910..."
+                            className="w-full px-3 py-2 text-xs rounded-xl border border-[#E6E0D4] bg-[#FAF8F5]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-[#111111] mb-1">Seuil stock bas</label>
+                          <input
+                            type="number"
+                            value={lowStockThreshold}
+                            onChange={(e) => setLowStockThreshold(Number(e.target.value))}
+                            className="w-full px-3 py-2 text-xs rounded-xl border border-[#E6E0D4] bg-[#FAF8F5]"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Continuer à vendre en cas de rupture de stock */}
+                      <div className="p-3 rounded-2xl bg-[#FAF8F5] border border-[#E6E0D4] space-y-1">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            id="toggle-continue-selling"
+                            checked={continueSellingWhenOutOfStock}
+                            onChange={(e) => setContinueSellingWhenOutOfStock(e.target.checked)}
+                            className="rounded border-[#E6E0D4] text-black focus:ring-black h-4 w-4"
+                          />
+                          <span className="text-xs font-bold text-[#111111]">
+                            Continuer à vendre en cas de rupture de stock
+                          </span>
+                        </label>
+                        <p className="text-[11px] text-[#7A7A7A] pl-6">
+                          Si cette case est activée, la commande est acceptée à stock zéro et passe automatiquement en « En attente de stock » (conformité Prompt 16-b).
+                        </p>
+                      </div>
+
+                      {/* Surcharge Prompt 16-b */}
+                      <div>
+                        <label className="block text-xs font-bold text-[#111111] mb-1">
+                          Comportement en cas de rupture sur la vitrine
+                        </label>
+                        <select
+                          value={outOfStockVisibilityOverride}
+                          onChange={(e) => setOutOfStockVisibilityOverride(e.target.value as any)}
+                          className="w-full sm:w-2/3 px-3 py-2 text-xs rounded-xl border border-[#E6E0D4] bg-white font-semibold"
+                        >
+                          <option value="store_default">Suivre le réglage de la boutique (Par défaut)</option>
+                          <option value="always_show">Toujours afficher (avec mention Rupture)</option>
+                          <option value="always_hide">Toujours masquer de la vitrine en cas de rupture</option>
+                        </select>
+                      </div>
+                    </div>
                   )}
                 </div>
+              </div>
+            )}
+          </div>
 
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    value={videoUrl}
-                    onChange={(e) => setVideoUrl(e.target.value)}
-                    placeholder="https://www.youtube.com/watch?v=..., Vimeo, ou lien direct .mp4"
-                    className="flex-1 px-3 py-2 text-xs rounded-xl border border-black/[0.08] bg-[#FAF8F5] text-[#111111] focus:outline-none focus:border-[#111111]"
-                  />
-                </div>
+          {/* ======================================================== */}
+          {/* 9) CARTE EXPÉDITION (Phase 17-C, 3) */}
+          {/* ======================================================== */}
+          <div className="rounded-3xl border border-[#E6E0D4] bg-white p-6 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-[#111111]">Expédition & Colis</h3>
+                <p className="text-xs text-[#7A7A7A] mt-0.5">
+                  La livraison est offerte et gratuite pour le client lors de la validation COD.
+                </p>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  id="toggle-is-physical"
+                  checked={isPhysical}
+                  onChange={(e) => setIsPhysical(e.target.checked)}
+                  className="rounded border-[#E6E0D4] text-black focus:ring-black h-4 w-4"
+                />
+                <span className="text-xs font-bold text-[#111111]">Produit physique</span>
+              </label>
+            </div>
 
-                {videoUrl && (
-                  <div className="text-[11px] flex items-center gap-2 text-[#666660]">
-                    {(() => {
-                      const parsed = parseVideoUrl(videoUrl);
-                      if (parsed.type === "youtube") {
-                        return (
-                          <span className="text-emerald-700 font-bold flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                            Format YouTube valide
-                          </span>
-                        );
-                      }
-                      if (parsed.type === "vimeo") {
-                        return (
-                          <span className="text-emerald-700 font-bold flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                            Format Vimeo valide
-                          </span>
-                        );
-                      }
-                      if (parsed.type === "mp4") {
-                        return (
-                          <span className="text-emerald-700 font-bold flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                            Format vidéo direct valide
-                          </span>
-                        );
-                      }
-                      return (
-                        <span className="text-amber-700 font-bold flex items-center gap-1">
-                          <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
-                          Lien vidéo non reconnu (fournissez un lien YouTube, Vimeo ou .mp4)
-                        </span>
-                      );
-                    })()}
+            {isPhysical && (
+              <div className="border-t border-[#F0EBE0] pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPackageDimensions(!showPackageDimensions)}
+                  className="flex items-center gap-1.5 text-xs font-bold text-[#111111] hover:underline"
+                >
+                  <span>Poids et dimensions du colis (optionnel)</span>
+                  {showPackageDimensions ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
+
+                {showPackageDimensions && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 animate-in fade-in">
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#111111] mb-1">Poids (kg)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={weightKg}
+                        onChange={(e) => setWeightKg(Number(e.target.value))}
+                        className="w-full px-3 py-1.5 text-xs rounded-xl border border-[#E6E0D4] bg-[#FAF8F5]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#111111] mb-1">Longueur (cm)</label>
+                      <input
+                        type="number"
+                        value={packageLengthCm}
+                        onChange={(e) => setPackageLengthCm(Number(e.target.value))}
+                        className="w-full px-3 py-1.5 text-xs rounded-xl border border-[#E6E0D4] bg-[#FAF8F5]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#111111] mb-1">Largeur (cm)</label>
+                      <input
+                        type="number"
+                        value={packageWidthCm}
+                        onChange={(e) => setPackageWidthCm(Number(e.target.value))}
+                        className="w-full px-3 py-1.5 text-xs rounded-xl border border-[#E6E0D4] bg-[#FAF8F5]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#111111] mb-1">Hauteur (cm)</label>
+                      <input
+                        type="number"
+                        value={packageHeightCm}
+                        onChange={(e) => setPackageHeightCm(Number(e.target.value))}
+                        className="w-full px-3 py-1.5 text-xs rounded-xl border border-[#E6E0D4] bg-[#FAF8F5]"
+                      />
+                    </div>
                   </div>
                 )}
               </div>
             )}
-
-            {/* Modal édition Texte Alternatif (SEO/Accessibilité) */}
-            {editingAltItem && (
-              <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-                <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl border border-black/[0.08] space-y-4 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-[#111111]">
-                      Texte alternatif de l'image (alt)
-                    </h4>
-                    <button
-                      type="button"
-                      onClick={() => setEditingAltItem(null)}
-                      className="text-[#666660] hover:text-[#111111]"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <p className="text-xs text-[#666660]">
-                    Décrivez ce que montre l'image pour le référencement naturel (SEO) et les lecteurs d'écran.
-                  </p>
-                  <input
-                    type="text"
-                    value={editingAltItem.alt}
-                    onChange={(e) =>
-                      setEditingAltItem((prev) => (prev ? { ...prev, alt: e.target.value } : null))
-                    }
-                    placeholder="Ex: Montre connectée noire vue de face avec écran allumé"
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-black/[0.12] focus:outline-none focus:border-[#111111]"
-                  />
-                  <div className="flex items-center justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setEditingAltItem(null)}
-                      className="px-3 py-1.5 rounded-xl border border-black/[0.08] text-xs font-bold text-[#666660] hover:bg-black/[0.03]"
-                    >
-                      Annuler
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => saveAltText(editingAltItem.id, editingAltItem.alt)}
-                      className="px-4 py-1.5 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black/80"
-                    >
-                      Enregistrer
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Case de confirmation obligatoire des droits d'images */}
-            <div className="pt-2 border-t border-black/[0.06]">
-              <label className="flex items-start gap-2.5 text-xs text-[#111111] cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={confirmedImageRights}
-                  onChange={(e) => setConfirmedImageRights(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 rounded border-black/20 text-[#111111] focus:ring-[#111111] cursor-pointer"
-                />
-                <span className="font-medium text-[#444440] leading-snug">
-                  Je confirme avoir le droit d'utiliser ces images et vidéos pour la vente de ce produit.
-                </span>
-              </label>
-            </div>
           </div>
 
-          {/* Bloc 3 : Tarification & Calculateur de marge */}
-          <div className="rounded-[20px] border border-black/[0.08] bg-[#FAF8F5] p-5 shadow-2xs space-y-4">
-            <h3 className="text-sm font-bold text-[#111111]">Tarification</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-[#111111] mb-1">
-                  Prix de vente <span className="text-rose-500">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={salePrice}
-                    onChange={(e) => setSalePrice(Number(e.target.value))}
-                    className="w-full px-3.5 py-2 text-xs font-bold rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none focus:border-[#111111]"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[#888880]">
-                    FCFA
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#111111] mb-1">
-                  Prix avant réduction
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={compareAtPrice || ""}
-                    onChange={(e) => setCompareAtPrice(Number(e.target.value) || undefined)}
-                    placeholder="Prix barré"
-                    className="w-full px-3.5 py-2 text-xs font-bold rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none focus:border-[#111111]"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[#888880]">
-                    FCFA
-                  </span>
-                </div>
-              </div>
-
-              {!isCloser && (
-                <div>
-                  <label className="block text-xs font-bold text-[#111111] mb-1">
-                    Coût par article (PUMP)
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      value={costPrice}
-                      onChange={(e) => setCostPrice(Number(e.target.value))}
-                      className="w-full px-3.5 py-2 text-xs font-bold rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none focus:border-[#111111]"
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[#888880]">
-                      FCFA
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Marge calculée en direct */}
-            {!isCloser && (
-              <div className="rounded-xl border border-black/[0.06] bg-emerald-50/60 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                <div>
-                  <span className="font-bold text-emerald-900 block">
-                    Marge brute estimée par article :
-                  </span>
-                  <span className="text-[11px] text-emerald-700">
-                    Les clients ne voient pas ce coût. Il alimente le module Finances COD.
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <div className="text-sm font-black text-emerald-950">
-                      +{formatFcfa(marginFcfa)}
-                    </div>
-                    <div className="text-[10px] font-bold text-emerald-800">
-                      Marge : {marginPct}%
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Facturer la taxe */}
-            <div className="pt-2 border-t border-black/[0.06]">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={chargeTax}
-                  onChange={(e) => setChargeTax(e.target.checked)}
-                  className="rounded border-gray-300 text-black focus:ring-black cursor-pointer"
-                />
-                <span className="text-xs font-semibold text-[#111111]">
-                  Facturer la taxe sur ce produit (TVA zone UEMOA)
-                </span>
-              </label>
-            </div>
-          </div>
-
-          {/* Bloc 4 : Inventaire et Suivi du stock */}
-          <div className="rounded-[20px] border border-black/[0.08] bg-[#FAF8F5] p-5 shadow-2xs space-y-4">
-            <h3 className="text-sm font-bold text-[#111111]">Inventaire & Stock</h3>
-            <div className="space-y-3">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={trackStock}
-                  onChange={(e) => setTrackStock(e.target.checked)}
-                  className="rounded border-gray-300 text-black focus:ring-black cursor-pointer"
-                />
-                <span className="text-xs font-semibold text-[#111111]">
-                  Suivre la quantité en stock pour ce produit
-                </span>
-              </label>
-
-              {trackStock && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-                  <div>
-                    <label className="block text-xs font-bold text-[#111111] mb-1">
-                      SKU (Unité de gestion)
-                    </label>
-                    <input
-                      type="text"
-                      value={sku}
-                      onChange={(e) => setSku(e.target.value)}
-                      placeholder="Ex: CF-MUSH-02"
-                      className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-[#111111] mb-1">
-                      Code-barres (ISBN, UPC, GTIN)
-                    </label>
-                    <input
-                      type="text"
-                      value={barcode}
-                      onChange={(e) => setBarcode(e.target.value)}
-                      placeholder="Ex: 693847291024"
-                      className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-[#111111] mb-1">
-                      Seuil de stock bas
-                    </label>
-                    <input
-                      type="number"
-                      value={lowStockThreshold}
-                      onChange={(e) => setLowStockThreshold(Number(e.target.value))}
-                      className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Surcharge visibilité rupture (Prompt 16-b) */}
-              <div className="pt-3 border-t border-black/[0.06]">
-                <label className="block text-xs font-bold text-[#111111] mb-1">
-                  Comportement en cas de rupture sur la vitrine (Surcharge produit)
-                </label>
-                <select
-                  value={outOfStockVisibilityOverride}
-                  onChange={(e) =>
-                    setOutOfStockVisibilityOverride(e.target.value as OutOfStockProductOverride)
-                  }
-                  data-testid="select-out-of-stock-override"
-                  className="w-full sm:w-2/3 px-3 py-2 text-xs font-semibold rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
-                >
-                  <option value="store_default">
-                    Suivre le réglage de la boutique (Par défaut)
-                  </option>
-                  <option value="always_show">
-                    Toujours afficher (avec mention Rupture)
-                  </option>
-                  <option value="always_hide">
-                    Toujours masquer de la vitrine en cas de rupture
-                  </option>
-                </select>
-                <p className="text-[10px] text-[#888880] mt-1">
-                  Permet de déroger exceptionnellement à la règle générale de la boutique pour cet article.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Bloc 5 : Expédition & Produit Physique */}
-          <div className="rounded-[20px] border border-black/[0.08] bg-[#FAF8F5] p-5 shadow-2xs space-y-4">
-            <h3 className="text-sm font-bold text-[#111111]">Expédition</h3>
-            <div className="space-y-3">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isPhysical}
-                  onChange={(e) => setIsPhysical(e.target.checked)}
-                  className="rounded border-gray-300 text-black focus:ring-black cursor-pointer"
-                />
-                <span className="text-xs font-semibold text-[#111111]">
-                  C'est un produit physique (nécessite une livraison coursier/relais)
-                </span>
-              </label>
-
-              {isPhysical && (
-                <div className="w-full sm:w-1/2 pt-1">
-                  <label className="block text-xs font-bold text-[#111111] mb-1">
-                    Poids de l'article (utilisé pour les tarifs d'expédition)
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      step="0.05"
-                      value={weightKg}
-                      onChange={(e) => setWeightKg(Number(e.target.value))}
-                      className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[#888880]">
-                      kg
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Bloc 6 : Variantes (Options, Tailles, Combinaisons) */}
-          <div className="rounded-[20px] border border-black/[0.08] bg-[#FAF8F5] p-5 shadow-2xs space-y-4">
+          {/* ======================================================== */}
+          {/* 10) CARTE VARIANTES (Phase 17-C, 4) */}
+          {/* ======================================================== */}
+          <div className="rounded-3xl border border-[#E6E0D4] bg-white p-6 shadow-2xs space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-bold text-[#111111]">Variantes</h3>
-                <p className="text-xs text-[#666660]">
-                  Gérez les options (ex: taille, couleur, formule) avec prix, stock et SKU par variante.
+                <p className="text-xs text-[#7A7A7A] mt-0.5">
+                  Ce produit est-il décliné en plusieurs options (taille, couleur, etc.) ?
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={handleAddVariant}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-black/[0.08] bg-white text-xs font-bold text-[#111111] hover:bg-black/[0.03]"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Ajouter une variante</span>
-              </button>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  id="toggle-has-variants"
+                  checked={hasVariants}
+                  onChange={(e) => {
+                    setHasVariants(e.target.checked);
+                    if (e.target.checked && productOptions.length === 0) {
+                      handleAddOption();
+                    }
+                  }}
+                  className="rounded border-[#E6E0D4] text-black focus:ring-black h-4 w-4"
+                />
+                <span className="text-xs font-bold text-[#111111]">Ce produit a des variantes</span>
+              </label>
             </div>
 
-            <div className="space-y-3">
-              {variants.map((v) => (
-                <div
-                  key={v.id}
-                  className="rounded-xl border border-black/[0.06] bg-white p-3.5 space-y-3"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <input
-                      type="text"
-                      value={v.name}
-                      onChange={(e) => handleUpdateVariant(v.id, "name", e.target.value)}
-                      placeholder="Nom de la variante"
-                      className="font-bold text-xs text-[#111111] px-2.5 py-1.5 rounded-lg border border-black/[0.08] bg-[#FAF8F5] flex-1"
-                    />
-                    {variants.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteVariant(v.id)}
-                        className="text-rose-600 hover:text-rose-700 p-1"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                    <div>
-                      <span className="text-[10px] text-[#888880] font-bold block mb-0.5">Prix (FCFA)</span>
-                      <input
-                        type="number"
-                        value={v.price}
-                        onChange={(e) => handleUpdateVariant(v.id, "price", Number(e.target.value))}
-                        className="w-full px-2 py-1.5 rounded-lg border border-black/[0.08] text-xs font-semibold"
-                      />
-                    </div>
-                    {!isCloser && (
-                      <div>
-                        <span className="text-[10px] text-[#888880] font-bold block mb-0.5">Coût (FCFA)</span>
-                        <input
-                          type="number"
-                          value={v.costPrice}
-                          onChange={(e) => handleUpdateVariant(v.id, "costPrice", Number(e.target.value))}
-                          className="w-full px-2 py-1.5 rounded-lg border border-black/[0.08] text-xs font-semibold"
-                        />
+            {hasVariants && (
+              <div className="space-y-4 pt-1">
+                {/* Options (max 3) */}
+                <div className="space-y-3">
+                  {productOptions.map((opt, optIndex) => (
+                    <div
+                      key={opt.id}
+                      className="p-4 rounded-2xl border border-[#E6E0D4] bg-[#FAF8F5] space-y-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <GripVertical className="w-4 h-4 text-[#7A7A7A]" />
+                          <input
+                            type="text"
+                            value={opt.name}
+                            onChange={(e) => {
+                              const n = e.target.value;
+                              setProductOptions((prev) =>
+                                prev.map((o) => (o.id === opt.id ? { ...o, name: n } : o))
+                              );
+                            }}
+                            placeholder="Nom de l'option (ex: Taille, Couleur)"
+                            className="px-3 py-1 text-xs font-bold rounded-lg border border-[#E6E0D4] bg-white"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveOption(opt.id)}
+                          className="text-xs font-bold text-rose-600 hover:underline"
+                        >
+                          Supprimer
+                        </button>
                       </div>
-                    )}
-                    <div>
-                      <span className="text-[10px] text-[#888880] font-bold block mb-0.5">Stock dispo</span>
-                      <input
-                        type="number"
-                        value={v.stock}
-                        onChange={(e) => handleUpdateVariant(v.id, "stock", Number(e.target.value))}
-                        className="w-full px-2 py-1.5 rounded-lg border border-black/[0.08] text-xs font-semibold"
-                      />
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-[#888880] font-bold block mb-0.5">SKU</span>
-                      <input
-                        type="text"
-                        value={v.sku || ""}
-                        onChange={(e) => handleUpdateVariant(v.id, "sku", e.target.value)}
-                        placeholder="SKU-VAR"
-                        className="w-full px-2 py-1.5 rounded-lg border border-black/[0.08] text-xs font-semibold"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Bloc 7 : Offres de Quantité COD (Packs) */}
-          <div className="rounded-[20px] border border-black/[0.08] bg-[#FAF8F5] p-5 shadow-2xs space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-[#111111]">Offres de Quantité COD</h3>
-                <p className="text-xs text-[#666660]">
-                  Multi-packs avec réductions pour doper le panier moyen sur vos formulaires de commande rapide.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={handleAddOffer}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-black/[0.08] bg-white text-xs font-bold text-[#111111] hover:bg-black/[0.03]"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Ajouter une offre</span>
-              </button>
-            </div>
+                      {/* Valeurs saisies en étiquettes */}
+                      <div>
+                        <div className="flex gap-2 mb-2">
+                          <input
+                            type="text"
+                            value={newOptionValueInputs[opt.id] || ""}
+                            onChange={(e) =>
+                              setNewOptionValueInputs((prev) => ({
+                                ...prev,
+                                [opt.id]: e.target.value,
+                              }))
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === ",") {
+                                e.preventDefault();
+                                handleAddOptionValue(opt.id, newOptionValueInputs[opt.id] || "");
+                              }
+                            }}
+                            placeholder="Tapez une valeur (ex: S, M, Rouge) et appuyez sur Entrée..."
+                            className="flex-1 px-3 py-1.5 text-xs rounded-xl border border-[#E6E0D4] bg-white"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleAddOptionValue(opt.id, newOptionValueInputs[opt.id] || "")
+                            }
+                            className="px-3 py-1.5 rounded-xl bg-[#111111] text-white text-xs font-bold"
+                          >
+                            Ajouter
+                          </button>
+                        </div>
 
-            <div className="space-y-3">
-              {quantityOffers.map((qo) => (
-                <div
-                  key={qo.id}
-                  className="rounded-xl border border-black/[0.06] bg-white p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="h-8 w-8 rounded-lg bg-[#111111] text-white flex items-center justify-center font-black">
-                      {qo.quantity}x
-                    </span>
-                    <div>
-                      <input
-                        type="text"
-                        value={qo.badgeText || ""}
-                        onChange={(e) => handleUpdateOffer(qo.id, "badgeText", e.target.value)}
-                        placeholder="Badge (ex: Populaire)"
-                        className="px-2 py-1 rounded border border-black/[0.08] text-xs font-bold text-[#111111]"
-                      />
+                        <div className="flex flex-wrap gap-1.5">
+                          {opt.values.map((val) => (
+                            <span
+                              key={val}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-[#E6E0D4] text-xs font-semibold text-[#111111]"
+                            >
+                              <span>{val}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveOptionValue(opt.id, val)}
+                                className="text-[#888880] hover:text-black"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  ))}
 
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <span className="text-[10px] text-[#888880] block">Prix Total</span>
-                      <input
-                        type="number"
-                        value={qo.totalPrice}
-                        onChange={(e) => handleUpdateOffer(qo.id, "totalPrice", Number(e.target.value))}
-                        className="w-28 px-2 py-1 rounded border border-black/[0.08] text-xs font-bold"
-                      />
-                    </div>
+                  {productOptions.length < 3 && (
                     <button
                       type="button"
-                      onClick={() => handleDeleteOffer(qo.id)}
-                      className="text-rose-600 hover:text-rose-700 p-1"
+                      id="btn-add-variant-option"
+                      onClick={handleAddOption}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:underline"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Ajouter une autre option</span>
                     </button>
-                  </div>
+                  )}
                 </div>
-              ))}
-            </div>
+
+                {/* Tableau des variantes générées */}
+                {variants.length > 0 && (
+                  <div className="space-y-3 pt-3 border-t border-[#E6E0D4]">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#111111]">
+                        {variants.length} variante(s) générée(s)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowBulkEditModal(true)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] text-xs font-bold hover:bg-[#EFECE6]"
+                      >
+                        <SlidersHorizontal className="w-3.5 h-3.5" />
+                        <span>Modifier en masse</span>
+                      </button>
+                    </div>
+
+                    <div className="rounded-2xl border border-[#E6E0D4] overflow-hidden overflow-x-auto bg-white">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-[#FAF8F5] border-b border-[#E6E0D4] font-bold text-[#111111]">
+                          <tr>
+                            <th className="p-3">Variante</th>
+                            <th className="p-3">Prix (FCFA)</th>
+                            <th className="p-3">Stock</th>
+                            <th className="p-3">SKU</th>
+                            <th className="p-3">Statut</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#E6E0D4]">
+                          {variants.map((v, idx) => (
+                            <tr key={v.id} className="hover:bg-[#FAF8F5]/60 transition-colors">
+                              <td className="p-3 font-bold text-[#111111]">{v.name}</td>
+                              <td className="p-3">
+                                <input
+                                  type="number"
+                                  step="1"
+                                  value={v.price}
+                                  onChange={(e) => {
+                                    const p = Number(e.target.value);
+                                    setVariants((prev) =>
+                                      prev.map((item, i) => (i === idx ? { ...item, price: p } : item))
+                                    );
+                                  }}
+                                  className="w-24 px-2 py-1 rounded-lg border border-[#E6E0D4] font-bold"
+                                />
+                              </td>
+                              <td className="p-3">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={v.stock}
+                                  onChange={(e) => {
+                                    const s = Number(e.target.value);
+                                    setVariants((prev) =>
+                                      prev.map((item, i) => (i === idx ? { ...item, stock: s } : item))
+                                    );
+                                  }}
+                                  className="w-20 px-2 py-1 rounded-lg border border-[#E6E0D4]"
+                                />
+                              </td>
+                              <td className="p-3">
+                                <input
+                                  type="text"
+                                  value={v.sku || ""}
+                                  onChange={(e) => {
+                                    const sk = e.target.value;
+                                    setVariants((prev) =>
+                                      prev.map((item, i) => (i === idx ? { ...item, sku: sk } : item))
+                                    );
+                                  }}
+                                  className="w-28 px-2 py-1 rounded-lg border border-[#E6E0D4] font-mono"
+                                />
+                              </td>
+                              <td className="p-3">
+                                {v.stock > 0 ? (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                                    En stock
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-200 text-stone-600">
+                                    Épuisé (grisé)
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Bloc 8 : Aperçu Moteur de Recherche (SEO Google) */}
-          <div className="rounded-[20px] border border-black/[0.08] bg-[#FAF8F5] p-5 shadow-2xs space-y-4">
-            <h3 className="text-sm font-bold text-[#111111]">Aperçu Moteur de Recherche (SEO)</h3>
-            <div className="rounded-xl border border-black/[0.08] bg-white p-4 space-y-1">
-              <span className="text-xs text-[#1a0dab] font-medium hover:underline cursor-pointer block truncate font-sans">
-                {seoTitle || "Titre du produit"}
-              </span>
-              <span className="text-[11px] text-[#006621] block font-sans">
-                https://afribuilder.store/products/{seoSlug || "mon-produit"}
-              </span>
-              <p className="text-xs text-[#545454] line-clamp-2 font-sans pt-1">
-                {seoDescription || "Aucune description SEO définie."}
-              </p>
+          {/* ======================================================== */}
+          {/* 11) CARTE CHAMPS PERSONNALISÉS (Phase 17-D, 1) */}
+          {/* ======================================================== */}
+          <div className="rounded-3xl border border-[#E6E0D4] bg-white p-6 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-[#111111]">Champs personnalisés (Méta-champs)</h3>
+                <p className="text-xs text-[#7A7A7A] mt-0.5">
+                  Informations spécifiques (ingrédients, mode d'emploi, garantie) affichées dans le thème.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddCustomFieldModal(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] text-xs font-bold text-[#111111] hover:bg-[#EFECE6]"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Ajouter une définition</span>
+              </button>
             </div>
 
-            <div className="space-y-3 pt-2">
-              <div>
-                <label className="block text-xs font-bold text-[#111111] mb-1">Titre de la page</label>
-                <input
-                  type="text"
-                  value={seoTitle}
-                  onChange={(e) => setSeoTitle(e.target.value)}
-                  className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
-                />
+            {/* Modèles prêts en un clic */}
+            <div className="flex flex-wrap gap-2 pt-1">
+              <span className="text-[11px] font-bold text-[#7A7A7A] self-center">Modèles prêts :</span>
+              {predefinedMetafieldTemplates.map((tpl) => (
+                <button
+                  key={tpl.key}
+                  type="button"
+                  onClick={() => handleAddPredefinedTemplate(tpl)}
+                  className="px-2.5 py-1 rounded-lg border border-[#E6E0D4] bg-[#FAF8F5] hover:bg-white text-xs font-medium text-[#111111]"
+                >
+                  + {tpl.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Liste des champs saisis */}
+            {customFields.length === 0 ? (
+              <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-[#E6E0D4] text-xs text-[#7A7A7A] text-center">
+                Aucun champ personnalisé épinglé pour le moment.
               </div>
-              <div>
-                <label className="block text-xs font-bold text-[#111111] mb-1">Méta-description</label>
-                <textarea
-                  rows={2}
-                  value={seoDescription}
-                  onChange={(e) => setSeoDescription(e.target.value)}
-                  className="w-full px-3 py-2 text-xs text-[#111111] rounded-xl border border-black/[0.08] bg-white focus:outline-none"
-                />
+            ) : (
+              <div className="space-y-3 pt-2">
+                {customFields.map((field, idx) => (
+                  <div
+                    key={field.id}
+                    className="p-3.5 rounded-2xl border border-[#E6E0D4] bg-[#FAF8F5] space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#111111]">{field.label}</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setCustomFields((prev) => prev.filter((_, i) => i !== idx))
+                        }
+                        className="text-xs font-bold text-rose-600 hover:underline"
+                      >
+                        Retirer
+                      </button>
+                    </div>
+
+                    {field.type === "long_text" ? (
+                      <textarea
+                        rows={3}
+                        value={field.value}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setCustomFields((prev) =>
+                            prev.map((f, i) => (i === idx ? { ...f, value: val } : f))
+                          );
+                        }}
+                        placeholder={`Saisissez le texte pour ${field.label.toLowerCase()}...`}
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-[#E6E0D4] bg-white focus:outline-none"
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        value={field.value}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setCustomFields((prev) =>
+                            prev.map((f, i) => (i === idx ? { ...f, value: val } : f))
+                          );
+                        }}
+                        placeholder={`Valeur pour ${field.label.toLowerCase()}...`}
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-[#E6E0D4] bg-white focus:outline-none"
+                      />
+                    )}
+                  </div>
+                ))}
               </div>
-              <div>
-                <label className="block text-xs font-bold text-[#111111] mb-1">URL simplifiée (Slug)</label>
-                <input
-                  type="text"
-                  value={seoSlug}
-                  onChange={(e) => setSeoSlug(e.target.value)}
-                  className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
-                />
+            )}
+          </div>
+
+          {/* ======================================================== */}
+          {/* 12) ACTIONS AVANCÉES & HISTORIQUE (Phase 17-D, 2 & 3) */}
+          {/* ======================================================== */}
+          <div className="rounded-3xl border border-[#E6E0D4] bg-white p-6 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-[#111111]">Actions sur le produit</h3>
+              {initialProduct && (
+                <button
+                  type="button"
+                  onClick={() => setShowAuditTrail(!showAuditTrail)}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-[#111111] hover:underline"
+                >
+                  <History className="w-3.5 h-3.5 text-[#7A7A7A]" />
+                  <span>Historique des modifications</span>
+                </button>
+              )}
+            </div>
+
+            {/* Historique si déplié */}
+            {showAuditTrail && (
+              <div className="p-3 rounded-2xl bg-[#FAF8F5] border border-[#E6E0D4] space-y-2 animate-in fade-in">
+                <span className="text-[10px] uppercase font-bold text-[#7A7A7A] block">
+                  Journal d'audit du produit
+                </span>
+                <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                  {auditTrail.map((entry) => (
+                    <div
+                      key={entry.id}
+                      className="text-[11px] text-[#4A4A4A] flex items-center justify-between border-b border-[#E6E0D4]/40 pb-1"
+                    >
+                      <span className="font-semibold">{entry.action}</span>
+                      <span className="text-[#7A7A7A]">
+                        par {entry.performedBy} ({new Date(entry.timestamp).toLocaleDateString("fr-FR")})
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
+            )}
+
+            <div className="flex flex-wrap gap-3 pt-1">
+              {initialProduct && canManage && (
+                <button
+                  type="button"
+                  id="btn-duplicate-product"
+                  onClick={handleDuplicateProduct}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] text-xs font-bold text-[#111111] hover:bg-[#EFECE6] transition-colors"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Dupliquer ce produit</span>
+                </button>
+              )}
+
+              {initialProduct && canManage && (
+                <button
+                  type="button"
+                  id="btn-archive-product"
+                  onClick={handleArchiveProduct}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-amber-300 bg-amber-50 text-xs font-bold text-amber-900 hover:bg-amber-100 transition-colors"
+                >
+                  <Archive className="w-3.5 h-3.5" />
+                  <span>Archiver le produit</span>
+                </button>
+              )}
+
+              {initialProduct && canManage && (
+                <button
+                  type="button"
+                  id="btn-delete-product"
+                  onClick={handleDeleteProduct}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-rose-300 bg-rose-50 text-xs font-bold text-rose-800 hover:bg-rose-100 transition-colors ml-auto"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Supprimer le produit</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
 
         {/* ======================================================== */}
-        {/* COLONNE LATÉRALE (1 Tiers) */}
+        {/* PANNEAU LATÉRAL (lg:col-span-1) (Prompt 17 - Phase 17-B) */}
         {/* ======================================================== */}
         <div className="space-y-6">
-          {/* Bloc Statut */}
-          <div className="rounded-[20px] border border-black/[0.08] bg-[#FAF8F5] p-5 shadow-2xs space-y-3">
+          {/* 1) STATUT DU PRODUIT */}
+          <div className="rounded-3xl border border-[#E6E0D4] bg-white p-6 shadow-2xs space-y-3">
             <h3 className="text-sm font-bold text-[#111111]">Statut du produit</h3>
             <select
               value={productStatus}
-              onChange={(e) => setProductStatus(e.target.value as ProductStatus)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] bg-white text-xs font-bold text-[#111111] focus:outline-none"
+              id="select-product-status"
+              onChange={(e) => setProductStatus(e.target.value as any)}
+              className="w-full px-3.5 py-2.5 rounded-2xl border border-[#E6E0D4] bg-white text-xs font-bold text-[#111111] focus:outline-none"
             >
-              <option value="active">Actif (En ligne)</option>
-              <option value="draft">Brouillon (Non visible)</option>
-              <option value="archived">Archivé</option>
+              <option value="active">Actif (Visible sur la boutique)</option>
+              <option value="draft">Brouillon (Masqué du public)</option>
+              <option value="archived">Archivé (Non commandable)</option>
+              <option value="scheduled">Programmé (Publication différée)</option>
             </select>
-            <p className="text-[11px] text-[#666660]">
-              Un produit actif est disponible à l'achat sur les canaux sélectionnés.
-            </p>
-          </div>
 
-          {/* Option Discrétion / Anti-Espion : Masquer du catalogue public */}
-          <div className="rounded-[20px] border border-black/[0.08] bg-[#FAF8F5] p-5 shadow-2xs space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Eye className="w-4 h-4 text-[#C2410C]" />
-                <h3 className="text-sm font-bold text-[#111111]">Visibilité catalogue</h3>
-              </div>
-              <span
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setProductStatus("active")}
                 className={cn(
-                  "text-[10px] px-2 py-0.5 rounded-full font-bold",
-                  hiddenFromCatalog
-                    ? "bg-amber-100 text-amber-800"
-                    : "bg-emerald-100 text-emerald-800"
+                  "py-2 rounded-xl text-xs font-bold border transition-colors",
+                  productStatus === "active"
+                    ? "bg-[#111111] text-white border-black"
+                    : "bg-[#FAF8F5] text-[#4A4A4A] border-[#E6E0D4] hover:bg-[#EFECE6]"
                 )}
               >
-                {hiddenFromCatalog ? "Discret (Masqué)" : "Public"}
-              </span>
+                Actif
+              </button>
+              <button
+                type="button"
+                onClick={() => setProductStatus("draft")}
+                className={cn(
+                  "py-2 rounded-xl text-xs font-bold border transition-colors",
+                  productStatus === "draft"
+                    ? "bg-[#111111] text-white border-black"
+                    : "bg-[#FAF8F5] text-[#4A4A4A] border-[#E6E0D4] hover:bg-[#EFECE6]"
+                )}
+              >
+                Brouillon
+              </button>
+              <button
+                type="button"
+                onClick={() => setProductStatus("archived")}
+                className={cn(
+                  "py-2 rounded-xl text-xs font-bold border transition-colors",
+                  productStatus === "archived"
+                    ? "bg-[#111111] text-white border-black"
+                    : "bg-[#FAF8F5] text-[#4A4A4A] border-[#E6E0D4] hover:bg-[#EFECE6]"
+                )}
+              >
+                Archivé
+              </button>
+              <button
+                type="button"
+                onClick={() => setProductStatus("scheduled")}
+                className={cn(
+                  "py-2 rounded-xl text-xs font-bold border transition-colors",
+                  productStatus === "scheduled"
+                    ? "bg-[#111111] text-white border-black"
+                    : "bg-[#FAF8F5] text-[#4A4A4A] border-[#E6E0D4] hover:bg-[#EFECE6]"
+                )}
+              >
+                Programmé
+              </button>
             </div>
-            <label className="flex items-start gap-2.5 text-xs font-semibold text-[#111111] cursor-pointer pt-1">
-              <input
-                type="checkbox"
-                checked={hiddenFromCatalog}
-                onChange={(e) => {
-                  setHiddenFromCatalog(e.target.checked);
-                  setIsDirty(true);
-                }}
-                className="mt-0.5 rounded border-gray-300 text-[#C2410C] focus:ring-[#C2410C] cursor-pointer"
-              />
-              <span className="leading-snug">
-                Masquer ce produit du catalogue public de la vitrine
-              </span>
-            </label>
-            <p className="text-[11px] text-[#666660] leading-relaxed">
-              Le produit ne s&apos;affichera pas dans la liste des articles de la boutique ni dans les recherches. Il reste accessible et commandable uniquement par son lien direct (idéal pour les tunnels Facebook / TikTok Ads privés et la protection contre les espions concurrents).
+
+            {productStatus === "scheduled" && (
+              <div className="pt-2 animate-in fade-in space-y-1">
+                <label className="block text-[11px] font-bold text-[#111111]">
+                  Date et heure de mise en ligne automatique
+                </label>
+                <input
+                  type="datetime-local"
+                  value={scheduledDate}
+                  onChange={(e) => setScheduledDate(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[#E6E0D4] bg-[#FAF8F5]"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* 2) PUBLICATION */}
+          <div className="rounded-3xl border border-[#E6E0D4] bg-white p-6 shadow-2xs space-y-3">
+            <h3 className="text-sm font-bold text-[#111111]">Publication & Canaux</h3>
+            <p className="text-xs text-[#7A7A7A]">
+              Choisissez où le produit doit être accessible pour les clients et la publicité.
             </p>
-          </div>
 
-          {/* Bloc Canaux de publication */}
-          <div className="rounded-[20px] border border-black/[0.08] bg-[#FAF8F5] p-5 shadow-2xs space-y-3">
-            <h3 className="text-sm font-bold text-[#111111]">Canaux de vente</h3>
-            <div className="space-y-2">
-              {["Boutique en ligne", "WhatsApp Catalogue", "TikTok Ads", "Facebook Shop"].map((ch) => {
-                const checked = publishedChannels.includes(ch);
-                return (
-                  <label
-                    key={ch}
-                    onClick={() => toggleChannel(ch)}
-                    className="flex items-center gap-2.5 text-xs font-semibold text-[#111111] cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => {}}
-                      className="rounded border-gray-300 text-black focus:ring-black cursor-pointer"
-                    />
-                    <span>{ch}</span>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Bloc Résumé des ventes (Performance COD) */}
-          <div className="rounded-[20px] border border-black/[0.08] bg-[#FAF8F5] p-5 shadow-2xs space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-[#111111]">Performance COD</h3>
-              <BarChart3 className="w-4 h-4 text-[#888880]" />
-            </div>
-            <div className="space-y-2 pt-1 text-xs">
-              <div className="flex justify-between text-[#666660]">
-                <span>Unités commandées :</span>
-                <span className="font-bold text-[#111111]">{salesSummary.unitsSold}</span>
-              </div>
-              <div className="flex justify-between text-[#666660]">
-                <span>Unités livrées & payées :</span>
-                <span className="font-bold text-emerald-700">{salesSummary.unitsDelivered}</span>
-              </div>
-              <div className="flex justify-between text-[#666660]">
-                <span>Taux de livraison réel :</span>
-                <span className="font-black text-emerald-800">{salesSummary.deliveryRate}%</span>
-              </div>
-              <div className="flex justify-between pt-2 border-t border-black/[0.06] text-xs font-black text-[#111111]">
-                <span>CA net encaissé :</span>
-                <span>{formatFcfa(salesSummary.netSales)}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Bloc Organisation */}
-          <div className="rounded-[20px] border border-black/[0.08] bg-[#FAF8F5] p-5 shadow-2xs space-y-4">
-            <h3 className="text-sm font-bold text-[#111111]">Organisation</h3>
-
-            <div>
-              <label className="block text-xs font-bold text-[#111111] mb-1">
-                Catégorie de produit
+            <div className="space-y-3 pt-1">
+              <label className="flex items-center justify-between p-3 rounded-2xl border border-[#E6E0D4] bg-[#FAF8F5] cursor-pointer">
+                <div>
+                  <span className="text-xs font-bold text-[#111111] block">Vitrine de la boutique</span>
+                  <span className="text-[11px] text-[#7A7A7A]">Visible dans le catalogue public</span>
+                </div>
+                <input
+                  type="checkbox"
+                  id="toggle-publish-storefront"
+                  checked={publishToStorefront}
+                  onChange={(e) => setPublishToStorefront(e.target.checked)}
+                  className="h-4 w-4 rounded border-[#E6E0D4] text-black focus:ring-black"
+                />
               </label>
-              <input
-                type="text"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                placeholder="Ex: Beauté & Soins"
-                className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
-              />
-            </div>
 
-            <div>
-              <label className="block text-xs font-bold text-[#111111] mb-1">
-                Type de produit
+              <label className="flex items-center justify-between p-3 rounded-2xl border border-[#E6E0D4] bg-[#FAF8F5] cursor-pointer">
+                <div>
+                  <span className="text-xs font-bold text-[#111111] block">Catalogue Meta</span>
+                  <span className="text-[11px] text-[#7A7A7A]">Export flux Facebook & Instagram Ads</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={publishToMetaCatalog}
+                  onChange={(e) => setPublishToMetaCatalog(e.target.checked)}
+                  className="h-4 w-4 rounded border-[#E6E0D4] text-black focus:ring-black"
+                />
               </label>
+            </div>
+          </div>
+
+          {/* 3) ORGANISATION DU PRODUIT */}
+          <div className="rounded-3xl border border-[#E6E0D4] bg-white p-6 shadow-2xs space-y-4">
+            <h3 className="text-sm font-bold text-[#111111]">Organisation du produit</h3>
+
+            {/* Type */}
+            <div>
+              <label className="block text-xs font-bold text-[#111111] mb-1">Type de produit</label>
               <input
                 type="text"
                 value={productType}
                 onChange={(e) => setProductType(e.target.value)}
-                placeholder="Ex: Sérum cosmétique"
-                className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
+                placeholder="Ex: Sérum, Café bio, Crème..."
+                className="w-full px-3 py-2 text-xs rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] text-[#111111]"
               />
             </div>
 
+            {/* Fournisseur */}
             {!isCloser && (
               <div>
-                <label className="block text-xs font-bold text-[#111111] mb-1">
-                  Fournisseur principal
-                </label>
+                <label className="block text-xs font-bold text-[#111111] mb-1">Fournisseur</label>
                 <select
                   value={supplierId}
                   onChange={(e) => setSupplierId(e.target.value)}
-                  className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] text-[#111111]"
                 >
                   {MOCK_SUPPLIERS.map((s) => (
                     <option key={s.id} value={s.id}>
@@ -2030,367 +2472,395 @@ export function ProductFormClient({
               </div>
             )}
 
+            {/* Collections avec création à la volée */}
             <div>
-              <label className="block text-xs font-bold text-[#111111] mb-1">
-                Collection associée
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-bold text-[#111111]">Collection</label>
+                <button
+                  type="button"
+                  onClick={() => setShowNewCollectionForm(!showNewCollectionForm)}
+                  className="text-[11px] font-bold text-blue-600 hover:underline"
+                >
+                  {showNewCollectionForm ? "Annuler" : "+ Créer une collection"}
+                </button>
+              </div>
+
+              {showNewCollectionForm ? (
+                <div className="flex gap-2 mb-2 animate-in fade-in">
+                  <input
+                    type="text"
+                    value={newCollectionInput}
+                    onChange={(e) => setNewCollectionInput(e.target.value)}
+                    placeholder="Nom de la collection..."
+                    className="flex-1 px-3 py-1.5 text-xs rounded-xl border border-[#E6E0D4] bg-white"
+                  />
+                  <button
+                    type="button"
+                    id="btn-add-collection-confirm"
+                    onClick={handleCreateCollectionOnTheFly}
+                    className="px-3 py-1.5 rounded-xl bg-[#111111] text-white text-xs font-bold"
+                  >
+                    Ajouter
+                  </button>
+                </div>
+              ) : null}
+
               <select
-                value={collection}
-                onChange={(e) => setCollection(e.target.value)}
-                className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
+                value={selectedCollection}
+                id="select-product-collection"
+                onChange={(e) => setSelectedCollection(e.target.value)}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] text-[#111111]"
               >
-                {MOCK_COLLECTIONS.map((c) => (
-                  <option key={c.id} value={c.title}>
-                    {c.title}
+                {collectionsList.map((col) => (
+                  <option key={col} value={col}>
+                    {col}
                   </option>
                 ))}
               </select>
             </div>
 
+            {/* Balises (Tags) */}
             <div>
               <label className="block text-xs font-bold text-[#111111] mb-1">
-                Balises (Tags séparés par virgules)
+                Balises (Tags)
               </label>
-              <input
-                type="text"
-                value={tagsInput}
-                onChange={(e) => setTagsInput(e.target.value)}
-                placeholder="best-seller, promo, vitalité"
-                className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
-              />
-            </div>
+              <div className="flex gap-2 mb-2">
+                <input
+                  type="text"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === ",") {
+                      e.preventDefault();
+                      handleAddTag(tagInput);
+                    }
+                  }}
+                  placeholder="Tapez et appuyez sur Entrée..."
+                  className="flex-1 px-3 py-1.5 text-xs rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] text-[#111111]"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleAddTag(tagInput)}
+                  className="px-3 py-1.5 rounded-xl bg-[#FAF8F5] border border-[#E6E0D4] text-xs font-bold text-[#111111]"
+                >
+                  +
+                </button>
+              </div>
 
-            <div>
-              <label className="block text-xs font-bold text-[#111111] mb-1">
-                Modèle de page produit
-              </label>
-              <select
-                value={template}
-                onChange={(e) => setTemplate(e.target.value)}
-                className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
-              >
-                <option value="Par défaut">Modèle standard e-commerce</option>
-                <option value="Landing COD Directe">Landing page 1-clic COD (Haute conversion)</option>
-                <option value="Page Longue Storytelling">Page longue avec témoignages & avis</option>
-              </select>
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {tags.map((t) => (
+                  <span
+                    key={t}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#FAF8F5] border border-[#E6E0D4] text-xs font-medium text-[#111111]"
+                  >
+                    <span>{t}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTag(t)}
+                      className="text-[#888880] hover:text-black"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* 4) MODÈLE DE THÈME */}
+          <div className="rounded-3xl border border-[#E6E0D4] bg-white p-6 shadow-2xs space-y-3">
+            <h3 className="text-sm font-bold text-[#111111]">Modèle de thème</h3>
+            <p className="text-xs text-[#7A7A7A]">
+              Modèle de mise en page assigné depuis le thème actif de la vitrine.
+            </p>
+            <select
+              value={themeTemplate}
+              id="select-theme-template"
+              onChange={(e) => setThemeTemplate(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-2xl border border-[#E6E0D4] bg-white text-xs font-bold text-[#111111]"
+            >
+              <option value="Modèle par défaut : Produit">Modèle par défaut : Produit</option>
+              <option value="Page de vente directe / Landing page">Page de vente directe / Landing page</option>
+              <option value="Pack promotionnel">Pack promotionnel</option>
+            </select>
+          </div>
+
+          {/* 5) PIXELS META */}
+          <div className="rounded-3xl border border-[#E6E0D4] bg-white p-6 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-[#111111]">Pixels Meta</h3>
+              <span className="text-[11px] text-[#7A7A7A]">Max 3 pixels</span>
+            </div>
+            <p className="text-xs text-[#7A7A7A]">
+              Ciblage publicitaire et suivi des événements d'achat (Purchase / Lead) pour ce produit.
+            </p>
+
+            <div className="space-y-2 pt-1">
+              {shopPixels.length === 0 ? (
+                <div className="p-3 rounded-2xl bg-[#FAF8F5] border border-[#E6E0D4] text-xs text-[#7A7A7A]">
+                  Aucun pixel configuré pour cette boutique. Rendez-vous dans Réglages → Connexions pour en ajouter.
+                </div>
+              ) : (
+                shopPixels.map((p) => {
+                  const isChecked = selectedPixelIds.includes(p.id) || p.applyToAllProducts;
+                  return (
+                    <label
+                      key={p.id}
+                      className="flex items-start gap-2.5 p-3 rounded-2xl border border-[#E6E0D4] bg-[#FAF8F5] cursor-pointer hover:bg-white transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        disabled={p.applyToAllProducts}
+                        onChange={() => togglePixel(p.id)}
+                        className="mt-0.5 rounded border-[#E6E0D4] text-black focus:ring-black"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <span className="text-xs font-bold text-[#111111] block truncate">
+                          {p.name}
+                        </span>
+                        <span className="text-[10px] text-[#7A7A7A] block font-mono">
+                          ID: {p.pixelId} {p.applyToAllProducts && "(Appliqué à toute la boutique)"}
+                        </span>
+                      </div>
+                    </label>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
       </div>
-    )}
 
-      {/* ONGLET 2 : CONTENU DU REÇU DÉDIÉ (FIGÉ À LA LIVRAISON) */}
-      {activeFormTab === "receipt" && (
-        <div id="receipt-content-tab-pane" className="space-y-6">
-          {/* Barre d'outils du reçu : Langue & Assistant IA */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 rounded-2xl bg-white border border-black/[0.08] shadow-2xs">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
-                <ReceiptIcon className="w-5 h-5" />
-              </div>
+      {/* ======================================================== */}
+      {/* MODALE : MODIFICATION GROUPÉE DES VARIANTES */}
+      {/* ======================================================== */}
+      {showBulkEditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl space-y-4">
+            <h3 className="text-base font-bold text-[#111111]">
+              Modification groupée des variantes
+            </h3>
+            <p className="text-xs text-[#7A7A7A]">
+              Appliquez une valeur commune à l'ensemble des {variants.length} variantes.
+            </p>
+
+            <div className="space-y-3">
               <div>
-                <h2 className="text-sm font-bold text-[#111111]">
-                  Contenu spécifique du reçu de livraison
-                </h2>
-                <p className="text-xs text-[#666660]">
-                  Textes d'accompagnement injectés dans le reçu et le message WhatsApp après livraison.
-                </p>
+                <label className="block text-xs font-bold text-[#111111] mb-1">
+                  Nouveau prix pour toutes les variantes (FCFA)
+                </label>
+                <input
+                  type="number"
+                  step="1"
+                  value={bulkPriceInput}
+                  onChange={(e) => setBulkPriceInput(e.target.value ? Number(e.target.value) : "")}
+                  placeholder="Laisser vide pour ne pas modifier"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[#E6E0D4] bg-[#FAF8F5]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#111111] mb-1">
+                  Nouveau stock pour toutes les variantes
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={bulkStockInput}
+                  onChange={(e) => setBulkStockInput(e.target.value ? Number(e.target.value) : "")}
+                  placeholder="Laisser vide pour ne pas modifier"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[#E6E0D4] bg-[#FAF8F5]"
+                />
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Sélecteur de langue */}
-              <div className="flex items-center rounded-xl border border-black/10 bg-[#FAF8F5] p-1">
-                {(
-                  [
-                    { code: "fr", label: "Français" },
-                    { code: "en", label: "English" },
-                    { code: "ar", label: "العربية" },
-                  ] as const
-                ).map((lang) => (
-                  <button
-                    key={lang.code}
-                    type="button"
-                    onClick={() => setReceiptLanguage(lang.code)}
-                    className={cn(
-                      "px-2.5 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer",
-                      receiptLanguage === lang.code
-                        ? "bg-[#111111] text-[#FAF8F5]"
-                        : "text-[#666660] hover:text-[#111111]"
-                    )}
-                  >
-                    {lang.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Bouton Brouillon IA */}
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E6E0D4]">
               <button
                 type="button"
-                id="btn-ai-generate-receipt"
-                onClick={handleGenerateAiReceiptDraft}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-all shadow-xs cursor-pointer"
+                onClick={() => setShowBulkEditModal(false)}
+                className="px-4 py-2 rounded-xl border border-[#E6E0D4] text-xs font-semibold text-[#666660]"
               >
-                <Wand2 className="w-3.5 h-3.5" />
-                <span>Générer avec l'IA</span>
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleBulkApply}
+                className="px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold"
+              >
+                Appliquer à toutes
               </button>
             </div>
           </div>
+        </div>
+      )}
 
-          {/* Avertissement Catégorie Santé / Bien-être obligatoire */}
-          {isHealthCategory && (
-            <div
-              id="health-warning-banner"
-              className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-3"
-            >
-              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-              <div className="space-y-0.5">
-                <p className="font-bold">
-                  Avertissement Réglementaire (Produit de Santé / Nutrition / Bien-être)
-                </p>
-                <p className="text-amber-800">
-                  Aucune allégation médicale, promesse de guérison ni résultat garanti n'est autorisée
-                  dans les textes de vos reçus. Respectez scrupuleusement la réglementation sanitaire locale.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Bannière de réassurance : Instantané figé */}
-          <div className="p-4 rounded-2xl bg-[#F4EFE6] border border-black/[0.08] text-xs text-[#666660] flex items-center gap-3">
-            <Lock className="w-4 h-4 text-[#888880] shrink-0" />
-            <p>
-              <strong>Copie figée dans l'instantané :</strong> Les textes ci-dessous sont enregistrés de
-              manière immuable dans chaque reçu émis lors du passage à « Livrée ». Modifier ce produit plus
-              tard ne modifiera jamais les reçus clients déjà créés.
+      {/* ======================================================== */}
+      {/* MODALE : CRÉATION D'UN CHAMP PERSONNALISÉ */}
+      {/* ======================================================== */}
+      {showAddCustomFieldModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl space-y-4">
+            <h3 className="text-base font-bold text-[#111111]">
+              Ajouter une définition de champ personnalisé
+            </h3>
+            <p className="text-xs text-[#7A7A7A]">
+              Les données seront stockées sous forme de texte brut sécurisé pour le thème.
             </p>
-          </div>
 
-          {/* Formulaire des champs du reçu */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Colonne 1 : Conseils et Précautions */}
-            <div className="space-y-5">
-              <div className="p-5 rounded-2xl bg-white border border-black/[0.08] shadow-2xs space-y-3">
-                <label className="block text-xs font-bold text-[#111111]">
-                  Conseils d'utilisation
-                </label>
-                <p className="text-[11px] text-[#666660]">
-                  Recommandations posologiques ou guide étape par étape (texte brut, pas de HTML).
-                </p>
-                <textarea
-                  id="receipt-usage-input"
-                  rows={4}
-                  value={receiptContent.usageInstructions}
-                  onChange={(e) => {
-                    setReceiptContent((prev) => ({ ...prev, usageInstructions: e.target.value }));
-                    setIsDirty(true);
-                  }}
-                  className="w-full p-3 rounded-xl border border-black/[0.1] bg-[#FAF8F5] text-xs text-[#111111] focus:outline-none focus:border-[#111111]"
-                  placeholder="Ex: Appliquer matin et soir sur peau propre..."
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-[#111111] mb-1">Nom du champ</label>
+                <input
+                  type="text"
+                  value={newFieldLabel}
+                  onChange={(e) => setNewFieldLabel(e.target.value)}
+                  placeholder="Ex: Conseils de conservation"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[#E6E0D4] bg-[#FAF8F5]"
                 />
               </div>
 
-              <div className="p-5 rounded-2xl bg-white border border-black/[0.08] shadow-2xs space-y-3">
-                <label className="block text-xs font-bold text-[#111111]">
-                  Précautions d'emploi & Composition
-                </label>
-                <p className="text-[11px] text-[#666660]">
-                  Contre-indications, allergènes ou précautions de conservation.
-                </p>
-                <textarea
-                  id="receipt-precautions-input"
-                  rows={4}
-                  value={receiptContent.precautions}
-                  onChange={(e) => {
-                    setReceiptContent((prev) => ({ ...prev, precautions: e.target.value }));
-                    setIsDirty(true);
-                  }}
-                  className="w-full p-3 rounded-xl border border-black/[0.1] bg-[#FAF8F5] text-xs text-[#111111] focus:outline-none focus:border-[#111111]"
-                  placeholder="Ex: Tenir hors de portée des enfants. Conserver dans un endroit sec."
+              <div>
+                <label className="block text-xs font-bold text-[#111111] mb-1">Clé interne (optionnelle)</label>
+                <input
+                  type="text"
+                  value={newFieldKey}
+                  onChange={(e) => setNewFieldKey(e.target.value)}
+                  placeholder="Ex: storage_advice"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] font-mono"
                 />
               </div>
 
-              <div className="p-5 rounded-2xl bg-white border border-black/[0.08] shadow-2xs space-y-3">
-                <label className="block text-xs font-bold text-[#111111]">
-                  Conseil d'entretien
-                </label>
-                <p className="text-[11px] text-[#666660]">
-                  Pour vêtements, accessoires ou flacons réutilisables.
-                </p>
-                <textarea
-                  id="receipt-care-input"
-                  rows={3}
-                  value={receiptContent.careAdvice}
-                  onChange={(e) => {
-                    setReceiptContent((prev) => ({ ...prev, careAdvice: e.target.value }));
-                    setIsDirty(true);
-                  }}
-                  className="w-full p-3 rounded-xl border border-black/[0.1] bg-[#FAF8F5] text-xs text-[#111111] focus:outline-none focus:border-[#111111]"
-                  placeholder="Ex: Lavage à 30°C ou bien refermer le bouchon après usage."
-                />
+              <div>
+                <label className="block text-xs font-bold text-[#111111] mb-1">Type de champ</label>
+                <select
+                  value={newFieldType}
+                  onChange={(e) => setNewFieldType(e.target.value as any)}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[#E6E0D4] bg-white font-semibold"
+                >
+                  <option value="short_text">Texte court (1 ligne)</option>
+                  <option value="long_text">Texte long (paragraphe)</option>
+                  <option value="number">Nombre entier ou décimal</option>
+                  <option value="boolean">Oui / Non</option>
+                </select>
               </div>
             </div>
 
-            {/* Colonne 2 : Garanties, Retours, WhatsApp et Avis */}
-            <div className="space-y-5">
-              <div className="p-5 rounded-2xl bg-white border border-black/[0.08] shadow-2xs space-y-3">
-                <label className="block text-xs font-bold text-[#111111]">
-                  Garantie spécifique au produit
-                </label>
-                <p className="text-[11px] text-[#666660]">
-                  Laisse vide pour appliquer la garantie par défaut de la boutique.
-                </p>
-                <input
-                  type="text"
-                  id="receipt-warranty-input"
-                  value={receiptContent.warranty}
-                  onChange={(e) => {
-                    setReceiptContent((prev) => ({ ...prev, warranty: e.target.value }));
-                    setIsDirty(true);
-                  }}
-                  className="w-full px-3 py-2 rounded-xl border border-black/[0.1] bg-[#FAF8F5] text-xs text-[#111111] focus:outline-none focus:border-[#111111]"
-                  placeholder="Ex: Garantie 14 jours satisfaite ou remboursée"
-                />
-              </div>
-
-              <div className="p-5 rounded-2xl bg-white border border-black/[0.08] shadow-2xs space-y-3">
-                <label className="block text-xs font-bold text-[#111111]">
-                  Conditions de retour ou d'échange spécifiques
-                </label>
-                <textarea
-                  id="receipt-returns-input"
-                  rows={3}
-                  value={receiptContent.returnTerms}
-                  onChange={(e) => {
-                    setReceiptContent((prev) => ({ ...prev, returnTerms: e.target.value }));
-                    setIsDirty(true);
-                  }}
-                  className="w-full p-3 rounded-xl border border-black/[0.1] bg-[#FAF8F5] text-xs text-[#111111] focus:outline-none focus:border-[#111111]"
-                  placeholder="Ex: Retour accepté sous 48h si emballage non ouvert."
-                />
-              </div>
-
-              <div className="p-5 rounded-2xl bg-white border border-black/[0.08] shadow-2xs space-y-3">
-                <label className="block text-xs font-bold text-[#111111]">
-                  Remerciement personnalisé
-                </label>
-                <textarea
-                  id="receipt-thankyou-input"
-                  rows={3}
-                  value={receiptContent.thankYouNote}
-                  onChange={(e) => {
-                    setReceiptContent((prev) => ({ ...prev, thankYouNote: e.target.value }));
-                    setIsDirty(true);
-                  }}
-                  className="w-full p-3 rounded-xl border border-black/[0.1] bg-[#FAF8F5] text-xs text-[#111111] focus:outline-none focus:border-[#111111]"
-                  placeholder="Ex: Merci pour votre confiance ! Notre équipe reste à votre écoute."
-                />
-              </div>
-
-              {/* Ligne WhatsApp courte (140 car max) */}
-              <div className="p-5 rounded-2xl bg-emerald-50/50 border border-emerald-200/80 shadow-2xs space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-bold text-[#111111]">
-                    Ligne WhatsApp courte (Facultatif)
-                  </label>
-                  <span
-                    id="receipt-wa-char-counter"
-                    className={cn(
-                      "text-[10px] font-bold font-mono px-2 py-0.5 rounded",
-                      (receiptContent.shortWhatsAppLine?.length || 0) > 140
-                        ? "bg-rose-100 text-rose-800"
-                        : "bg-emerald-100 text-emerald-800"
-                    )}
-                  >
-                    {receiptContent.shortWhatsAppLine?.length || 0} / 140
-                  </span>
-                </div>
-                <p className="text-[11px] text-[#666660]">
-                  Insérée dans le message WhatsApp sous le nom du produit. Max 140 caractères.
-                </p>
-                <input
-                  type="text"
-                  id="receipt-short-whatsapp-input"
-                  maxLength={140}
-                  value={receiptContent.shortWhatsAppLine || ""}
-                  onChange={(e) => {
-                    setReceiptContent((prev) => ({ ...prev, shortWhatsAppLine: e.target.value }));
-                    setIsDirty(true);
-                  }}
-                  className="w-full px-3 py-2 rounded-xl border border-black/[0.1] bg-white text-xs text-[#111111] focus:outline-none focus:border-[#111111]"
-                  placeholder="Ex: 1 tasse le matin suffit pour une énergie stable toute la journée !"
-                />
-              </div>
-
-              {/* Case : Inclure un lien pour donner son avis */}
-              <div className="p-4 rounded-2xl bg-white border border-black/[0.08] shadow-2xs">
-                <label className="flex items-center gap-3 cursor-pointer text-xs font-bold text-[#111111]">
-                  <input
-                    type="checkbox"
-                    id="receipt-include-review-input"
-                    checked={receiptContent.includeReviewLink}
-                    onChange={(e) => {
-                      setReceiptContent((prev) => ({
-                        ...prev,
-                        includeReviewLink: e.target.checked,
-                      }));
-                      setIsDirty(true);
-                    }}
-                    className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                  />
-                  <span>Inclure un lien pour donner son avis sur le produit dans le reçu</span>
-                </label>
-                <p className="text-[11px] text-[#666660] ml-7 mt-0.5">
-                  Génère un bouton direct vers le formulaire d'évaluation lié à la commande livrée.
-                </p>
-              </div>
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E6E0D4]">
+              <button
+                type="button"
+                onClick={() => setShowAddCustomFieldModal(false)}
+                className="px-4 py-2 rounded-xl border border-[#E6E0D4] text-xs font-semibold text-[#666660]"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateCustomField}
+                className="px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold"
+              >
+                Créer la définition
+              </button>
             </div>
           </div>
         </div>
       )}
 
       {/* ======================================================== */}
-      {/* ZONE DANGEREUSE : SUPPRESSION DU PRODUIT (Prompt 14-B) */}
+      {/* MODALE : ÉDITION DU TEXTE ALTERNATIF (Alt) */}
       {/* ======================================================== */}
-      {initialProduct && canTrashProduct(activeRole) && (
-        <div
-          id="danger-zone-delete"
-          className="rounded-[24px] border border-rose-200 bg-rose-50/70 p-6 shadow-2xs space-y-4"
-        >
-          <div className="flex items-start gap-3">
-            <div className="p-2.5 rounded-2xl bg-rose-100 text-rose-700 shrink-0">
-              <Trash2 className="w-5 h-5" />
+      {editingAltItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl space-y-4">
+            <h3 className="text-base font-bold text-[#111111]">
+              Texte alternatif (Alt text)
+            </h3>
+            <p className="text-xs text-[#7A7A7A]">
+              Améliore l'accessibilité pour les malvoyants et favorise le référencement naturel Google Images.
+            </p>
+            <input
+              type="text"
+              value={editingAltItem.alt}
+              onChange={(e) => setEditingAltItem({ ...editingAltItem, alt: e.target.value })}
+              placeholder="Ex: Vue avant du flacon de sérum éclat 100ml"
+              className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] text-[#111111] focus:outline-none focus:border-[#111111]"
+            />
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E6E0D4]">
+              <button
+                type="button"
+                onClick={() => setEditingAltItem(null)}
+                className="px-4 py-2 rounded-xl border border-[#E6E0D4] text-xs font-semibold text-[#666660]"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSaveAltText(editingAltItem.id, editingAltItem.alt)}
+                className="px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold"
+              >
+                Enregistrer le texte Alt
+              </button>
             </div>
-            <div>
-              <h3 className="text-sm font-black text-rose-950">Zone dangereuse</h3>
-              <p className="text-xs text-rose-800/90 mt-0.5 leading-relaxed">
-                Déplacer ce produit dans la corbeille. Il sera immédiatement masqué de votre vitrine en ligne, du catalogue et des recherches publiques. Il restera conservé 30 jours avant purge définitive.
-              </p>
-            </div>
-          </div>
-
-          <div className="pt-3 border-t border-rose-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <span className="text-xs font-semibold text-rose-900">
-              Vous pourrez restaurer ce produit à tout moment depuis l'onglet « Corbeille » de la liste des produits.
-            </span>
-            <button
-              type="button"
-              id="btn-delete-product"
-              onClick={handleDeleteProduct}
-              className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer shrink-0"
-            >
-              <Trash2 className="w-4 h-4" />
-              <span>Supprimer ce produit</span>
-            </button>
           </div>
         </div>
       )}
 
       {/* ======================================================== */}
-      {/* BARRE COLLANTE DU BAS : MODIFICATIONS NON ENREGISTRÉES */}
+      {/* MODALE : MÉDIATHÈQUE DE LA BOUTIQUE */}
+      {/* ======================================================== */}
+      {isMediaLibraryModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-[#E6E0D4]">
+              <h3 className="text-base font-bold text-[#111111]">
+                Médiathèque de la boutique
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsMediaLibraryModalOpen(false)}
+                className="text-[#7A7A7A] hover:text-black"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-xs text-[#7A7A7A]">
+              Sélectionnez un visuel déjà téléversé sur votre boutique pour l'ajouter à cette fiche produit.
+            </p>
+
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-72 overflow-y-auto p-1">
+              {MOCK_PRODUCTS.flatMap((p) => p.images || []).map((imgUrl, i) => (
+                <button
+                  key={`${imgUrl}-${i}`}
+                  type="button"
+                  onClick={() => handleSelectFromLibrary(imgUrl)}
+                  className="rounded-xl border border-[#E6E0D4] aspect-square overflow-hidden hover:scale-105 hover:ring-2 hover:ring-black transition-all bg-[#FAF8F5]"
+                >
+                  <img src={imgUrl} alt="Média boutique" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+
+            <div className="flex justify-end pt-3 border-t border-[#E6E0D4]">
+              <button
+                type="button"
+                onClick={() => setIsMediaLibraryModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-[#E6E0D4] text-xs font-semibold"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* BARRE COLLANTE FIXE EN BAS : MODIFICATIONS NON ENREGISTRÉES */}
       {/* ======================================================== */}
       {isDirty && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#111111]/95 backdrop-blur-md text-white border-t border-black/20 px-6 py-3.5 shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom-3 duration-200">
+        <div
+          id="bar-unsaved-changes-sticky"
+          className="fixed bottom-0 left-0 right-0 z-40 bg-[#111111]/95 backdrop-blur-md text-white border-t border-black/20 px-6 py-3.5 shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom-3 duration-200"
+        >
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
             <span className="text-xs font-bold">Modifications non enregistrées</span>
@@ -2398,15 +2868,15 @@ export function ProductFormClient({
 
           <div className="flex items-center gap-3">
             <button
-              onClick={() => {
-                setIsDirty(false);
-                router.refresh();
-              }}
+              type="button"
+              onClick={handleCancel}
               className="px-3.5 py-1.5 rounded-xl border border-white/20 hover:bg-white/10 text-xs font-semibold transition-colors"
             >
               Annuler
             </button>
             <button
+              type="button"
+              id="btn-save-product-bottom"
               onClick={handleSave}
               className="px-5 py-1.5 rounded-xl bg-white text-[#111111] hover:bg-[#F3EFE6] text-xs font-black transition-all shadow-sm"
             >

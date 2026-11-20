@@ -172,7 +172,6 @@ export function ProductsNavTabs({ storeSlug }: ProductsNavTabsProps) {
           return (
             <Link
               key={tab.id}
-              id={`products-nav-tab-${tab.id}`}
               href={tab.href}
               className={`group flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap shadow-xs ${active
                 ? "bg-[#111111] text-white shadow-sm"

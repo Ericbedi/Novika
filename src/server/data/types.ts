@@ -121,6 +121,29 @@ export interface Order {
 
 export * from "./followups-types";
 
+export interface ProductCustomField {
+  id: string;
+  key: string;
+  label: string;
+  type: "short_text" | "long_text" | "number" | "choice" | "boolean";
+  value: string;
+  isPinned?: boolean;
+}
+
+export interface ProductOption {
+  id: string;
+  name: string; // Taille, Couleur, Pointure, Matière...
+  values: string[];
+}
+
+export interface ProductAuditEntry {
+  id: string;
+  action: string;
+  performedBy: string;
+  timestamp: string;
+  details?: string;
+}
+
 export interface ProductVariant {
   id: string;
   name: string;
@@ -228,7 +251,7 @@ export interface Product {
   hiddenFromCatalog?: boolean; // Option discrétion : Masquer du catalogue public (accessible uniquement par lien direct / tunnel ads)
   variants: ProductVariant[];
   quantityOffers: QuantityOffer[];
-  badgesConfig: ProductBadgesConfig;
+  badgesConfig?: ProductBadgesConfig;
   salesSummary?: {
     unitsSold: number;
     unitsDelivered: number;
@@ -244,10 +267,18 @@ export interface Product {
   tags?: string[];
   template?: string;
   receiptContent?: any;
+  customFields?: ProductCustomField[];
+  productOptions?: ProductOption[];
+  dimensions?: { lengthCm?: number; widthCm?: number; heightCm?: number };
+  unitPriceLabel?: string;
+  continueSellingWhenOutOfStock?: boolean;
+  inventoryLocation?: string;
+  auditTrail?: ProductAuditEntry[];
   importBatchId?: string;
   deletedAt?: string | null;
   archivedAt?: string | null;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Expense {

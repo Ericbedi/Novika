@@ -23,7 +23,7 @@ const ALLOWED_TAGS = new Set([
   "strong", "b", "em", "i", "u", "s", "strike",
   "table", "thead", "tbody", "tfoot", "tr", "th", "td",
   "blockquote", "div", "section", "span",
-  "a", "img"
+  "a", "img", "iframe"
 ]);
 
 // Attributs autorisés par balise
@@ -35,7 +35,21 @@ const TAG_SPECIFIC_ATTRS: Record<string, Set<string>> = {
   table: new Set(["border", "cellpadding", "cellspacing"]),
   td: new Set(["colspan", "rowspan", "align", "valign"]),
   th: new Set(["colspan", "rowspan", "align", "valign", "scope"]),
+  iframe: new Set(["src", "title", "width", "height", "allow", "allowfullscreen", "frameborder"]),
 };
+
+const WHITELISTED_VIDEO_IFRAME_PREFIXES = [
+  "https://www.youtube.com/embed/",
+  "https://youtube.com/embed/",
+  "https://www.youtube-nocookie.com/embed/",
+  "https://player.vimeo.com/video/",
+];
+
+export function isWhitelistedIframeSrc(src: string): boolean {
+  if (!src) return false;
+  const trimmed = src.trim().toLowerCase();
+  return WHITELISTED_VIDEO_IFRAME_PREFIXES.some((prefix) => trimmed.startsWith(prefix));
+}
 
 /**
  * Assainit un extrait HTML pour le stockage et l'affichage sécurisé.
@@ -51,7 +65,7 @@ export function sanitizeHtml(rawHtml: string): SanitizeResult {
   let html = rawHtml;
 
   // 1. Suppression intégrale des balises dangereuses et de leur contenu
-  const dangerousBlockRegex = /<(script|style|iframe|object|embed|applet|form|svg|math)[^>]*>[\s\S]*?<\/\1>/gi;
+  const dangerousBlockRegex = /<(script|style|object|embed|applet|form|svg|math)[^>]*>[\s\S]*?<\/\1>/gi;
   if (dangerousBlockRegex.test(html)) {
     const matches = html.match(dangerousBlockRegex);
     removedCount += matches ? matches.length : 1;
@@ -60,7 +74,7 @@ export function sanitizeHtml(rawHtml: string): SanitizeResult {
   }
 
   // Suppression des balises dangereuses orphelines/auto-fermantes
-  const dangerousSelfClosing = /<(script|style|iframe|object|embed|applet|form|meta|link|base)[^>]*\/?>/gi;
+  const dangerousSelfClosing = /<(script|style|object|embed|applet|form|meta|link|base)[^>]*\/?>/gi;
   if (dangerousSelfClosing.test(html)) {
     removedCount++;
     html = html.replace(dangerousSelfClosing, "");
@@ -77,6 +91,17 @@ export function sanitizeHtml(rawHtml: string): SanitizeResult {
     if (!ALLOWED_TAGS.has(tag)) {
       removedCount++;
       return "";
+    }
+
+    // Validation stricte des iframes (vidéos YouTube / Vimeo uniquement)
+    if (tag === "iframe") {
+      const srcMatch = rawAttrs.match(/src\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
+      const srcVal = srcMatch ? (srcMatch[1] ?? srcMatch[2] ?? srcMatch[3] ?? "") : "";
+      if (!isWhitelistedIframeSrc(srcVal)) {
+        removedCount++;
+        warnings.push("Iframe non autorisée neutralisée (seuls YouTube et Vimeo sont autorisés).");
+        return "";
+      }
     }
 
     // Balise fermante
