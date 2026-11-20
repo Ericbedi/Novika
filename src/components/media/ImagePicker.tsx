@@ -181,8 +181,9 @@ export function ImagePicker({
           </div>
           <button
             type="button"
+            id="btn-close-image-picker"
             onClick={onClose}
-            className="p-1 rounded-xl text-[#7A7A7A] hover:text-[#111111] hover:bg-black/5 transition-colors"
+            className="p-1 rounded-xl text-[#7A7A7A] hover:text-[#111111] hover:bg-black/5 transition-colors cursor-pointer"
           >
             <X className="h-5 w-5" />
           </button>
