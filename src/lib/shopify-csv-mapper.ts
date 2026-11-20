@@ -684,8 +684,12 @@ export function convertDraftToProduct(
     existingProduct?.short_code ||
     Math.random().toString(36).slice(2, 8);
 
+  const generatedId = `prod_imp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const finalId = existingProduct && strategy === "update" ? existingProduct.id : generatedId;
+
   return {
-    id: existingProduct && strategy === "update" ? existingProduct.id : `prod_imp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    id: finalId,
+    legacy_id: (existingProduct as any)?.legacy_id || finalId,
     storeId: storeSlug,
     shop_id: storeSlug,
     storeSlug,

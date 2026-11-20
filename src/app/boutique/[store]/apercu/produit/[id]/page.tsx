@@ -42,7 +42,26 @@ export default function ProductPreviewPage({
       slugOrId: productId,
       allowDraft: true,
     });
-    setProduct(loaded);
+    if (loaded) {
+      setProduct(loaded);
+    } else {
+      fetch(`/api/products?store=${encodeURIComponent(storeSlug)}&id=${encodeURIComponent(productId)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.products && data.products.length > 0) {
+            const found = data.products.find(
+              (p: Product) =>
+                p.id === productId ||
+                p.slug === productId ||
+                p.shortCode === productId ||
+                p.short_code === productId ||
+                (p as any).legacy_id === productId
+            );
+            if (found) setProduct(found);
+          }
+        })
+        .catch(() => {});
+    }
   }, [storeSlug, productId]);
 
   // Gestion de l'expiration du jeton (30 min)

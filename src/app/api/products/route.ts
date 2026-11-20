@@ -18,7 +18,13 @@ export async function GET(req: NextRequest) {
         .eq("shop_slug", storeSlug);
 
       if (productIdOrSlug) {
-        query = query.or(`slug.eq.${productIdOrSlug},product_id.eq.${productIdOrSlug}`);
+        // Validation UUID stricte (Prompt 17-O) pour éviter l'erreur PostgreSQL 22P02
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(productIdOrSlug);
+        if (isUuid) {
+          query = query.or(`slug.eq.${productIdOrSlug},product_id.eq.${productIdOrSlug},short_code.eq.${productIdOrSlug},legacy_id.eq.${productIdOrSlug}`);
+        } else {
+          query = query.or(`slug.eq.${productIdOrSlug},short_code.eq.${productIdOrSlug},legacy_id.eq.${productIdOrSlug}`);
+        }
       }
 
       const { data: dbRows, error } = await query;
@@ -26,11 +32,12 @@ export async function GET(req: NextRequest) {
       if (!error && dbRows && dbRows.length > 0) {
         const mappedProducts: Product[] = dbRows.map((r: any) => ({
           id: r.product_id,
+          legacy_id: r.legacy_id || undefined,
           name: r.name,
           title: r.name,
           slug: r.slug,
-          shortCode: r.slug?.slice(0, 6) || "prod01",
-          short_code: r.slug?.slice(0, 6) || "prod01",
+          shortCode: r.short_code || r.slug?.slice(0, 6) || "prod01",
+          short_code: r.short_code || r.slug?.slice(0, 6) || "prod01",
           description: r.description || "",
           category: r.category || "Santé & Bien-être",
           collection: r.category || "Santé & Bien-être",

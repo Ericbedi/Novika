@@ -226,10 +226,14 @@ export function getShopProductsRaw(shopSlug: string): Product[] {
 
   if (shopSlug === "kelio") {
     if (list.length === 0) {
-      list = [...KELIO_PRODUCTS];
+      if (memoryStoreProducts.has("kelio")) {
+        list = memoryStoreProducts.get("kelio")!;
+      } else {
+        list = [...KELIO_PRODUCTS];
+      }
     } else {
       for (const kp of KELIO_PRODUCTS) {
-        if (!list.some((p) => p.id === kp.id || p.slug === kp.slug)) {
+        if (!list.some((p) => p.id === kp.id || p.slug === kp.slug || ((p as any).legacy_id && (p as any).legacy_id === kp.id))) {
           list.push(kp);
         }
       }
@@ -323,10 +327,14 @@ export function findProductInShopRaw(
   const products = getShopProductsRaw(shopSlug);
   const target = normalizeProductIdentifier(slugOrId);
 
-  let matchedBy: "id" | "slug" | "short_code" | null = null;
+  let matchedBy: "id" | "slug" | "short_code" | "legacy_id" | null = null;
   const found = products.find((p) => {
     if (p.id && normalizeProductIdentifier(p.id) === target) {
       matchedBy = "id";
+      return true;
+    }
+    if ((p as any).legacy_id && normalizeProductIdentifier((p as any).legacy_id) === target) {
+      matchedBy = "legacy_id";
       return true;
     }
     if (p.slug && normalizeProductIdentifier(p.slug) === target) {

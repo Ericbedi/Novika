@@ -44,6 +44,8 @@ import {
   Tag,
   Boxes,
   MoreHorizontal,
+  RefreshCw,
+  Database,
 } from "lucide-react";
 import {
   canUseAiProductGenerator,
@@ -258,9 +260,54 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
   const [isBatchStatusModalOpen, setIsBatchStatusModalOpen] = useState(false);
   const [batchStatusChoice, setBatchStatusChoice] = useState<"active" | "draft" | "archived">("active");
 
+  // Synchronisation Supabase (Prompt 17-O)
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+  const [syncReport, setSyncReport] = useState<{
+    total_received: number;
+    synced_count: number;
+    existing_count: number;
+    error_count: number;
+    errors: any[];
+  } | null>(null);
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const handleSyncToSupabase = async () => {
+    try {
+      setIsSyncing(true);
+      const localProducts = getShopProductsRaw(storeSlug);
+      const res = await fetch("/api/products/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          storeSlug,
+          products: localProducts,
+          role: activeRole,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.report) {
+        setSyncReport(data.report);
+        setIsSyncModalOpen(true);
+        // Rafraîchir les produits locaux
+        setProducts(getShopProductsRaw(storeSlug));
+        showToast(
+          data.report.synced_count > 0
+            ? `${data.report.synced_count} produit(s) synchronisé(s) dans Supabase !`
+            : "Tous vos produits sont déjà synchronisés dans Supabase !"
+        );
+      } else {
+        showToast(data.error || "Erreur lors de la synchronisation Supabase.");
+      }
+    } catch {
+      showToast("Échec de connexion lors de la synchronisation.");
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   // Calcul dynamique des 3 indicateurs
@@ -864,6 +911,22 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
               >
                 <Upload className="w-3.5 h-3.5 text-[#666660]" />
                 <span>Importer</span>
+              </button>
+            )}
+
+            {/* Bouton : Synchroniser mes produits vers la base (Prompt 17-O) */}
+            {canImport && (
+              <button
+                type="button"
+                id="btn-sync-to-supabase"
+                data-testid="btn-sync-to-supabase"
+                onClick={handleSyncToSupabase}
+                disabled={isSyncing}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-emerald-300 bg-emerald-50 text-xs font-semibold text-emerald-900 hover:bg-emerald-100 transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
+                title="Synchroniser mes produits vers la base de données Supabase"
+              >
+                <RefreshCw className={cn("w-3.5 h-3.5 text-emerald-700", isSyncing && "animate-spin")} />
+                <span>{isSyncing ? "Synchronisation..." : "Synchroniser vers la base"}</span>
               </button>
             )}
 
@@ -2368,6 +2431,80 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
                 Vider définitivement
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modale de rapport de synchronisation Supabase (Prompt 17-O) */}
+      {isSyncModalOpen && syncReport && (
+        <div
+          data-testid="sync-report-modal"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in"
+        >
+          <div className="bg-white rounded-3xl border border-[#E6E0D4] shadow-xl max-w-md w-full p-6 space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-[#F0EBE0]">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-200">
+                  <Database className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-[#111111]">Synchronisation Supabase</h3>
+                  <p className="text-[11px] text-[#7A7A7A]">Rapport d'enregistrement en base de données</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSyncModalOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-stone-100 text-[#7A7A7A] transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3.5 rounded-2xl bg-stone-50 border border-stone-200/80 space-y-0.5">
+                <span className="text-[10px] font-bold text-[#7A7A7A] uppercase">Total analysé</span>
+                <p className="text-xl font-black text-[#111111]">{syncReport.total_received}</p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200/80 space-y-0.5">
+                <span className="text-[10px] font-bold text-emerald-800 uppercase">Insérés en base</span>
+                <p className="text-xl font-black text-emerald-700">{syncReport.synced_count}</p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-blue-50 border border-blue-200/80 space-y-0.5">
+                <span className="text-[10px] font-bold text-blue-800 uppercase">Déjà en base</span>
+                <p className="text-xl font-black text-blue-700">{syncReport.existing_count}</p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200/80 space-y-0.5">
+                <span className="text-[10px] font-bold text-rose-800 uppercase">Erreurs</span>
+                <p className="text-xl font-black text-rose-700">{syncReport.error_count}</p>
+              </div>
+            </div>
+
+            {syncReport.errors && syncReport.errors.length > 0 && (
+              <div className="p-3 bg-rose-50 rounded-xl border border-rose-200 text-xs text-rose-800 space-y-1">
+                <p className="font-bold">Détails des erreurs :</p>
+                <ul className="list-disc pl-4 space-y-0.5 text-[11px]">
+                  {syncReport.errors.slice(0, 3).map((err: any, i: number) => (
+                    <li key={i}>{err.title}: {err.error}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div className="p-3 bg-amber-50/70 border border-amber-200/70 rounded-xl text-[11px] text-amber-900 leading-snug">
+              Vos produits sont désormais enregistrés de manière permanente dans la base Supabase et visibles en vitrine publique. Vos données locales restent intactes dans votre navigateur.
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsSyncModalOpen(false)}
+              className="w-full py-2.5 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-colors"
+            >
+              Fermer le rapport
+            </button>
           </div>
         </div>
       )}

@@ -412,5 +412,23 @@ Deux buckets publics ont été provisionnés avec limitation de taille et filtra
   - Utilisation de balises directes `<title>` et `<meta>` compatibles avec React 19 et Next.js 15.
 * **Tests** : 6 tests unitaires dans `prompt-17n-kelio-storefront.test.ts`, 347 tests globaux Vitest au vert, captures d'écran Playwright en versions desktop et mobile iPhone 15 Pro Max.
 
+### Prompt 17-O : Persistance des Produits Importés dans Supabase & Synchronisation
+* **Diagnostic & Constat initial** :
+  - L'incident `ERR-9AN3N5` / `ERR-UKIUA1` était déclenché par une exception non interceptée dans `src/app/error.tsx` lors de l'accès à un produit importé.
+  - Cause racine : les produits importés en CSV recevaient un identifiant généré de type `prod_imp_...` stocké UNIQUEMENT dans le `localStorage` du navigateur. Aucune ligne n'était écrite dans la table `products` de Supabase (qui ne contenait qu'une seule ligne : `c8f6d031-521b-4b30-a902-96f9e4920002`).
+  - La requête `product_id.eq.${productIdOrSlug}` dans `/api/products` levait l'erreur PostgreSQL `22P02: invalid input syntax for type uuid` sur ces identifiants non-UUID.
+* **Migration Supabase & Schéma unifié** :
+  - Colonnes `legacy_id TEXT` et `short_code VARCHAR(30)` ajoutées dans la table `products` avec index partiels dédiés.
+  - Vue `product_availability` mise à jour avec `legacy_id` et `short_code`.
+* **Sécurisation des requêtes API** :
+  - Validation du format UUID par expression régulière (`isUuid`) avant tout filtre `product_id.eq`. Les identifiants non-UUID sont résolus par `slug`, `legacy_id` ou `short_code`.
+* **Procédure stockée atomique & Import Direct** :
+  - Fonction PostgreSQL `public.sync_products_to_supabase(p_shop_slug, p_products)` avec détection de doublons (par `legacy_id`, `slug` et `title`), insertion atomique dans `products`, `variants`, `stock_levels` et `product_media`.
+  - L'API `/api/products/import/route.ts` écrit directement les produits dans Supabase via cette procédure stockée.
+* **Bouton de synchronisation client** :
+  - Bouton « Synchroniser vers la base » ajouté dans l'administration (`products-list-client.tsx`) avec modale de rapport transparent (total analysé, insérés, déjà existants, erreurs).
+* **Tests** : 4 tests unitaires dans `src/lib/prompt-17o-supabase-sync.test.ts`, 351 tests globaux Vitest réussis à 100%.
+
+
 
 

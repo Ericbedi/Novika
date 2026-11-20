@@ -246,7 +246,24 @@ Dernière mise à jour : 2026-11-20
   - Suite globale Vitest : 31 fichiers, 347 tests passés au vert
   - Vérification E2E Playwright : capture d'écran catalogue, fiche produit desktop et mobile iPhone 15 Pro Max
 
-
-
-
+### 14. Prompt 17-O : Persistance des Produits Importés dans Supabase & Synchronisation
+- **Objectif** : Établir Supabase comme source de vérité unique pour les produits importés. Éviter que les produits ne vivent que dans le `localStorage` du navigateur. Supprimer toute erreur PostgreSQL `22P02` (syntaxe UUID) et prévenir les incidents de type `ERR-9AN3N5` ou `ERR-UKIUA1`.
+- **Réalisations & Garanties R0** :
+  1. *Schéma Supabase non-destructif* : Ajout de la colonne `legacy_id TEXT` et `short_code VARCHAR(30)` dans la table `products` avec index dédiés (`idx_products_store_legacy_id`, `idx_products_store_short_code`). Mise à jour de la vue `product_availability`.
+  2. *Sécurisation UUID* : Dans `/api/products/route.ts`, vérification stricte du format UUID par expression régulière avant toute clause `product_id.eq`. Les identifiants de type `prod_imp_...` sont résolus de manière sûre par `legacy_id`, `slug` ou `short_code`, sans jamais déclencher l'erreur Postgres `22P02`.
+  3. *Procédure stockée atomique* : Fonction PostgreSQL `public.sync_products_to_supabase(p_shop_slug, p_products)` avec anti-doublon par `legacy_id`, `slug` et `title`. Insère atomiquement dans `products`, `variants`, `stock_levels` et `product_media`.
+  4. *Import CSV direct* : L'API `/api/products/import/route.ts` persiste immédiatement les produits importés dans Supabase via la procédure stockée.
+  5. *Bouton de synchronisation client* : Ajout du bouton « Synchroniser vers la base » dans l'espace administration (`products-list-client.tsx`), permettant au propriétaire d'envoyer ses produits locaux vers Supabase avec un rapport détaillé modal (total analysé, insérés, déjà existants, erreurs) sans toucher aux données locales.
+- **Fichiers clés** :
+  - `src/app/api/products/route.ts`
+  - `src/app/api/products/sync/route.ts`
+  - `src/app/api/products/import/route.ts`
+  - `src/app/app/[store]/produits/products-list-client.tsx`
+  - `src/app/boutique/[store]/produits/[id]/page.tsx`
+  - `src/app/boutique/[store]/apercu/produit/[id]/page.tsx`
+  - `src/lib/shopify-csv-mapper.ts`
+  - `src/lib/products-store.ts`
+- **Tests** :
+  - `src/lib/prompt-17o-supabase-sync.test.ts` (4 tests unitaires au vert)
+  - Suite globale Vitest : 32 fichiers, 351 tests passés au vert à 100%.
 

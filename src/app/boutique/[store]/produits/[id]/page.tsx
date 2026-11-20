@@ -91,13 +91,18 @@ export default function ProductCanonicalDetailPage({
                 p.id === productId ||
                 p.slug === productId ||
                 p.shortCode === productId ||
-                p.short_code === productId
-            ) || data.products[0];
-            setProductData({
-              product: found,
-              isDeleted: Boolean(found.deletedAt),
-              isUnpublished: !found.published_to_storefront,
-            });
+                p.short_code === productId ||
+                (p as any).legacy_id === productId
+            );
+            if (found) {
+              setProductData({
+                product: found,
+                isDeleted: Boolean(found.deletedAt),
+                isUnpublished: !found.published_to_storefront,
+              });
+            } else {
+              setProductData(raw);
+            }
           } else {
             setProductData(raw);
           }

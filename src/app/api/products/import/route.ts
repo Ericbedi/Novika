@@ -3,6 +3,7 @@ import { canImportProducts } from "@/config/permissions";
 import { executeAutoCsvImport } from "@/lib/csv-import-engine";
 import { UserRole } from "@/server/data/types";
 import { logAuthAudit } from "@/lib/audit-auth";
+import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
   try {
@@ -63,6 +64,19 @@ export async function POST(req: NextRequest) {
       duplicateStrategy,
       currency,
     });
+
+    // 4. Persistance directe dans Supabase (Prompt 17-O)
+    if (report?.importedProducts && report.importedProducts.length > 0) {
+      try {
+        const supabase = await createClient();
+        await (supabase as any).rpc("sync_products_to_supabase", {
+          p_shop_slug: storeSlug || "lome-glow",
+          p_products: report.importedProducts,
+        });
+      } catch (dbSyncErr) {
+        console.warn("[CSV Import] Note: Écriture Supabase asynchrone / hors ligne:", dbSyncErr);
+      }
+    }
 
     return NextResponse.json({
       success: true,
