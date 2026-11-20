@@ -230,8 +230,8 @@ export function updateOrderStatusWithAudit(params: {
   const timeFormatted = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 
   // 4. Logique de Stock & Réservation (Prompt 16-b)
-  const storeSlug = order.storeSlug || "lome-glow";
-  const orderProductId = order.productId || order.items?.[0]?.productId || "prod_1";
+  const storeSlug = (order as any).storeSlug || order.shopId || "lome-glow";
+  const orderProductId = (order as any).productId || order.items?.[0]?.id || "prod_1";
   const orderQty = order.items?.reduce((s, it) => s + (it.quantity || 1), 0) || 1;
 
   if (targetStatus === "confirmed") {
@@ -272,7 +272,7 @@ export function updateOrderStatusWithAudit(params: {
       quantity: orderQty,
       orderNumber: order.orderNumber,
     });
-  } else if (targetStatus === "cancelled" || targetStatus === "rejected") {
+  } else if (targetStatus === "cancelled" || (targetStatus as string) === "rejected") {
     // Commande annulée ou rejetée : libération du stock réservé
     releaseReservedStock({
       storeSlug,

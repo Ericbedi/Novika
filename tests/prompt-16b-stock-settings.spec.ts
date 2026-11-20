@@ -33,7 +33,7 @@ test.describe("Prompt 16-b : Réglages de stock par boutique (Réglages → Stoc
   });
 
   test("2. Réglage 1 : Option A (Afficher avec mention Rupture) vs Option B (Masquer de la vitrine)", () => {
-    const testProd: Product = {
+    const testProd = {
       id: "prod_16b_visibility",
       name: "Sérum Anti-Taches",
       slug: "serum-anti-taches",
@@ -44,7 +44,7 @@ test.describe("Prompt 16-b : Réglages de stock par boutique (Réglages → Stoc
       productStatus: "active",
       variants: [],
       images: [],
-    };
+    } as unknown as Product;
 
     // Option A : Afficher avec la mention rupture
     updateStockSettings(storeSlug, { outOfStockVisibility: "show_badge" }, { role: "owner" });
@@ -58,7 +58,7 @@ test.describe("Prompt 16-b : Réglages de stock par boutique (Réglages → Stoc
   });
 
   test("3. Surcharge par produit : 'always_show' et 'always_hide'", () => {
-    const prodAlwaysShow: Product = {
+    const prodAlwaysShow = {
       id: "prod_force_show",
       name: "Produit Phare",
       slug: "produit-phare",
@@ -70,9 +70,9 @@ test.describe("Prompt 16-b : Réglages de stock par boutique (Réglages → Stoc
       outOfStockVisibilityOverride: "always_show",
       variants: [],
       images: [],
-    };
+    } as unknown as Product;
 
-    const prodAlwaysHide: Product = {
+    const prodAlwaysHide = {
       id: "prod_force_hide",
       name: "Produit Discret",
       slug: "produit-discret",
@@ -84,7 +84,7 @@ test.describe("Prompt 16-b : Réglages de stock par boutique (Réglages → Stoc
       outOfStockVisibilityOverride: "always_hide",
       variants: [],
       images: [],
-    };
+    } as unknown as Product;
 
     // Boutique configurée sur Option B ("hide")
     updateStockSettings(storeSlug, { outOfStockVisibility: "hide" }, { role: "owner" });
@@ -100,7 +100,7 @@ test.describe("Prompt 16-b : Réglages de stock par boutique (Réglages → Stoc
   });
 
   test("4. Réglage 2 : Réservation atomique (Option A à la réception)", () => {
-    const prod: Product = {
+    const prod = {
       id: "prod_res_timing_a",
       name: "Savon Noir",
       slug: "savon-noir",
@@ -113,7 +113,7 @@ test.describe("Prompt 16-b : Réglages de stock par boutique (Réglages → Stoc
       productStatus: "active",
       variants: [],
       images: [],
-    };
+    } as unknown as Product;
     saveShopProduct(storeSlug, prod);
 
     updateStockSettings(storeSlug, { reservationTiming: "on_order_received" }, { role: "owner" });
@@ -145,7 +145,7 @@ test.describe("Prompt 16-b : Réglages de stock par boutique (Réglages → Stoc
   });
 
   test("5. Réglage 2 : Réservation à la confirmation (Option B closeuse) et bascule 'pending_stock'", () => {
-    const prod: Product = {
+    const prod = {
       id: "prod_res_timing_b",
       name: "Huile de Ricin",
       slug: "huile-ricin",
@@ -158,7 +158,7 @@ test.describe("Prompt 16-b : Réglages de stock par boutique (Réglages → Stoc
       productStatus: "active",
       variants: [],
       images: [],
-    };
+    } as unknown as Product;
     saveShopProduct(storeSlug, prod);
 
     updateStockSettings(storeSlug, { reservationTiming: "on_closer_confirmation" }, { role: "owner" });
@@ -211,7 +211,7 @@ test.describe("Prompt 16-b : Réglages de stock par boutique (Réglages → Stoc
   });
 
   test("6. Livraison effective (fulfill) décrémente le stock physique et solde la réservation", () => {
-    const prod: Product = {
+    const prod = {
       id: "prod_fulfill_test",
       name: "Poudre de Baobab",
       slug: "poudre-baobab",
@@ -224,7 +224,7 @@ test.describe("Prompt 16-b : Réglages de stock par boutique (Réglages → Stoc
       productStatus: "active",
       variants: [],
       images: [],
-    };
+    } as unknown as Product;
     saveShopProduct(storeSlug, prod);
 
     fulfillDeliveredOrderStock({

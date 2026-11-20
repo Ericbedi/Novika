@@ -195,9 +195,11 @@ export function ImportExportClient({ storeSlug }: ImportExportClientProps) {
           isOpen={isImportModalOpen}
           onClose={() => setIsImportModalOpen(false)}
           storeSlug={storeSlug}
-          onSuccess={(importedCount) => {
+          activeRole={activeRole}
+          existingProducts={getShopProductsRaw(storeSlug)}
+          onImportSuccess={(importedProducts) => {
             setIsImportModalOpen(false);
-            showToast(`${importedCount} produit(s) importé(s) avec succès !`);
+            showToast(`${importedProducts.length} produit(s) importé(s) avec succès !`);
           }}
         />
       </div>

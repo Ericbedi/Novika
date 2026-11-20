@@ -22,6 +22,7 @@ describe("Prompt 17 - Product Indicators Calculator", () => {
       status: "in_stock",
       trackQuantity: true,
       variants: [],
+      images: [],
       quantityOffers: [],
       badgesConfig: {} as any,
       createdAt: "2026-01-01T00:00:00Z",
@@ -40,6 +41,7 @@ describe("Prompt 17 - Product Indicators Calculator", () => {
       status: "in_stock",
       trackQuantity: true,
       variants: [],
+      images: [],
       quantityOffers: [],
       badgesConfig: {} as any,
       createdAt: "2026-01-01T00:00:00Z",
@@ -58,6 +60,7 @@ describe("Prompt 17 - Product Indicators Calculator", () => {
       status: "in_stock",
       trackQuantity: true,
       variants: [],
+      images: [],
       quantityOffers: [],
       badgesConfig: {} as any,
       createdAt: "2026-01-01T00:00:00Z",
@@ -69,11 +72,10 @@ describe("Prompt 17 - Product Indicators Calculator", () => {
   const dateWithin10Days = new Date("2026-11-12T10:00:00Z").toISOString();
   const dateOld = new Date("2026-06-01T10:00:00Z").toISOString();
 
-  const mockOrders: Order[] = [
+  const mockOrders = [
     {
       id: "ord-1",
       orderNumber: "NOV-001",
-      storeSlug: "lome-glow",
       customerName: "Amina Diallo",
       customerPhone: "+22890000001",
       city: "Lomé",
@@ -82,7 +84,9 @@ describe("Prompt 17 - Product Indicators Calculator", () => {
       totalAmount: 30000,
       items: [
         {
+          id: "it-1",
           productId: "prod-1",
+          productName: "Sérum",
           quantity: 2,
           unitPrice: 15000,
           totalPrice: 30000,
@@ -94,7 +98,6 @@ describe("Prompt 17 - Product Indicators Calculator", () => {
     {
       id: "ord-2",
       orderNumber: "NOV-002",
-      storeSlug: "lome-glow",
       customerName: "Koffi Mensah",
       customerPhone: "+22890000002",
       city: "Lomé",
@@ -103,7 +106,9 @@ describe("Prompt 17 - Product Indicators Calculator", () => {
       totalAmount: 20000,
       items: [
         {
+          id: "it-2",
           productId: "prod-2",
+          productName: "Crème",
           quantity: 2,
           unitPrice: 10000,
           totalPrice: 20000,
@@ -115,7 +120,6 @@ describe("Prompt 17 - Product Indicators Calculator", () => {
     {
       id: "ord-3",
       orderNumber: "NOV-003",
-      storeSlug: "lome-glow",
       customerName: "Fatou Sow",
       customerPhone: "+22890000003",
       city: "Dakar",
@@ -124,7 +128,9 @@ describe("Prompt 17 - Product Indicators Calculator", () => {
       totalAmount: 15000,
       items: [
         {
+          id: "it-3",
           productId: "prod-1",
+          productName: "Sérum",
           quantity: 1,
           unitPrice: 15000,
           totalPrice: 15000,
@@ -136,7 +142,6 @@ describe("Prompt 17 - Product Indicators Calculator", () => {
     {
       id: "ord-4",
       orderNumber: "NOV-004",
-      storeSlug: "lome-glow",
       customerName: "Paul Lawson",
       customerPhone: "+22890000004",
       city: "Lomé",
@@ -145,7 +150,9 @@ describe("Prompt 17 - Product Indicators Calculator", () => {
       totalAmount: 5000,
       items: [
         {
+          id: "it-4",
           productId: "prod-3",
+          productName: "Savon",
           quantity: 1,
           unitPrice: 5000,
           totalPrice: 5000,
@@ -154,7 +161,7 @@ describe("Prompt 17 - Product Indicators Calculator", () => {
       createdAt: dateOld,
       updatedAt: dateOld,
     },
-  ];
+  ] as unknown as Order[];
 
   it("filtre strictement les commandes livrées selon la période", () => {
     // 7 jours : ord-1 (il y a 1 jour)

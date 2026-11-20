@@ -112,7 +112,7 @@ describe("Prompt 17 - Phase 17-C : Moteur de Génération des Variantes", () => 
 
 describe("Prompt 17 - Phase 17-D : Règle de suppression avec commandes existantes", () => {
   it("refuse la suppression définitive d'un produit avec commandes et impose l'archivage", () => {
-    const orderCount = 5;
+    const orderCount: number = 5;
     const canDeletePermanently = orderCount === 0;
     const archiveRecommended = orderCount > 0;
 

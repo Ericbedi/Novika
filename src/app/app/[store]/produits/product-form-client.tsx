@@ -106,7 +106,7 @@ export function ProductFormClient({
   isEditing = false,
 }: ProductFormClientProps) {
   const router = useRouter();
-  const { activeRole, currentUser } = useApp();
+  const { activeRole } = useApp();
   const isCloser = activeRole === "closer";
   const canViewFinancials = canViewProductFinancials(activeRole);
   const canManage = canManageProducts(activeRole);
@@ -549,7 +549,7 @@ export function ProductFormClient({
       {
         id: "aud-01",
         action: isEditing ? "Mise à jour du produit" : "Création initiale de la fiche",
-        performedBy: currentUser?.name || "Admin",
+        performedBy: activeRole === "admin" ? "Admin" : activeRole === "closer" ? "Closeuse" : "Utilisateur",
         timestamp: new Date().toISOString(),
       },
     ]
@@ -909,7 +909,7 @@ export function ProductFormClient({
         {
           id: `aud-${Date.now()}`,
           action: isEditing ? "Mise à jour des prix, stock et variantes" : "Création du produit",
-          performedBy: currentUser?.name || "Admin",
+          performedBy: activeRole === "admin" ? "Admin" : activeRole === "closer" ? "Closeuse" : "Utilisateur",
           timestamp: new Date().toISOString(),
         },
         ...auditTrail,

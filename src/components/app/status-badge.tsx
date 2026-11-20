@@ -77,6 +77,12 @@ const STATUS_STYLES: Record<OrderStatus, { bg: string; text: string; border: str
     border: "border-rose-200 dark:border-rose-800/60",
     dot: "bg-rose-500",
   },
+  pending_stock: {
+    bg: "bg-amber-50 dark:bg-amber-950/50",
+    text: "text-amber-700 dark:text-amber-300",
+    border: "border-amber-200 dark:border-amber-800/60",
+    dot: "bg-amber-500",
+  },
 };
 
 export function StatusBadge({ status, className, size = "md", showDot = true }: StatusBadgeProps) {

@@ -250,7 +250,7 @@ export function OrderDetailClient({ storeSlug, orderNumber }: OrderDetailClientP
       });
 
       if (!stockRes.success && stockRes.orderStatus === "pending_stock") {
-        notificationSound(); // Alerte sonore pour la closeuse
+        notificationSound.playOrderSound(); // Alerte sonore pour la closeuse
         setOrder((prev) => ({
           ...prev,
           status: "pending_stock",
@@ -416,7 +416,7 @@ export function OrderDetailClient({ storeSlug, orderNumber }: OrderDetailClientP
                 customerPhone: order.customerPhone,
                 customerName: order.customerName,
                 orderNumber: order.orderNumber,
-                productName: order.items?.[0]?.name || "votre produit",
+                productName: order.items?.[0]?.productName || (order.items?.[0] as any)?.name || "votre produit",
                 storeName: "Novika",
               })}
               target="_blank"
@@ -1329,7 +1329,7 @@ export function OrderDetailClient({ storeSlug, orderNumber }: OrderDetailClientP
                   customerPhone: order.customerPhone,
                   customerName: order.customerName,
                   orderNumber: order.orderNumber,
-                  productName: order.items?.[0]?.name || "votre commande",
+                  productName: order.items?.[0]?.productName || (order.items?.[0] as any)?.name || "votre commande",
                   storeName: "Novika",
                 })}
                 target="_blank"

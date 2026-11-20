@@ -93,9 +93,12 @@ describe("Prompt 16-b : Réglages de Stock par Boutique & Réservations", () => 
       id: "prod_test_vis",
       name: "Sérum Test",
       slug: "serum-test",
+      description: "Test description",
       category: "Soins",
+      collection: "Général",
       price: 15000,
       salePrice: 15000,
+      costPrice: 5000,
       stock: 10,
       availableStock: 10,
       physicalStock: 10,
@@ -104,6 +107,8 @@ describe("Prompt 16-b : Réglages de Stock par Boutique & Réservations", () => 
       status: "active",
       variants: [],
       images: [],
+      quantityOffers: [],
+      createdAt: "2026-01-01T00:00:00Z",
     };
 
     it("affiche toujours un produit en stock (> 0) quelle que soit l'option", () => {
@@ -157,7 +162,7 @@ describe("Prompt 16-b : Réglages de Stock par Boutique & Réservations", () => 
   });
 
   describe("3. Fiche Produit Directe : Écran 'Produit indisponible pour le moment'", () => {
-    const baseProduct: Product = {
+    const baseProduct = {
       id: "prod_detail_test",
       name: "Thé Minceur",
       slug: "the-minceur",
@@ -168,7 +173,7 @@ describe("Prompt 16-b : Réglages de Stock par Boutique & Réservations", () => 
       productStatus: "active",
       variants: [],
       images: [],
-    };
+    } as unknown as Product;
 
     it("déclenche l'écran indisponible si stock = 0 et réglage boutique = 'hide'", () => {
       expect(shouldDisplayUnavailableScreen(baseProduct, storeSlug, { outOfStockVisibility: "hide" } as any)).toBe(true);
@@ -195,7 +200,7 @@ describe("Prompt 16-b : Réglages de Stock par Boutique & Réservations", () => 
   });
 
   describe("4. Réglage 2 : Moment de Réservation (Option A Réception vs Option B Confirmation)", () => {
-    const testProduct: Product = {
+    const testProduct = {
       id: "prod_atom_1",
       name: "Crème Hydratante",
       slug: "creme-hydratante",
@@ -208,7 +213,7 @@ describe("Prompt 16-b : Réglages de Stock par Boutique & Réservations", () => 
       productStatus: "active",
       variants: [],
       images: [],
-    };
+    } as unknown as Product;
 
     beforeEach(() => {
       saveShopProduct(storeSlug, { ...testProduct });
@@ -289,7 +294,7 @@ describe("Prompt 16-b : Réglages de Stock par Boutique & Réservations", () => 
 
   describe("5. Cycle de Vie Complet : Libération et Livraison Effective", () => {
     beforeEach(() => {
-      const prod: Product = {
+      const prod = {
         id: "prod_life_1",
         name: "Produit Cycle",
         slug: "produit-cycle",
@@ -302,7 +307,7 @@ describe("Prompt 16-b : Réglages de Stock par Boutique & Réservations", () => 
         productStatus: "active",
         variants: [],
         images: [],
-      };
+      } as unknown as Product;
       saveShopProduct(storeSlug, prod);
     });
 
