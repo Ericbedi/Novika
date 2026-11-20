@@ -90,7 +90,7 @@ export function StoresManagementClient({ storeSlug }: StoresManagementClientProp
           setStoreList(data.stores);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -520,207 +520,207 @@ export function StoresManagementClient({ storeSlug }: StoresManagementClientProp
       ) : (
         /* Liste des boutiques */
         <div className="space-y-3">
-        {filteredStores.map((store) => {
-          const isCurrentActive = store.id === activeStore.id;
-          const isPendingDelete = store.status === "pending_deletion";
-          const isArchived = store.status === "archived";
-          const canEdit = canEditStore(activeRole);
-          const canDelete = canDeleteStore(activeRole);
+          {filteredStores.map((store) => {
+            const isCurrentActive = store.id === activeStore.id;
+            const isPendingDelete = store.status === "pending_deletion";
+            const isArchived = store.status === "archived";
+            const canEdit = canEditStore(activeRole);
+            const canDelete = canDeleteStore(activeRole);
 
-          return (
-            <div
-              key={store.id}
-              className={cn(
-                "p-4 rounded-2xl border bg-white transition-all shadow-2xs",
-                isCurrentActive
-                  ? "border-[#111111] ring-1 ring-[#111111]/15"
-                  : isPendingDelete
-                    ? "border-rose-300 bg-rose-50/30"
-                    : "border-black/[0.08] hover:border-black/20"
-              )}
-            >
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                {/* Informations de base */}
-                <div className="flex items-start gap-3.5 min-w-0 flex-1">
-                  <div className="h-11 w-11 rounded-xl bg-[#FAF8F5] border border-black/[0.08] flex items-center justify-center shrink-0">
-                    <CountryFlag code={store.country} width={28} height={18} />
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {/* Clic sur le nom de la boutique ouvre le tiroir Modifier (Prompt 05-M) */}
-                      {canEdit ? (
-                        <button
-                          type="button"
-                          id={`link-edit-store-${store.slug}`}
-                          onClick={() => setEditingStore(store)}
-                          className="text-sm font-black text-[#111111] hover:underline text-left cursor-pointer truncate"
-                          title="Cliquer pour modifier cette boutique"
-                        >
-                          {store.name}
-                        </button>
-                      ) : (
-                        <h2 className="text-sm font-black text-[#111111] truncate">{store.name}</h2>
-                      )}
-
-                      {isCurrentActive && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#111111] text-[#FAF8F5]">
-                          Boutique Active
-                        </span>
-                      )}
-                      {isArchived && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-black/[0.06] text-[#666660]">
-                          Archivée
-                        </span>
-                      )}
-                      {isPendingDelete && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-100 text-rose-700 border border-rose-200">
-                          Suppression le {store.deletionDate}
-                        </span>
-                      )}
+            return (
+              <div
+                key={store.id}
+                className={cn(
+                  "p-4 rounded-2xl border bg-white transition-all shadow-2xs",
+                  isCurrentActive
+                    ? "border-[#111111] ring-1 ring-[#111111]/15"
+                    : isPendingDelete
+                      ? "border-rose-300 bg-rose-50/30"
+                      : "border-black/[0.08] hover:border-black/20"
+                )}
+              >
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  {/* Informations de base */}
+                  <div className="flex items-start gap-3.5 min-w-0 flex-1">
+                    <div className="h-11 w-11 rounded-xl bg-[#FAF8F5] border border-black/[0.08] flex items-center justify-center shrink-0">
+                      <CountryFlag code={store.country} width={28} height={18} />
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-[#666660]">
-                      <span className="font-semibold text-[#111111]">
-                        {store.countryName} · {store.currency}
-                      </span>
-                      <span>·</span>
-                      <span className="font-mono text-[11px] text-[#888880]">/boutique/{store.slug}</span>
-                      <span>·</span>
-                      <span>WhatsApp : {store.whatsappNumber}</span>
-                      <span>·</span>
-                      <span>{store.productCount ?? 0} produits</span>
-                      <span>·</span>
-                      <span>{store.orderCount ?? 0} commandes</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {/* Clic sur le nom de la boutique ouvre le tiroir Modifier (Prompt 05-M) */}
+                        {canEdit ? (
+                          <button
+                            type="button"
+                            id={`link-edit-store-${store.slug}`}
+                            onClick={() => setEditingStore(store)}
+                            className="text-sm font-black text-[#111111] hover:underline text-left cursor-pointer truncate"
+                            title="Cliquer pour modifier cette boutique"
+                          >
+                            {store.name}
+                          </button>
+                        ) : (
+                          <h2 className="text-sm font-black text-[#111111] truncate">{store.name}</h2>
+                        )}
+
+                        {isCurrentActive && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#111111] text-[#FAF8F5]">
+                            Boutique Active
+                          </span>
+                        )}
+                        {isArchived && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-black/[0.06] text-[#666660]">
+                            Archivée
+                          </span>
+                        )}
+                        {isPendingDelete && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-100 text-rose-700 border border-rose-200">
+                            Suppression le {store.deletionDate}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-[#666660]">
+                        <span className="font-semibold text-[#111111]">
+                          {store.countryName} · {store.currency}
+                        </span>
+                        <span>·</span>
+                        <span className="font-mono text-[11px] text-[#888880]">/boutique/{store.slug}</span>
+                        <span>·</span>
+                        <span>WhatsApp : {store.whatsappNumber}</span>
+                        <span>·</span>
+                        <span>{store.productCount ?? 0} produits</span>
+                        <span>·</span>
+                        <span>{store.orderCount ?? 0} commandes</span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* ======================================================== */}
-                {/* ACTIONS CONTEXTUELLES DE LA CARTE DE BOUTIQUE            */}
-                {/* ORDRE FINAL STRICT (Prompt 05-M) :                       */}
-                {/* 1. Basculer ici                                          */}
-                {/* 2. Aperçu (œil)                                          */}
-                {/* 3. Modifier                                              */}
-                {/* 4. Dupliquer                                             */}
-                {/* 5. Archiver                                              */}
-                {/* 6. Supprimer                                             */}
-                {/* ======================================================== */}
-                <div className="flex flex-wrap items-center gap-2 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-black/[0.06]">
-                  {/* 1. Basculer ici (si non active) */}
-                  {!isCurrentActive && !isPendingDelete && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveStore(store);
-                        router.push(`/app/${store.slug}`);
-                      }}
-                      className="px-3 py-1.5 rounded-xl border border-black/[0.1] bg-[#FAF8F5] hover:bg-black/[0.05] text-xs font-bold text-[#111111] transition-colors cursor-pointer"
-                    >
-                      Basculer ici
-                    </button>
-                  )}
-
-                  {/* 2. Aperçu (œil) */}
-                  <a
-                    id={`btn-store-preview-${store.slug}`}
-                    href={`/boutique/${store.slug}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title={store.status === "active" ? "Voir la boutique" : "Aperçu de la boutique (non publiée)"}
-                    aria-label={`Voir la boutique ${store.name} (s'ouvre dans un nouvel onglet)`}
-                    className="p-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-xl border border-black/[0.08] hover:border-black/20 text-[#666660] hover:text-[#111111] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </a>
-
-                  {/* 2b. Domaines & DNS (Prompt 19) */}
-                  <Link
-                    href={`/app/${store.slug}/reglages/domaines`}
-                    title="Gérer les domaines et DNS"
-                    className="p-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-xl border border-black/[0.08] hover:border-black/20 text-[#666660] hover:text-[#111111] transition-colors"
-                  >
-                    <Globe2 className="h-4 w-4" />
-                  </Link>
-
-                  {/* 3. Modifier (icône crayon + texte) - Réservé aux rôles autorisés */}
-                  {canEdit && (
-                    <button
-                      type="button"
-                      id={`btn-edit-store-${store.slug}`}
-                      onClick={() => setEditingStore(store)}
-                      title="Modifier les paramètres de la boutique"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-black/[0.08] hover:border-black/20 text-xs font-semibold text-[#111111] hover:bg-black/[0.03] transition-colors cursor-pointer"
-                    >
-                      <Pencil className="h-3.5 w-3.5 text-[#666660]" />
-                      <span>Modifier</span>
-                    </button>
-                  )}
-
-                  {/* 4. Dupliquer */}
-                  <button
-                    type="button"
-                    id={`btn-duplicate-store-${store.slug}`}
-                    onClick={() => handleStartDuplicate(store)}
-                    title="Dupliquer vers un autre pays ou nouvelle marque"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-black/[0.08] hover:border-black/20 text-xs font-semibold text-[#111111] hover:bg-black/[0.03] transition-colors cursor-pointer"
-                  >
-                    <Copy className="h-3.5 w-3.5 text-[#666660]" />
-                    <span>Dupliquer</span>
-                  </button>
-
-                  {/* 5. Archiver / Désarchiver */}
-                  <button
-                    type="button"
-                    id={`btn-archive-store-${store.slug}`}
-                    onClick={() => setArchiveTarget(store)}
-                    title={isArchived ? "Réactiver cette boutique" : "Archiver cette boutique"}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-black/[0.08] hover:border-black/20 text-xs font-semibold text-[#666660] hover:text-[#111111] hover:bg-black/[0.03] transition-colors cursor-pointer"
-                  >
-                    <Archive className="h-3.5 w-3.5" />
-                    <span>{isArchived ? "Réactiver" : "Archiver"}</span>
-                  </button>
-
-                  {/* 6. Supprimer ou Annuler suppression - Réservé au Propriétaire (Prompt 05-M) */}
-                  {isPendingDelete ? (
-                    <button
-                      type="button"
-                      onClick={() => handleCancelDeletion(store.id)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 text-xs font-bold hover:bg-amber-100 transition-colors cursor-pointer"
-                    >
-                      <RotateCcw className="h-3.5 w-3.5" />
-                      <span>Annuler la suppression</span>
-                    </button>
-                  ) : (
-                    canDelete && (
+                  {/* ======================================================== */}
+                  {/* ACTIONS CONTEXTUELLES DE LA CARTE DE BOUTIQUE            */}
+                  {/* ORDRE FINAL STRICT (Prompt 05-M) :                       */}
+                  {/* 1. Basculer ici                                          */}
+                  {/* 2. Aperçu (œil)                                          */}
+                  {/* 3. Modifier                                              */}
+                  {/* 4. Dupliquer                                             */}
+                  {/* 5. Archiver                                              */}
+                  {/* 6. Supprimer                                             */}
+                  {/* ======================================================== */}
+                  <div className="flex flex-wrap items-center gap-2 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-black/[0.06]">
+                    {/* 1. Basculer ici (si non active) */}
+                    {!isCurrentActive && !isPendingDelete && (
                       <button
                         type="button"
-                        id={`btn-delete-store-${store.slug}`}
                         onClick={() => {
-                          setDeleteTarget(store);
-                          setDeleteConfirmName("");
-                          setDeletePassword("");
-                          setDeleteError("");
+                          setActiveStore(store);
+                          router.push(`/app/${store.slug}`);
                         }}
-                        title="Supprimer la boutique (action propriétaire)"
-                        className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors cursor-pointer"
+                        className="px-3 py-1.5 rounded-xl border border-black/[0.1] bg-[#FAF8F5] hover:bg-black/[0.05] text-xs font-bold text-[#111111] transition-colors cursor-pointer"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        Basculer ici
                       </button>
-                    )
-                  )}
+                    )}
+
+                    {/* 2. Aperçu (œil) */}
+                    <a
+                      id={`btn-store-preview-${store.slug}`}
+                      href={`/boutique/${store.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={store.status === "active" ? "Voir la boutique" : "Aperçu de la boutique (non publiée)"}
+                      aria-label={`Voir la boutique ${store.name} (s'ouvre dans un nouvel onglet)`}
+                      className="p-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-xl border border-black/[0.08] hover:border-black/20 text-[#666660] hover:text-[#111111] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </a>
+
+                    {/* 2b. Domaines & DNS (Prompt 19) */}
+                    <Link
+                      href={`/app/${store.slug}/reglages/domaines`}
+                      title="Gérer les domaines et DNS"
+                      className="p-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-xl border border-black/[0.08] hover:border-black/20 text-[#666660] hover:text-[#111111] transition-colors"
+                    >
+                      <Globe2 className="h-4 w-4" />
+                    </Link>
+
+                    {/* 3. Modifier (icône crayon + texte) - Réservé aux rôles autorisés */}
+                    {canEdit && (
+                      <button
+                        type="button"
+                        id={`btn-edit-store-${store.slug}`}
+                        onClick={() => setEditingStore(store)}
+                        title="Modifier les paramètres de la boutique"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-black/[0.08] hover:border-black/20 text-xs font-semibold text-[#111111] hover:bg-black/[0.03] transition-colors cursor-pointer"
+                      >
+                        <Pencil className="h-3.5 w-3.5 text-[#666660]" />
+                        <span>Modifier</span>
+                      </button>
+                    )}
+
+                    {/* 4. Dupliquer */}
+                    <button
+                      type="button"
+                      id={`btn-duplicate-store-${store.slug}`}
+                      onClick={() => handleStartDuplicate(store)}
+                      title="Dupliquer vers un autre pays ou nouvelle marque"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-black/[0.08] hover:border-black/20 text-xs font-semibold text-[#111111] hover:bg-black/[0.03] transition-colors cursor-pointer"
+                    >
+                      <Copy className="h-3.5 w-3.5 text-[#666660]" />
+                      <span>Dupliquer</span>
+                    </button>
+
+                    {/* 5. Archiver / Désarchiver */}
+                    <button
+                      type="button"
+                      id={`btn-archive-store-${store.slug}`}
+                      onClick={() => setArchiveTarget(store)}
+                      title={isArchived ? "Réactiver cette boutique" : "Archiver cette boutique"}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-black/[0.08] hover:border-black/20 text-xs font-semibold text-[#666660] hover:text-[#111111] hover:bg-black/[0.03] transition-colors cursor-pointer"
+                    >
+                      <Archive className="h-3.5 w-3.5" />
+                      <span>{isArchived ? "Réactiver" : "Archiver"}</span>
+                    </button>
+
+                    {/* 6. Supprimer ou Annuler suppression - Réservé au Propriétaire (Prompt 05-M) */}
+                    {isPendingDelete ? (
+                      <button
+                        type="button"
+                        onClick={() => handleCancelDeletion(store.id)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 text-xs font-bold hover:bg-amber-100 transition-colors cursor-pointer"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                        <span>Annuler la suppression</span>
+                      </button>
+                    ) : (
+                      canDelete && (
+                        <button
+                          type="button"
+                          id={`btn-delete-store-${store.slug}`}
+                          onClick={() => {
+                            setDeleteTarget(store);
+                            setDeleteConfirmName("");
+                            setDeletePassword("");
+                            setDeleteError("");
+                          }}
+                          title="Supprimer la boutique (action propriétaire)"
+                          className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
 
-        {filteredStores.length === 0 && (
-          <div className="p-8 text-center rounded-2xl bg-white border border-black/[0.08] text-xs text-[#666660]">
-            Aucune boutique ne correspond à votre recherche.
-          </div>
-        )}
-      </div>
+          {filteredStores.length === 0 && (
+            <div className="p-8 text-center rounded-2xl bg-white border border-black/[0.08] text-xs text-[#666660]">
+              Aucune boutique ne correspond à votre recherche.
+            </div>
+          )}
+        </div>
       )}
 
       {/* ======================================================== */}
