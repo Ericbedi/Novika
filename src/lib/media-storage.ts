@@ -8,7 +8,8 @@
  * - Migration par lots des images externes (Shopify / CSV)
  */
 
-export const MAX_MEDIA_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 Mo
+export const MAX_MEDIA_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 Mo pour les images standards
+export const MAX_GIF_FILE_SIZE_BYTES = 8 * 1024 * 1024; // 8 Mo pour les animations GIF (Prompt 17-J)
 
 export const ALLOWED_IMAGE_MIME_TYPES = [
   "image/jpeg",

@@ -4,6 +4,7 @@ import {
   detectImageMagicBytes,
   saveShopMediaItem,
   MAX_MEDIA_FILE_SIZE_BYTES,
+  MAX_GIF_FILE_SIZE_BYTES,
   StoredMediaItem,
 } from "@/lib/media-storage";
 
@@ -48,18 +49,7 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await res.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // 3. Vérification de la taille (Max 5 Mo)
-    if (buffer.length > MAX_MEDIA_FILE_SIZE_BYTES) {
-      return NextResponse.json(
-        {
-          error: "L'image distante dépasse la limite maximale autorisée de 5 Mo.",
-          code: "FILE_TOO_LARGE",
-        },
-        { status: 413 }
-      );
-    }
-
-    // 4. Vérification Magic Bytes
+    // 3. Vérification Magic Bytes
     const magicCheck = detectImageMagicBytes(buffer);
     if (!magicCheck.valid || !magicCheck.mimeType) {
       return NextResponse.json(
@@ -71,16 +61,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 5. Copie dans notre stockage interne
+    // 4. Vérification de la taille (8 Mo max pour GIF, 5 Mo max pour les autres)
+    const isGif = magicCheck.mimeType === "image/gif";
+    const maxSizeBytes = isGif ? MAX_GIF_FILE_SIZE_BYTES : MAX_MEDIA_FILE_SIZE_BYTES;
+
+    if (buffer.length > maxSizeBytes) {
+      return NextResponse.json(
+        {
+          error: isGif
+            ? "L'animation GIF distante dépasse la limite maximale autorisée de 8 Mo."
+            : "L'image distante dépasse la limite maximale autorisée de 5 Mo.",
+          code: "FILE_TOO_LARGE",
+        },
+        { status: 413 }
+      );
+    }
+
+    // 5. Copie dans notre stockage interne avec conservation de l'extension .gif
     const mediaId = `med_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    const fileName = `${mediaId}.webp`;
+    const extension = isGif ? "gif" : magicCheck.mimeType === "image/png" ? "png" : magicCheck.mimeType === "image/jpeg" ? "jpg" : "webp";
+    const fileName = `${mediaId}.${extension}`;
     const storageUrl = `/storage/shops/${storeSlug}/media/${fileName}`;
 
     const mediaItem: StoredMediaItem = {
       id: mediaId,
       storeSlug,
       url: storageUrl,
-      originalName: url.split("/").pop() || "image-importee.webp",
+      originalName: url.split("/").pop() || (isGif ? "animation.gif" : "image-importee.webp"),
       mimeType: magicCheck.mimeType,
       sizeBytes: buffer.length,
       altText: altText.trim() || "Image importée",

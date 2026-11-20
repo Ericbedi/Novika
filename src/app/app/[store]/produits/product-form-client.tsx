@@ -112,8 +112,9 @@ export function ProductFormClient({
   const canViewFinancials = canViewProductFinancials(activeRole);
   const canManage = canManageProducts(activeRole);
 
-  // Clé de brouillon automatique dans le navigateur (Prompt 17 - Phase 17-B)
-  const DRAFT_KEY = `novika_draft_product_${storeSlug}_${initialProduct?.id || "new"}`;
+  // Clé de brouillon isolée par boutique et produit (Prompt 17-J)
+  const currentProductId = initialProduct?.id || "new";
+  const DRAFT_KEY = `draft_${storeSlug}_${currentProductId}`;
 
   // ========================================================
   // ÉTATS DE LA COLONNE PRINCIPALE (Phases 17-B, 17-C, 17-D)
@@ -578,23 +579,32 @@ export function ProductFormClient({
   };
 
   useEffect(() => {
-    if (typeof window !== "undefined" && !isEditing) {
+    if (typeof window !== "undefined") {
       try {
         const savedDraft = localStorage.getItem(DRAFT_KEY);
         if (savedDraft) {
           const parsed = JSON.parse(savedDraft);
           if (parsed && typeof parsed === "object") {
-            if (parsed.name) setName(parsed.name);
-            if (parsed.description) setDescription(parsed.description);
-            if (parsed.category) setCategory(parsed.category);
-            if (parsed.salePrice) setSalePrice(parsed.salePrice);
-            if (parsed.costPrice) setCostPrice(parsed.costPrice);
-            showToast("Brouillon automatiquement restauré.");
+            // RÈGLE STRICTE PROMPT 17-J : Ne JAMAIS charger le brouillon d'un autre produit ou d'une autre boutique
+            if (parsed.productId && parsed.productId !== currentProductId) {
+              return;
+            }
+            if (parsed.shopSlug && parsed.shopSlug !== storeSlug) {
+              return;
+            }
+            if (!isEditing) {
+              if (parsed.name) setName(parsed.name);
+              if (parsed.description) setDescription(parsed.description);
+              if (parsed.category) setCategory(parsed.category);
+              if (parsed.salePrice) setSalePrice(parsed.salePrice);
+              if (parsed.costPrice) setCostPrice(parsed.costPrice);
+              showToast("Brouillon automatiquement restauré.");
+            }
           }
         }
       } catch {}
     }
-  }, [DRAFT_KEY, isEditing]);
+  }, [DRAFT_KEY, currentProductId, storeSlug, isEditing]);
 
   useEffect(() => {
     setIsDirty(true);
@@ -623,6 +633,8 @@ export function ProductFormClient({
   useEffect(() => {
     if (isDirty && typeof window !== "undefined") {
       const draftData = {
+        shopSlug: storeSlug,
+        productId: currentProductId,
         name,
         description,
         category,
@@ -632,7 +644,7 @@ export function ProductFormClient({
       };
       localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData));
     }
-  }, [isDirty, name, description, category, salePrice, costPrice, DRAFT_KEY]);
+  }, [isDirty, name, description, category, salePrice, costPrice, DRAFT_KEY, currentProductId, storeSlug]);
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -981,11 +993,20 @@ export function ProductFormClient({
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[#7A7A7A]">
-              {isEditing ? "Modification du produit" : "Nouveau produit"}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#7A7A7A]">
+                {isEditing ? "Modification du produit" : "Nouveau produit"}
+              </span>
+              {initialProduct?.id && (
+                <span className="px-1.5 py-0.5 rounded bg-stone-100 text-[10px] font-mono font-medium text-stone-600 border border-stone-200" title={`Identifiant unique : ${initialProduct.id}`}>
+                  ID: {initialProduct.id}
+                </span>
+              )}
+            </div>
             <h1 className="text-xl sm:text-2xl font-extrabold text-[#111111] tracking-tight line-clamp-1">
-              {name || "Ajouter un produit"}
+              {isEditing && initialProduct
+                ? (initialProduct.name || initialProduct.title || "Produit sans titre")
+                : (name || "Ajouter un produit")}
             </h1>
           </div>
         </div>

@@ -16,7 +16,8 @@ export function createDefaultNewShopTheme(shopId: string, shopName = "Ma Boutiqu
   const basePreset = THEME_PRESETS["novika-classique"];
 
   // 8 Sections initiales du modèle « Novika Simple » (Prompt 21-b)
-  const homeSections: ThemeSection[] = createNovikaSimpleSections();
+  // VIDES de contenu factice pour une nouvelle boutique (Prompt 12 & 21-b)
+  const homeSections: ThemeSection[] = createNovikaSimpleSections({ empty: true });
 
   return {
     id: `theme_${shopId}_v1`,

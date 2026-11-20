@@ -167,8 +167,9 @@ export const NOVIKA_SIMPLE_DEFAULTS: Record<string, NovikaSimpleDefaultContent> 
 
 /**
  * Génère les 8 sections initiales du modèle « Novika Simple »
+ * Par défaut (ou avec empty: true pour une nouvelle boutique), les sections sont vides de texte factice.
  */
-export function createNovikaSimpleSections(): ThemeSection[] {
+export function createNovikaSimpleSections(options: { empty?: boolean } = {}): ThemeSection[] {
   const keys: ThemeSectionType[] = [
     "announcement_bar",
     "hero_banner",
@@ -182,6 +183,18 @@ export function createNovikaSimpleSections(): ThemeSection[] {
 
   return keys.map((type, index) => {
     const def = NOVIKA_SIMPLE_DEFAULTS[type];
+    let settings = JSON.parse(JSON.stringify(def?.settings || {}));
+
+    if (options.empty) {
+      if (type === "announcement_bar") settings = { ...settings, messages: [] };
+      if (type === "hero_banner") settings = { ...settings, headline: "", subheadline: "", desktopImage: "", button1Text: "", button1Link: "" };
+      if (type === "featured_products") settings = { ...settings, productIds: [] };
+      if (type === "image_with_text") settings = { ...settings, title: "", bodyText: "", imageUrl: "" };
+      if (type === "rich_text") settings = { ...settings, title: "", content: "" };
+      if (type === "reassurance") settings = { ...settings, title: "", items: [] };
+      if (type === "whatsapp_block") settings = { ...settings, phoneNumber: "", defaultMessage: "" };
+    }
+
     return {
       id: `sec_novika_simple_${type}`,
       type,
@@ -189,7 +202,7 @@ export function createNovikaSimpleSections(): ThemeSection[] {
       isVisible: true,
       paletteId: def?.paletteId || "palette-1",
       order: index + 1,
-      settings: JSON.parse(JSON.stringify(def?.settings || {})),
+      settings,
     };
   });
 }

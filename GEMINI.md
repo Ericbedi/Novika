@@ -305,6 +305,12 @@ Lorsque vous travaillez sur ce référentiel de code, appliquez rigoureusement l
 - **Prompt 05-Px** : Support de 3 Pixels Meta par boutique, hachage SHA-256 CAPI, masquage des secrets, bandeau cookies.
 - **Prompt 05-Q** : Squelettes de chargement instantanés (< 50ms) sur les 6 écrans clés, WebGL Cobe asynchrone.
 - **Extension Calendrier & Analyse Weekly (Over-scaling)** : Sélecteur de semaine en tête de page, détection automatique de l'Over-scaling vs Scaling Sain, bannière d'alerte rouge avec diagnostic et action requise, matrice comparative multi-semaines (S43 à S46) et synchronisation dynamique des KPI cards.
+- **Prompt 17-J (Correction Édition Produit, Isolation des Fiches & Éditeur Stable)** :
+  - **Résolution stricte par ID unique & Boutique** : Routes canoniques `/produits/{id}/modifier` et `/produits/{id}`, chargement strictement filtré par `id` ET `shop_id` actif. En cas d'identifiant introuvable : écran d'erreur clair « Produit introuvable », **JAMAIS** de repli silencieux vers `MOCK_PRODUCTS[0]` ou un autre produit.
+  - **Isolation des composants & remontage React** : `ProductEditContainer` enveloppe le formulaire avec `key={`${storeSlug}-${product.id}`}` forçant la réinitialisation complète de l'arbre d'état React.
+  - **Brouillons locaux isolés** : Clés `draft_${shop_id}_${product_id}` avec contrôle strict de concordance pour interdire tout chargement de brouillon orphelin ou d'une autre fiche.
+  - **Éditeur de description stable** : Composant client avec `isInternalUpdateRef` interdisant la réécriture d'`innerHTML` pendant la frappe, suppression de la désinfection HTML à chaque frappe (nettoyage réservé à l'enregistrement `handleSave` et à l'affichage vitrine), raccourcis clavier natifs (Ctrl+B, Ctrl+I, Ctrl+U, Ctrl+Z, Ctrl+Y, Ctrl+K).
+  - **Support complet des animations GIF** : Préservation impérative de l'extension `.gif` et de l'animation lors du téléversement (aucun écrasement en WebP statique), validation des Magic Bytes (`GIF87a`/`GIF89a`), et plafond rehaussé à 8 Mo pour les animations.
 - **Intégration Supabase Full-Stack (Novika Cloud)** : Déploiement complet sur instance Supabase PostgreSQL 17 (`zkkenzowvttmlleooqvu`), 27 tables créées avec RLS 100% conforme (0 avertissement de sécurité), types TypeScript stricts générés, Realtime actif sur les commandes avec alerte audio, buckets de stockage d'images configurés et routes d'API serveur reliées.
 
 ---

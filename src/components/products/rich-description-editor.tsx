@@ -59,11 +59,17 @@ export function RichDescriptionEditor({
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
+  const isInternalUpdateRef = useRef(false);
 
-  // Synchronisation du contenu dans l'éditeur visuel
+  // Synchronisation du contenu dans l'éditeur visuel UNIQUEMENT lors des changements externes (Prompt 17-J)
+  // Ne JAMAIS réécraser innerHTML pendant que l'utilisateur est en train de taper !
   useEffect(() => {
     if (editorRef.current && mode === "visual") {
-      if (editorRef.current.innerHTML !== value) {
+      if (isInternalUpdateRef.current) {
+        isInternalUpdateRef.current = false;
+        return;
+      }
+      if (editorRef.current.innerHTML !== (value || "")) {
         editorRef.current.innerHTML = value || "";
       }
     }
@@ -72,8 +78,9 @@ export function RichDescriptionEditor({
   const handleInput = () => {
     if (editorRef.current) {
       const html = editorRef.current.innerHTML;
-      const report = sanitizeProductDescription(html, { productTitle });
-      onChange(report.cleanedHtml);
+      isInternalUpdateRef.current = true;
+      // Nettoyage HTML : UNIQUEMENT à l'enregistrement et à l'affichage, JAMAIS à chaque frappe ! (Prompt 17-J)
+      onChange(html);
     }
   };
 
@@ -81,6 +88,35 @@ export function RichDescriptionEditor({
     if (mode !== "visual") return;
     document.execCommand(command, false, arg);
     handleInput();
+  };
+
+  // Raccourcis clavier usuels (Ctrl+B, Ctrl+I, Ctrl+U, Ctrl+Z, Ctrl+Y, Ctrl+K)
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (mode !== "visual") return;
+    const isMod = e.ctrlKey || e.metaKey;
+
+    if (isMod) {
+      const key = e.key.toLowerCase();
+      if (key === "b") {
+        e.preventDefault();
+        execCmd("bold");
+      } else if (key === "i") {
+        e.preventDefault();
+        execCmd("italic");
+      } else if (key === "u") {
+        e.preventDefault();
+        execCmd("underline");
+      } else if (key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        execCmd("undo");
+      } else if (key === "y" || (key === "z" && e.shiftKey)) {
+        e.preventDefault();
+        execCmd("redo");
+      } else if (key === "k") {
+        e.preventDefault();
+        handleInsertLink();
+      }
+    }
   };
 
   const handleInsertHeading = (tag: "h2" | "h3" | "h4" | "p") => {
@@ -144,11 +180,17 @@ export function RichDescriptionEditor({
     setIsVideoModalOpen(false);
   };
 
-  // Support direct du glisser-déposer et du collage d'image dans l'éditeur (Prompt 17-G)
+  // Support direct du glisser-déposer et du collage d'image dans l'éditeur (Prompt 17-G & 17-J)
   const handleDirectFileUpload = async (file: File) => {
     if (!file.type.startsWith("image/")) return;
-    if (file.size > 5 * 1024 * 1024) {
-      alert("L'image dépasse la taille maximale autorisée de 5 Mo.");
+    const isGif = file.type === "image/gif" || /\.gif$/i.test(file.name);
+    const maxSize = isGif ? 8 * 1024 * 1024 : 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert(
+        isGif
+          ? "L'animation GIF dépasse la taille maximale autorisée de 8 Mo."
+          : "L'image dépasse la taille maximale autorisée de 5 Mo."
+      );
       return;
     }
     try {
@@ -163,9 +205,9 @@ export function RichDescriptionEditor({
         body: formData,
       });
       const data = await res.json();
-      if (data.success && data.media?.url) {
+      if (data.success && (data.media?.url || data.url)) {
         handleSelectImage({
-          url: data.media.url,
+          url: data.media?.url || data.url,
           altText: productTitle,
           align: "center",
           width: "medium",
@@ -625,6 +667,7 @@ export function RichDescriptionEditor({
           contentEditable
           onInput={handleInput}
           onBlur={handleInput}
+          onKeyDown={handleKeyDown}
           onPaste={handleEditorPaste}
           onDrop={handleEditorDrop}
           onDragOver={(e) => {

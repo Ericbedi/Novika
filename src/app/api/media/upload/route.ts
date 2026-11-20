@@ -3,6 +3,7 @@ import {
   detectImageMagicBytes,
   saveShopMediaItem,
   MAX_MEDIA_FILE_SIZE_BYTES,
+  MAX_GIF_FILE_SIZE_BYTES,
   StoredMediaItem,
 } from "@/lib/media-storage";
 
@@ -18,21 +19,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Aucun fichier reçu." }, { status: 400 });
     }
 
-    // 1. Vérification de la taille (Max 5 Mo)
-    if (file.size > MAX_MEDIA_FILE_SIZE_BYTES) {
-      return NextResponse.json(
-        {
-          error: "Le fichier dépasse la taille maximale autorisée de 5 Mo.",
-          code: "FILE_TOO_LARGE",
-        },
-        { status: 413 }
-      );
-    }
-
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // 2. Vérification du vrai type binaire (Magic bytes) & Refus du SVG
+    // 1. Vérification du vrai type binaire (Magic bytes) & Refus du SVG
     const magicCheck = detectImageMagicBytes(buffer);
     if (!magicCheck.valid || !magicCheck.mimeType) {
       return NextResponse.json(
@@ -44,9 +34,26 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. Génération d'un nom de fichier aléatoire sécurisé
+    // 2. Vérification de la taille (8 Mo max pour les GIFs animés, 5 Mo pour les autres images)
+    const isGif = magicCheck.mimeType === "image/gif";
+    const maxSizeBytes = isGif ? MAX_GIF_FILE_SIZE_BYTES : MAX_MEDIA_FILE_SIZE_BYTES;
+
+    if (file.size > maxSizeBytes) {
+      return NextResponse.json(
+        {
+          error: isGif
+            ? "L'animation GIF dépasse la taille maximale autorisée de 8 Mo."
+            : "Le fichier dépasse la taille maximale autorisée de 5 Mo.",
+          code: "FILE_TOO_LARGE",
+        },
+        { status: 413 }
+      );
+    }
+
+    // 3. Génération d'un nom de fichier avec préservation stricte de l'extension .gif (Prompt 17-J)
     const mediaId = `med_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    const fileName = `${mediaId}.webp`;
+    const extension = isGif ? "gif" : magicCheck.mimeType === "image/png" ? "png" : magicCheck.mimeType === "image/jpeg" ? "jpg" : "webp";
+    const fileName = `${mediaId}.${extension}`;
     const storageUrl = `/storage/shops/${storeSlug}/media/${fileName}`;
 
     const mediaItem: StoredMediaItem = {
@@ -68,7 +75,7 @@ export async function POST(req: NextRequest) {
       success: true,
       url: storageUrl,
       mediaItem,
-      message: "Image téléversée avec succès.",
+      message: isGif ? "Animation GIF téléversée avec succès (animation préservée)." : "Image téléversée avec succès.",
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Erreur lors du téléversement";

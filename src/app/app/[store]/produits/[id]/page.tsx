@@ -2,7 +2,7 @@ import React from "react";
 import { MOCK_PRODUCTS } from "@/mock-data/products";
 import { MOCK_STORES } from "@/mock-data/stores";
 import { getProductByShopAndSlugOrId } from "@/lib/products-store";
-import { ProductFormClient } from "../product-form-client";
+import { ProductEditContainer } from "../product-edit-container";
 
 export function generateStaticParams() {
   const storeSlugs = MOCK_STORES.map((s) => s.slug);
@@ -21,16 +21,21 @@ export default async function ProductDetailPage({
   params: Promise<{ store: string; id: string }>;
 }) {
   const { store, id } = await params;
-  const product =
-    getProductByShopAndSlugOrId({ shopSlug: store, slugOrId: id, allowDraft: true }) ||
-    MOCK_PRODUCTS.find((p) => p.id === id || p.slug === id) ||
-    MOCK_PRODUCTS[0];
+
+  // Filtrage strict par boutique ET identifiant (Prompt 17-J)
+  // JAMAIS de repli sur un autre produit (MOCK_PRODUCTS[0] supprimé)
+  const product = getProductByShopAndSlugOrId({
+    shopSlug: store,
+    slugOrId: id,
+    allowDraft: true,
+    includeDeleted: true,
+  });
 
   return (
-    <ProductFormClient
+    <ProductEditContainer
       storeSlug={store}
-      initialProduct={product}
-      isEditing={true}
+      productId={id}
+      initialServerProduct={product}
     />
   );
 }

@@ -1518,7 +1518,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
                       {/* Titre (tronqué 2 lignes max) + SKU */}
                       <td className="py-3.5 px-3 min-w-[200px] max-w-xs">
                         <Link
-                          href={`/app/${storeSlug}/produits/${product.id}`}
+                          href={`/app/${storeSlug}/produits/${product.id}/modifier`}
                           className="font-bold text-xs text-[#111111] hover:underline line-clamp-2"
                         >
                           {product.name || product.title || "Produit sans titre"}
@@ -1650,7 +1650,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
                           {/* Modifier (si gestionnaire) */}
                           {canManage && (
                             <Link
-                              href={`/app/${storeSlug}/produits/${product.id}`}
+                              href={`/app/${storeSlug}/produits/${product.id}/modifier`}
                               className="p-2 min-w-[34px] min-h-[34px] flex items-center justify-center rounded-xl border border-[#E6E0D4] bg-white text-[#111111] hover:bg-[#F3EFE6] transition-colors"
                               title="Modifier la fiche produit"
                             >
@@ -1816,7 +1816,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
                     </a>
                     {canManage && (
                       <Link
-                        href={`/app/${storeSlug}/produits/${product.id}`}
+                        href={`/app/${storeSlug}/produits/${product.id}/modifier`}
                         className="px-3 py-1.5 rounded-lg bg-[#111111] text-white text-xs font-bold"
                       >
                         Modifier
@@ -1941,7 +1941,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
                   </a>
                   {canManage && (
                     <Link
-                      href={`/app/${storeSlug}/produits/${product.id}`}
+                      href={`/app/${storeSlug}/produits/${product.id}/modifier`}
                       className="flex-1 text-center py-2 rounded-lg bg-[#111111] text-white text-xs font-bold"
                     >
                       Modifier

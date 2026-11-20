@@ -6,12 +6,19 @@
  */
 
 export const MAX_PRODUCT_IMAGES = 20;
-export const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5 Mo
+export const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5 Mo pour les images standards
+export const MAX_GIF_SIZE_BYTES = 8 * 1024 * 1024; // 8 Mo pour les animations GIF (Prompt 17-J)
+
 export const ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
   "image/png",
   "image/webp",
   "image/avif",
+];
+
+export const ALLOWED_IMAGE_AND_GIF_TYPES = [
+  ...ALLOWED_IMAGE_TYPES,
+  "image/gif",
 ];
 
 export interface ImageValidationResult {
@@ -21,33 +28,56 @@ export interface ImageValidationResult {
 
 /**
  * Valide un fichier image avant traitement ou envoi.
+ * - Par défaut (Prompt 15) : JPG, PNG, WebP, AVIF (max 5 Mo).
+ * - Avec allowGif = true (Prompt 17-J) : accepte également les GIFs animés jusqu'à 8 Mo.
  */
-export function validateProductImageFile(file: {
-  name: string;
-  size: number;
-  type: string;
-}): ImageValidationResult {
+export function validateProductImageFile(
+  file: {
+    name: string;
+    size: number;
+    type: string;
+  },
+  options: { allowGif?: boolean } = {}
+): ImageValidationResult {
   if (!file) {
     return { valid: false, error: "Aucun fichier fourni." };
   }
 
-  // Vérification de la taille (max 5 Mo)
-  if (file.size > MAX_IMAGE_SIZE_BYTES) {
-    const sizeInMb = (file.size / (1024 * 1024)).toFixed(1);
+  const isGif = file.type.toLowerCase() === "image/gif" || /\.gif$/i.test(file.name);
+  const allowGif = options.allowGif ?? false;
+
+  // Si c'est un GIF mais que les GIFs ne sont pas activés pour ce contexte spécifique
+  if (isGif && !allowGif) {
     return {
       valid: false,
-      error: `Le fichier « ${file.name} » (${sizeInMb} Mo) dépasse la limite autorisée de 5 Mo.`,
+      error: `Le format du fichier « ${file.name} » n'est pas supporté. Formats acceptés : JPG, PNG, WebP, AVIF.`,
+    };
+  }
+
+  const maxAllowedBytes = isGif ? MAX_GIF_SIZE_BYTES : MAX_IMAGE_SIZE_BYTES;
+
+  // Vérification de la taille (max 8 Mo pour GIF, max 5 Mo pour le reste)
+  if (file.size > maxAllowedBytes) {
+    const sizeInMb = (file.size / (1024 * 1024)).toFixed(1);
+    const limitMb = isGif ? "8 Mo" : "5 Mo";
+    return {
+      valid: false,
+      error: `Le fichier ${isGif ? "GIF " : ""}« ${file.name} » (${sizeInMb} Mo) dépasse la limite autorisée de ${limitMb}.`,
     };
   }
 
   // Vérification du type MIME
-  const isAllowedType = ALLOWED_IMAGE_TYPES.includes(file.type.toLowerCase()) ||
-    /\.(jpe?g|png|webp|avif)$/i.test(file.name);
+  const allowedList = allowGif ? ALLOWED_IMAGE_AND_GIF_TYPES : ALLOWED_IMAGE_TYPES;
+  const regexCheck = allowGif ? /\.(jpe?g|png|webp|gif|avif)$/i : /\.(jpe?g|png|webp|avif)$/i;
+
+  const isAllowedType =
+    allowedList.includes(file.type.toLowerCase()) || regexCheck.test(file.name);
 
   if (!isAllowedType) {
+    const acceptedStr = allowGif ? "JPG, PNG, WebP, GIF, AVIF" : "JPG, PNG, WebP, AVIF";
     return {
       valid: false,
-      error: `Le format du fichier « ${file.name} » n'est pas supporté. Formats acceptés : JPG, PNG, WebP, AVIF.`,
+      error: `Le format du fichier « ${file.name} » n'est pas supporté. Formats acceptés : ${acceptedStr}.`,
     };
   }
 
