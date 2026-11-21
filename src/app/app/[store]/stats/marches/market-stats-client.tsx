@@ -231,7 +231,16 @@ export function MarketStatsClient({ storeSlug }: MarketStatsClientProps) {
       </div>
 
       {/* Grille principale : Classement des marchés & Nuage de points */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {overview.markets.length === 0 ? (
+        <div className="p-12 text-center rounded-2xl bg-white border border-black/[0.08] shadow-2xs space-y-3">
+          <Globe2 className="h-10 w-10 text-[#888880] mx-auto opacity-40" />
+          <h3 className="font-bold text-sm text-[#111111]">Aucune donnée de marché disponible</h3>
+          <p className="text-xs text-[#666660] max-w-md mx-auto">
+            Les statistiques par marché (taux de livraison, CPA réel, seuil d&apos;équilibre d*) s&apos;afficheront automatiquement dès que vos premières commandes seront expédiées.
+          </p>
+        </div>
+      ) : selectedMarket ? (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Colonne Gauche (7 cols) : Tableau & Barres de classement */}
         <div className="lg:col-span-7 bg-white rounded-2xl border border-black/[0.08] shadow-2xs p-5 space-y-4">
           <div className="flex items-center justify-between">
@@ -417,6 +426,7 @@ export function MarketStatsClient({ storeSlug }: MarketStatsClientProps) {
           </div>
         </div>
       </div>
+      ) : null}
 
       {/* Simulateur interactif de rentabilité de marché */}
       <div className="bg-white rounded-2xl border border-black/[0.08] shadow-2xs p-5 space-y-4">

@@ -571,30 +571,9 @@ export function FinancesClient({ storeSlug }: FinancesClientProps) {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
-          <div className="p-3.5 rounded-2xl bg-white border border-black/[0.06] space-y-1">
-            <span className="text-[10px] font-bold uppercase text-[#888880] block">🇹🇬 Lomé</span>
-            <div className="text-sm font-black text-[#111111]">1 500 FCFA / colis</div>
-            <span className="text-[10px] text-emerald-700 font-medium block">Koffi Moto-Course</span>
-          </div>
-
-          <div className="p-3.5 rounded-2xl bg-white border border-black/[0.06] space-y-1">
-            <span className="text-[10px] font-bold uppercase text-[#888880] block">🇨🇮 Abidjan</span>
-            <div className="text-sm font-black text-[#111111]">2 000 FCFA / colis</div>
-            <span className="text-[10px] text-emerald-700 font-medium block">Mamadou Express</span>
-          </div>
-
-          <div className="p-3.5 rounded-2xl bg-white border border-black/[0.06] space-y-1">
-            <span className="text-[10px] font-bold uppercase text-[#888880] block">🇸🇳 Dakar</span>
-            <div className="text-sm font-black text-[#111111]">2 000 FCFA / colis</div>
-            <span className="text-[10px] text-emerald-700 font-medium block">Ibrahima Rapide</span>
-          </div>
-
-          <div className="p-3.5 rounded-2xl bg-white border border-black/[0.06] space-y-1">
-            <span className="text-[10px] font-bold uppercase text-[#888880] block">🇧🇯 Cotonou</span>
-            <div className="text-sm font-black text-[#111111]">1 500 FCFA / colis</div>
-            <span className="text-[10px] text-emerald-700 font-medium block">Romuald Colis</span>
-          </div>
+        <div className="p-6 text-center rounded-2xl bg-white border border-black/[0.06] text-xs text-[#888880] space-y-1">
+          <p className="font-bold text-[#111111]">Aucun frais de livraison forfaitaire enregistré.</p>
+          <p>Configurez vos tarifs de livraison par pays et ville dans le module Livraisons &gt; Tarifs.</p>
         </div>
       </div>
 

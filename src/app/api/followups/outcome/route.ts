@@ -7,45 +7,7 @@ import { Followup } from "@/server/data/followups-types";
 import { Order } from "@/server/data/types";
 
 // In-memory runtime state for followups across tests and requests
-let globalFollowups: Followup[] = [
-  {
-    id: "fol_demo_01",
-    orderId: "ord_10482",
-    orderNumber: "CMD-10482",
-    shopId: "shop_01",
-    customerName: "Awa Traoré",
-    customerPhone: "+2250748291102",
-    productName: "Café Bio Champignon Vitality",
-    totalAmount: 26900,
-    city: "Abidjan (Cocody)",
-    assignedTo: { id: "cls_01", name: "Aïcha Diallo" },
-    type: "unreachable",
-    dueAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(), // Déjà échue (À appeler maintenant)
-    attemptNo: 1,
-    status: "pending",
-    notes: "Sonnerie sans réponse au premier essai",
-    createdAt: new Date(Date.now() - 3600 * 1000).toISOString(),
-  },
-  {
-    id: "fol_demo_02",
-    orderId: "ord_10481",
-    orderNumber: "CMD-10481",
-    shopId: "shop_01",
-    customerName: "Koffi Mensah",
-    customerPhone: "+22890123456",
-    productName: "Sérum Visage Anti-Taches & Éclat",
-    totalAmount: 30000,
-    city: "Lomé (Agoè)",
-    assignedTo: { id: "cls_01", name: "Aïcha Diallo" },
-    type: "rescheduled",
-    dueAt: new Date(Date.now() + 2 * 3600 * 1000).toISOString(), // Programmée future
-    attemptNo: 2,
-    status: "pending",
-    postponeReason: "salary",
-    notes: "Rappel convenu après la paie",
-    createdAt: new Date(Date.now() - 86400 * 1000).toISOString(),
-  },
-];
+let globalFollowups: Followup[] = [];
 
 const OutcomeSchema = z.object({
   orderId: z.string().min(1, "L'identifiant de la commande est requis"),

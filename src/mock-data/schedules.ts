@@ -12,30 +12,7 @@ export const DEFAULT_DAY_SCHEDULES: DaySchedule[] = [
 ];
 
 // Stockage mémoire des plannings (persisté en sessionStorage / localStorage côté client si disponible)
-let IN_MEMORY_SCHEDULES: Record<string, TeamSchedule[]> = {
-  "lome-glow": [
-    {
-      id: "sched_lome_default",
-      shopId: "lome-glow",
-      scope: "shop",
-      days: JSON.parse(JSON.stringify(DEFAULT_DAY_SCHEDULES)),
-      timezone: "Africa/Lome",
-      updatedBy: "Promises Bedi (Propriétaire)",
-      updatedAt: new Date().toISOString(),
-    },
-  ],
-  "abidjan-bio": [
-    {
-      id: "sched_abidjan_default",
-      shopId: "abidjan-bio",
-      scope: "shop",
-      days: JSON.parse(JSON.stringify(DEFAULT_DAY_SCHEDULES)),
-      timezone: "Africa/Abidjan",
-      updatedBy: "Propriétaire Abidjan",
-      updatedAt: new Date().toISOString(),
-    },
-  ],
-};
+let IN_MEMORY_SCHEDULES: Record<string, TeamSchedule[]> = {};
 
 export function getShopSchedules(shopId: string): TeamSchedule[] {
   if (typeof window !== "undefined") {

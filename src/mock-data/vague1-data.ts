@@ -6,44 +6,8 @@ import {
   TrackingTokenInfo,
 } from "@/server/data/vague1-types";
 
-// Jetons de suivi mockés
-export const MOCK_TRACKING_TOKENS: TrackingTokenInfo[] = [
-  {
-    id: "trk_01",
-    orderId: "ord_10482",
-    orderNumber: "CMD-10482",
-    tokenHash: "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90",
-    rawToken: "tok_secure_awa_traore_abidjan_20261115_valid",
-    expiresAt: "2026-12-15T23:59:59Z",
-    createdAt: "2026-11-15T10:42:00Z",
-    accessCount: 3,
-    lastAccessedAt: "2026-11-15T14:20:00Z",
-    isRevoked: false,
-  },
-  {
-    id: "trk_02",
-    orderId: "ord_10480",
-    orderNumber: "CMD-10480",
-    tokenHash: "b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a1",
-    rawToken: "tok_secure_fatou_diop_dakar_20261114_delivered",
-    expiresAt: "2026-12-14T23:59:59Z",
-    createdAt: "2026-11-14T16:30:00Z",
-    accessCount: 8,
-    lastAccessedAt: "2026-11-15T09:10:00Z",
-    isRevoked: false,
-  },
-  {
-    id: "trk_03_expired",
-    orderId: "ord_expired_test",
-    orderNumber: "CMD-EXP-001",
-    tokenHash: "c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2",
-    rawToken: "tok_expired_sample_token_30days_passed",
-    expiresAt: "2026-10-01T00:00:00Z", // Date passée
-    createdAt: "2026-09-01T10:00:00Z",
-    accessCount: 1,
-    isRevoked: false,
-  },
-];
+// Jetons de suivi
+export const MOCK_TRACKING_TOKENS: TrackingTokenInfo[] = [];
 
 // Modèles de messages prédéfinis pour WhatsApp
 export const MOCK_MESSAGE_TEMPLATES: MessageTemplate[] = [

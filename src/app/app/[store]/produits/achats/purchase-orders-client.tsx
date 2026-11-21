@@ -310,7 +310,7 @@ export function PurchaseOrdersClient({ storeSlug }: PurchaseOrdersClientProps) {
 
     const newPO: PurchaseOrder = {
       id: `po_${Date.now()}`,
-      poNumber: `PO-2026-0${orders.length + 45}`,
+      poNumber: `PO-${new Date().getFullYear()}-${String(orders.length + 1).padStart(3, "0")}`,
       supplierId: sup.id,
       supplierName: sup.name,
       supplierCountry: sup.country,
@@ -684,7 +684,7 @@ export function PurchaseOrdersClient({ storeSlug }: PurchaseOrdersClientProps) {
                   <div className="rounded-xl border border-black/[0.06] bg-white p-3 space-y-1">
                     <span className="text-[10px] text-[#888880] font-bold block">Agent de Sourcing Partenaire</span>
                     <span className="font-bold text-[#111111]">
-                      Guangzhou Global Logistics (Agent Li Wei)
+                      {selectedOrder.carrier || "Agent de sourcing non spécifié"}
                     </span>
                   </div>
 

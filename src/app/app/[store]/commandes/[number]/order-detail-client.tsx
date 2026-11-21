@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { Order, OrderStatus, ORDER_STATUSES, ORDER_STATUS_LABELS, StatusHistoryEntry } from "@/server/data/types";
 import { MOCK_ORDERS } from "@/mock-data/orders";
+import { MOCK_RIDERS } from "@/mock-data/deliveries";
 import { MOCK_TRACKING_TOKENS, MOCK_MESSAGE_TEMPLATES } from "@/mock-data/vague1-data";
 import { MOCK_RECEIPTS_DATA } from "@/mock-data/receipts";
 import {
@@ -219,12 +220,12 @@ export function OrderDetailClient({ storeSlug, orderNumber }: OrderDetailClientP
 
     const changedByName =
       activeRole === "closer"
-        ? "Aïcha Diallo (Closeuse)"
+        ? "Closeuse en charge"
         : activeRole === "rider"
-          ? "Koffi Moto-Course (Livreur)"
+          ? "Livreur en tournée"
           : activeRole === "agency"
-            ? "Agence Express Lomé"
-            : "Directeur Propriétaire";
+            ? "Agence de livraison"
+            : "Administrateur";
 
     let reasonText = statusReason;
     if (selectedNewStatus === "delivered") {
@@ -659,19 +660,14 @@ export function OrderDetailClient({ storeSlug, orderNumber }: OrderDetailClientP
                   className="w-full p-2.5 text-xs rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
                 >
                   <option value="">Sélectionner un livreur</option>
-                  {activeRole === "agency" ? (
-                    // L'agence n'assigne que ses propres coursiers
-                    <>
-                      <option value="rdr_01">Mamadou Express (Agence Flash Colis)</option>
-                      <option value="rdr_02">Koffi Moto-Course (Agence Flash Colis)</option>
-                    </>
+                  {MOCK_RIDERS.length > 0 ? (
+                    MOCK_RIDERS.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.name} ({r.city})
+                      </option>
+                    ))
                   ) : (
-                    <>
-                      <option value="rdr_01">Mamadou Express (Abidjan)</option>
-                      <option value="rdr_02">Koffi Moto-Course (Lomé)</option>
-                      <option value="rdr_03">Ibrahima Colis (Dakar)</option>
-                      <option value="rdr_04">Parfait Express (Cotonou)</option>
-                    </>
+                    <option value="" disabled>Aucun livreur disponible</option>
                   )}
                 </select>
               )}
@@ -709,7 +705,7 @@ export function OrderDetailClient({ storeSlug, orderNumber }: OrderDetailClientP
             )}
           </div>
 
-          {/* D. Reçu de livraison (REC-2026-...) */}
+          {/* D. Reçu de livraison (REC-...) */}
           <div
             id="order-receipt-card"
             className="rounded-[20px] border border-black/[0.08] bg-[#FAF8F5] p-5 shadow-2xs space-y-3.5"

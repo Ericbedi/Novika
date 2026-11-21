@@ -2261,7 +2261,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
                         required
                         value={newMemberName}
                         onChange={(e) => setNewMemberName(e.target.value)}
-                        placeholder="Ex: Fatou Sylla ou Flash Colis Express"
+                        placeholder="Ex: Nom du membre ou Agence"
                         className="w-full p-2.5 rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
                       />
                     </div>

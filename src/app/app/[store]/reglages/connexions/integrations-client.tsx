@@ -167,7 +167,7 @@ export function IntegrationsClient({ storeSlug }: IntegrationsClientProps) {
         errorsCount: processed.errorsCount,
         warnings: [
           "Format de date jj/mm/aaaa détecté.",
-          "Regroupement multi-produits automatique actif (CMD-1043 a 2 lignes).",
+          "Regroupement multi-produits automatique actif (lignes avec même numéro de commande groupées).",
         ],
       });
 

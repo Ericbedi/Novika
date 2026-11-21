@@ -102,7 +102,7 @@ export function HeroProductPreview() {
                   Nouvelle commande reçue
                 </span>
                 <span className="text-xs font-bold text-[#111111] dark:text-white truncate block mt-0.5">
-                  #CMD-10482 · Abidjan · 24 900 FCFA
+                  #CMD-003 · Abidjan · 24 900 FCFA
                 </span>
               </div>
             </div>
@@ -167,7 +167,7 @@ export function HeroProductPreview() {
                 <CountryFlag code="CI" width={20} height={14} className="shrink-0" />
                 <div className="min-w-0">
                   <div className="text-xs font-bold text-[#111111] dark:text-white truncate">
-                    CMD-10482 · Awa T.
+                    CMD-003 · Client A.
                   </div>
                   <div className="text-[10px] text-[#888880] truncate">
                     Abidjan (Cocody) · Café Bio Vitality
@@ -190,7 +190,7 @@ export function HeroProductPreview() {
                 <CountryFlag code="TG" width={20} height={14} className="shrink-0" />
                 <div className="min-w-0">
                   <div className="text-xs font-bold text-[#111111] dark:text-white truncate">
-                    CMD-10481 · Koffi M.
+                    CMD-002 · Client B.
                   </div>
                   <div className="text-[10px] text-[#888880] truncate">
                     Lomé (Agoè) · Sérum Anti-Taches
@@ -213,7 +213,7 @@ export function HeroProductPreview() {
                 <CountryFlag code="SN" width={20} height={14} className="shrink-0" />
                 <div className="min-w-0">
                   <div className="text-xs font-bold text-[#111111] dark:text-white truncate">
-                    CMD-10480 · Fatou D.
+                    CMD-001 · Client C.
                   </div>
                   <div className="text-[10px] text-[#888880] truncate">
                     Dakar (Mermoz) · Pack Infusion
@@ -264,7 +264,7 @@ export function HeroProductPreview() {
               </span>
             </div>
             <span className="text-[10px] font-mono font-bold text-[#D35400] bg-[#F26522]/10 px-2 py-0.5 rounded-full">
-              CMD-10482
+              CMD-003
             </span>
           </div>
 

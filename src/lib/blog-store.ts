@@ -47,7 +47,7 @@ const DEMO_BLOG_POSTS: BlogPost[] = [
       <p>Prenez soin de vous en toute sérénité : nos produits certifiés sont livrés directement chez vous avec paiement en espèces à la livraison.</p>
     `,
     featuredImage: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c",
-    authorName: "Awa Traoré · Esthéticienne Conseil",
+    authorName: "Rédaction Beauté & Santé",
     publishedAt: "2026-11-10T10:00:00Z",
     readingTimeMinutes: 4,
     tags: ["Soins Visage", "Beauté Naturelle", "Conseils"],

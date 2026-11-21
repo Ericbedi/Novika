@@ -25,43 +25,7 @@ export interface NotificationItem {
   link?: string;
 }
 
-export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: "notif_1",
-    type: "order",
-    title: "Nouvelle commande #CMD-10482",
-    message: "Awa Traoré à Abidjan (25 000 FCFA) — À confirmer",
-    time: "Il y a 5 min",
-    isRead: false,
-    link: "/commandes",
-  },
-  {
-    id: "notif_2",
-    type: "delivery",
-    title: "Colis pris en charge",
-    message: "Livreur Mamadou en route pour Koumassi",
-    time: "Il y a 22 min",
-    isRead: false,
-    link: "/livraisons",
-  },
-  {
-    id: "notif_3",
-    type: "stock",
-    title: "Alerte stock bas",
-    message: "Sérum Vitamine C : plus que 4 unités en stock",
-    time: "Il y a 1h",
-    isRead: false,
-    link: "/produits/stock",
-  },
-  {
-    id: "notif_4",
-    type: "system",
-    title: "Bêta privée AfriBuilder",
-    message: "Nouvelles zones d'expédition par ville activées",
-    time: "Aujourd'hui",
-    isRead: true,
-  },
-];
+export const INITIAL_NOTIFICATIONS: NotificationItem[] = [];
 
 interface NotificationsPanelProps {
   isOpen: boolean;
@@ -219,7 +183,13 @@ export function NotificationsPanel({
 
       {/* Liste groupée par type */}
       <div className="flex-1 overflow-y-auto space-y-3 pr-1 text-xs">
-        {categories.map((cat) => {
+        {notifications.length === 0 ? (
+          <div className="py-8 text-center text-[#888880] space-y-1">
+            <Bell className="h-6 w-6 mx-auto opacity-30" />
+            <p className="text-xs font-medium">Aucune notification pour le moment</p>
+          </div>
+        ) : (
+          categories.map((cat) => {
           const items = notifications.filter((n) => n.type === cat.type);
           if (items.length === 0) return null;
 

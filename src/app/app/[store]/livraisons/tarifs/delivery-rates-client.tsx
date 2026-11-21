@@ -184,55 +184,62 @@ export function DeliveryRatesClient({ storeSlug }: { storeSlug: string }) {
       </div>
 
       {/* Grille des Tarifs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredRates.map((r) => (
-          <div
-            key={r.id}
-            className="p-5 rounded-[22px] border border-black/[0.08] bg-[#FAF8F5] shadow-2xs space-y-3 flex flex-col justify-between"
-          >
-            <div>
-              <div className="flex items-center justify-between">
-                <CountryChip code={r.country} showName={true} />
-                <span className="text-[10px] text-[#888880] font-mono">Mis à jour {r.updatedAt}</span>
+      {filteredRates.length === 0 ? (
+        <div className="p-12 text-center rounded-[24px] border border-black/[0.08] bg-[#FAF8F5] text-xs text-[#888880] space-y-2">
+          <p className="font-bold text-[#111111] text-sm">Aucun tarif de livraison configuré.</p>
+          <p>Cliquez sur "Ajouter un tarif" pour définir les frais de livraison par pays, ville et zone.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredRates.map((r) => (
+            <div
+              key={r.id}
+              className="p-5 rounded-[22px] border border-black/[0.08] bg-[#FAF8F5] shadow-2xs space-y-3 flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between">
+                  <CountryChip code={r.country} showName={true} />
+                  <span className="text-[10px] text-[#888880] font-mono">Mis à jour {r.updatedAt}</span>
+                </div>
+
+                <div className="mt-3">
+                  <h3 className="font-black text-sm text-[#111111]">{r.city}</h3>
+                  <p className="text-xs text-[#666660] mt-0.5 line-clamp-2">{r.zone}</p>
+                </div>
+
+                <div className="mt-3 flex items-center gap-2 text-xs font-bold text-[#111111]">
+                  {r.entityType === "agency" ? (
+                    <Building2 className="h-4 w-4 text-blue-600" />
+                  ) : (
+                    <Bike className="h-4 w-4 text-amber-600" />
+                  )}
+                  <span>{r.entityName}</span>
+                </div>
               </div>
 
-              <div className="mt-3">
-                <h3 className="font-black text-sm text-[#111111]">{r.city}</h3>
-                <p className="text-xs text-[#666660] mt-0.5 line-clamp-2">{r.zone}</p>
-              </div>
-
-              <div className="mt-3 flex items-center gap-2 text-xs font-bold text-[#111111]">
-                {r.entityType === "agency" ? (
-                  <Building2 className="h-4 w-4 text-blue-600" />
-                ) : (
-                  <Bike className="h-4 w-4 text-amber-600" />
+              {/* Tarifs Détaillés */}
+              <div className="pt-3 border-t border-black/[0.06] space-y-1.5 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-[#666660]">Livraison Standard :</span>
+                  <strong className="font-black text-[#111111]">{formatFcfa(r.standardFee)}</strong>
+                </div>
+                {r.expressFee && (
+                  <div className="flex justify-between items-center text-[11px]">
+                    <span className="text-[#888880]">Course Express :</span>
+                    <span className="font-bold text-[#111111]">{formatFcfa(r.expressFee)}</span>
+                  </div>
                 )}
-                <span>{r.entityName}</span>
+                {r.suburbFee && (
+                  <div className="flex justify-between items-center text-[11px]">
+                    <span className="text-[#888880]">Banlieue / Hors zone :</span>
+                    <span className="font-bold text-[#111111]">{formatFcfa(r.suburbFee)}</span>
+                  </div>
+                )}
               </div>
             </div>
-
-            {/* Tarifs Détaillés */}
-            <div className="pt-3 border-t border-black/[0.06] space-y-1.5 text-xs">
-              <div className="flex justify-between items-center">
-                <span className="text-[#666660]">Livraison Standard :</span>
-                <strong className="font-black text-[#111111]">{formatFcfa(r.standardFee)}</strong>
-              </div>
-              {r.expressFee && (
-                <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-[#888880]">Course Express :</span>
-                  <span className="font-bold text-[#111111]">{formatFcfa(r.expressFee)}</span>
-                </div>
-              )}
-              {r.suburbFee && (
-                <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-[#888880]">Banlieue / Hors zone :</span>
-                  <span className="font-bold text-[#111111]">{formatFcfa(r.suburbFee)}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Modale d'Ajout / Modification Tarif */}
       {isModalOpen && (

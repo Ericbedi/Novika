@@ -230,7 +230,7 @@ export type ScalingHealthStatus =
 export interface WeeklyScalingSnapshot {
   weekKey: string;           // "2026-W46"
   weekNumber: number;        // 46
-  label: string;             // "Semaine 46 (10 - 16 Nov)"
+  label: string;             // Ex: "Semaine 01 (01 - 07 Jan)"
   shortLabel: string;        // "S46"
   startDate: string;         // "2026-11-10"
   endDate: string;           // "2026-11-16"

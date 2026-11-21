@@ -190,7 +190,7 @@ export function NewManualOrderClient({ storeSlug }: { storeSlug: string }) {
                   required
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="Ex: Awa Traoré"
+                  placeholder="Ex: Prénom Nom"
                   className="w-full p-2.5 text-xs rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
                 />
               </div>

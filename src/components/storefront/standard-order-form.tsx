@@ -715,7 +715,7 @@ export function StandardOrderForm({
             autoComplete="name"
             value={customerName}
             onChange={(e) => setCustomerName(e.target.value)}
-            placeholder="Ex: Awa Traoré"
+            placeholder="Ex: Prénom Nom"
             className="w-full min-h-[44px] px-3.5 py-2.5 text-base sm:text-xs rounded-xl border border-black/[0.1] bg-white text-[#111111] placeholder:text-[#888880] focus:outline-none focus:ring-2 focus:ring-black/[0.15]"
           />
         </div>

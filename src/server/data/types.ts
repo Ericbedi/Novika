@@ -753,7 +753,7 @@ export interface PurchaseOrderEvent {
 
 export interface PurchaseOrder {
   id: string;
-  poNumber: string; // Ex: PO-2026-042
+  poNumber: string; // Ex: PO-001
   supplierId: string;
   supplierName: string;
   supplierCountry: string;

@@ -47,95 +47,20 @@ import {
 } from "@/lib/followups";
 import { canReassignFollowups, canViewCloserPerformance, canReopenRejectedOrders } from "@/config/permissions";
 import { UserRole, Order } from "@/server/data/types";
+import { useApp } from "@/components/layout/app-shell";
 
 interface FollowupsClientProps {
   storeSlug: string;
 }
 
 export function FollowupsClient({ storeSlug }: FollowupsClientProps) {
-  // Rôle actif de test
-  const [activeRole, setActiveRole] = useState<UserRole>("admin");
-  const currentCloserId = "cls_01";
-  const currentCloserName = "Aïcha Diallo";
+  const { activeRole, currentUser } = useApp();
+  const currentCloserId = currentUser?.id || "cls_user";
+  const currentCloserName = currentUser?.fullName || currentUser?.email || "Utilisateur connecté";
 
-  // État des commandes et des rappels
-  const [orders, setOrders] = useState<Order[]>(MOCK_ORDERS);
-  const [followups, setFollowups] = useState<Followup[]>([
-    {
-      id: "fol_01",
-      orderId: "ord_10482",
-      orderNumber: "CMD-10482",
-      shopId: storeSlug,
-      customerName: "Awa Traoré",
-      customerPhone: "+2250748291102",
-      productName: "Café Bio Champignon Vitality (Pack 2 boîtes)",
-      totalAmount: 26900,
-      city: "Abidjan (Cocody)",
-      assignedTo: { id: "cls_01", name: "Aïcha Diallo" },
-      type: "unreachable",
-      dueAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(), // Échue il y a 15 min
-      attemptNo: 1,
-      status: "pending",
-      notes: "Premier appel sans réponse",
-      createdAt: new Date(Date.now() - 3600 * 1000).toISOString(),
-    },
-    {
-      id: "fol_02",
-      orderId: "ord_10481",
-      orderNumber: "CMD-10481",
-      shopId: storeSlug,
-      customerName: "Koffi Mensah",
-      customerPhone: "+22890123456",
-      productName: "Sérum Visage Anti-Taches & Éclat",
-      totalAmount: 30000,
-      city: "Lomé (Agoè Nyivé)",
-      assignedTo: { id: "cls_01", name: "Aïcha Diallo" },
-      type: "rescheduled",
-      dueAt: new Date(Date.now() - 40 * 60 * 1000).toISOString(), // Échue il y a 40 min (>30m : alerte manager)
-      attemptNo: 2,
-      status: "pending",
-      postponeReason: "salary",
-      notes: "Client en attente de virement ce matin",
-      createdAt: new Date(Date.now() - 24 * 3600 * 1000).toISOString(),
-    },
-    {
-      id: "fol_03",
-      orderId: "ord_10476",
-      orderNumber: "CMD-10476",
-      shopId: storeSlug,
-      customerName: "Mariam Sanogo",
-      customerPhone: "+2250789123456",
-      productName: "Café Bio Champignon Vitality",
-      totalAmount: 26900,
-      city: "Abidjan (Yopougon)",
-      assignedTo: { id: "cls_02", name: "Fatou Bamba" },
-      type: "rescheduled",
-      dueAt: new Date(Date.now() + 4 * 3600 * 1000).toISOString(), // Programmée future
-      attemptNo: 1,
-      status: "pending",
-      postponeReason: "travel",
-      notes: "En déplacement, retour en fin d'après-midi",
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: "fol_04",
-      orderId: "ord_10474",
-      orderNumber: "CMD-10474",
-      shopId: storeSlug,
-      customerName: "Kossi Amégan",
-      customerPhone: "+22890445566",
-      productName: "Sérum Visage Anti-Taches",
-      totalAmount: 16500,
-      city: "Lomé (Adidogomé)",
-      assignedTo: { id: "cls_01", name: "Aïcha Diallo" },
-      type: "unreachable",
-      dueAt: new Date(Date.now() + 24 * 3600 * 1000).toISOString(), // Cadence essai 3
-      attemptNo: 2,
-      status: "pending",
-      notes: "Injoignable au 2e essai. Rappel programmé demain matin.",
-      createdAt: new Date().toISOString(),
-    },
-  ]);
+  // État des commandes et des rappels réels
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [followups, setFollowups] = useState<Followup[]>([]);
 
   // 3 Onglets principaux
   const [activeTab, setActiveTab] = useState<"due_now" | "scheduled" | "archive">("due_now");
@@ -480,13 +405,13 @@ export function FollowupsClient({ storeSlug }: FollowupsClientProps) {
         f.id === followupId
           ? {
             ...f,
-            assignedTo: { id: "cls_02", name: "Fatou Bamba" },
-            notes: `${f.notes || ""}\n[Réassigné par le Manager à Fatou Bamba]`.trim(),
+            assignedTo: { id: "cls_assigned", name: activeUser?.name || "Membre de l'équipe" },
+            notes: `${f.notes || ""}\n[Réassigné par le Manager]`.trim(),
           }
           : f
       )
     );
-    showToast("Rappel réassigné à Fatou Bamba (closeuse en service).");
+    showToast("Rappel réassigné avec succès.");
   };
 
   // ACTION 7 : Réouverture de commande
@@ -576,30 +501,13 @@ export function FollowupsClient({ storeSlug }: FollowupsClientProps) {
       {/* Barre de contexte du rôle & Horaires de service */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-white border border-black/[0.08] shadow-2xs">
         <div className="flex items-center gap-2 text-xs">
-          <span className="font-bold text-[#666660]">Rôle actif :</span>
-          <div className="flex items-center gap-1 bg-black/[0.04] p-1 rounded-xl">
-            {(["admin", "manager", "closer"] as UserRole[]).map((role) => (
-              <button
-                key={role}
-                type="button"
-                id={`role-btn-${role}`}
-                onClick={() => setActiveRole(role)}
-                className={cn(
-                  "px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer capitalize",
-                  activeRole === role
-                    ? "bg-[#111111] text-white shadow-xs"
-                    : "text-[#666660] hover:text-[#111111]"
-                )}
-              >
-                {role === "closer" ? "Closeuse" : role}
-              </button>
-            ))}
-          </div>
-          {activeRole === "closer" && (
-            <span className="text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-              Session : {currentCloserName}
-            </span>
-          )}
+          <span className="font-bold text-[#666660]">Rôle connecté :</span>
+          <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#111111] text-white capitalize">
+            {activeRole === "closer" ? "Closeuse" : activeRole}
+          </span>
+          <span className="text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+            Session : {currentCloserName}
+          </span>
         </div>
 
         <div className="flex items-center gap-3 text-xs text-[#666660]">

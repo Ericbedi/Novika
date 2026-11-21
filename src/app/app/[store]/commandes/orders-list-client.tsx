@@ -26,6 +26,7 @@ import {
 import { generatePendingStockWhatsAppUrl } from "@/lib/stock-settings-store";
 import { Order, OrderStatus, ORDER_STATUSES, ORDER_STATUS_LABELS } from "@/server/data/types";
 import { MOCK_ORDERS } from "@/mock-data/orders";
+import { MOCK_RIDERS } from "@/mock-data/deliveries";
 import { MOCK_RECEIPTS_DATA } from "@/mock-data/receipts";
 import { PageHeader } from "@/components/app/page-header";
 import { StatusBadge } from "@/components/app/status-badge";
@@ -822,10 +823,11 @@ export function OrdersListClient({ storeSlug }: OrdersListClientProps) {
                     className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
                   >
                     <option value="all">Tous les livreurs</option>
-                    <option value="rdr_01">Mamadou Express (Abidjan)</option>
-                    <option value="rdr_02">Koffi Moto-Course (Lomé)</option>
-                    <option value="rdr_03">Ibrahima Colis (Dakar)</option>
-                    <option value="rdr_04">Parfait Express (Cotonou)</option>
+                    {MOCK_RIDERS.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.name} ({r.city})
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>

@@ -61,11 +61,35 @@ export function StorefrontHomeClient({
       const ownerStatus = verified && role === "owner";
       setIsOwner(ownerStatus);
 
-      // Rafraîchir les données depuis le localStorage pour cette boutique
-      const resolved = resolveStorefrontData(storeSlug);
-      setData(resolved);
+      // Rafraîchir les données depuis le localStorage SI présent
+      const localProducts = localStorage.getItem(`novika_store_products_${storeSlug}`);
+      if (localProducts) {
+        const resolved = resolveStorefrontData(storeSlug);
+        setData(resolved);
+      } else if (initialResolved.products.length > 0) {
+        // Conserver les données initiales résolues par le serveur
+        setData(initialResolved);
+      } else {
+        // Récupération distante via l'API Supabase si aucune donnée initiale
+        fetch(`/api/products?store=${encodeURIComponent(storeSlug)}`)
+          .then((res) => res.json())
+          .then((json) => {
+            if (json.products && Array.isArray(json.products) && json.products.length > 0) {
+              const active = json.products.filter(
+                (p: any) => (p.productStatus === "active" || p.status === "active") && !p.hiddenFromCatalog
+              );
+              setData((prev) => ({
+                ...prev,
+                products: json.products,
+                activeProducts: active,
+                isPreparationMode: active.length === 0,
+              }));
+            }
+          })
+          .catch(() => {});
+      }
     }
-  }, [storeSlug]);
+  }, [storeSlug, initialResolved]);
 
   const { store, storefront, activeProducts, deliveredOrdersCount, averageRating, totalReviewsCount } = data;
   const themePrimary = storefront.activeTheme?.colors?.primary || "#C2410C";

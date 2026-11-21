@@ -407,25 +407,8 @@ export function CustomersClient({ storeSlug }: CustomersClientProps) {
               <span className="text-[10px] font-bold text-[#888880] uppercase block">
                 Dernières commandes enregistrées :
               </span>
-              <div className="p-3 rounded-xl bg-white border border-black/[0.06] flex items-center justify-between">
-                <div>
-                  <span className="font-mono font-bold text-[#111111] block">CMD-10482</span>
-                  <span className="text-[11px] text-[#666660]">Café Bio Champignon Vitality (Pack 2 boîtes)</span>
-                </div>
-                <div className="text-right">
-                  <span className="font-black text-[#111111]">{formatFcfa(26900)}</span>
-                  <span className="text-[10px] text-emerald-700 font-bold block">Livrée</span>
-                </div>
-              </div>
-              <div className="p-3 rounded-xl bg-white border border-black/[0.06] flex items-center justify-between">
-                <div>
-                  <span className="font-mono font-bold text-[#111111] block">CMD-10390</span>
-                  <span className="text-[11px] text-[#666660]">Sérum Visage Anti-Taches & Éclat</span>
-                </div>
-                <div className="text-right">
-                  <span className="font-black text-[#111111]">{formatFcfa(25000)}</span>
-                  <span className="text-[10px] text-emerald-700 font-bold block">Livrée</span>
-                </div>
+              <div className="p-4 rounded-xl bg-white border border-black/[0.06] text-center text-[#888880]">
+                <p className="text-xs">Aucun historique de commande pour ce client.</p>
               </div>
             </div>
 
@@ -460,7 +443,7 @@ export function CustomersClient({ storeSlug }: CustomersClientProps) {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Ex: Awa Traoré"
+                  placeholder="Ex: Prénom Nom"
                   className="w-full p-2.5 rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
                 />
               </div>

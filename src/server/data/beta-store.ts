@@ -29,103 +29,9 @@ export const INITIAL_COHORTS: BetaCohort[] = [
   },
 ];
 
-export const INITIAL_ACCESS_REQUESTS: AccessRequest[] = [
-  {
-    id: "req_1",
-    originalEmail: "fatou.traore@gmail.com",
-    canonicalEmail: "fatoutraore@gmail.com",
-    fullName: "Fatou Traoré",
-    country: "CI",
-    whatsapp: "+2250700112233",
-    productType: "Cosmétique naturelle",
-    monthlyOrdersEstimated: "100-300",
-    status: "verified_pending_approval",
-    cohortId: "cohort_1",
-    requestedAt: "2026-11-15T14:20:00Z",
-    verifiedAt: "2026-11-15T14:22:15Z",
-  },
-  {
-    id: "req_2",
-    originalEmail: "koffi.mensah.tg@yahoo.fr",
-    canonicalEmail: "koffi.mensah.tg@yahoo.fr",
-    fullName: "Koffi Mensah",
-    country: "TG",
-    whatsapp: "+22890123456",
-    productType: "Électronique & Montres",
-    monthlyOrdersEstimated: "50-100",
-    status: "verified_pending_approval",
-    cohortId: "cohort_1",
-    requestedAt: "2026-11-15T16:45:00Z",
-    verifiedAt: "2026-11-15T16:47:30Z",
-  },
-  {
-    id: "req_3",
-    originalEmail: "bad.email@mailinator.com",
-    canonicalEmail: "bad.email@mailinator.com",
-    fullName: "Spammer Robot",
-    country: "TG",
-    whatsapp: "+22899999999",
-    productType: "Inconnu",
-    monthlyOrdersEstimated: "10-50",
-    status: "rejected",
-    rejectedReason: "Domaine e-mail jetable refusé",
-    requestedAt: "2026-11-14T09:10:00Z",
-  },
-];
+export const INITIAL_ACCESS_REQUESTS: AccessRequest[] = [];
 
-export const INITIAL_STRICT_INVITATIONS: StrictBetaInvitation[] = [
-  {
-    id: "inv_aicha",
-    tokenHash: "tok_demo_aicha_valid",
-    originalEmail: "aicha.ba.dakar@gmail.com",
-    canonicalEmail: "aichabadakar@gmail.com",
-    fullName: "Aïcha Bâ",
-    country: "SN",
-    cohortId: "cohort_2",
-    status: "delivered",
-    resendCount: 0,
-    lastSentAt: "2026-11-15T10:00:00Z",
-    deliveredAt: "2026-11-15T10:01:12Z",
-    expiresAt: "2026-11-22T23:59:59Z",
-    invitedBy: "Promises Bedi (Admin)",
-    createdAt: "2026-11-15T10:00:00Z",
-    note: "Vendeuse de maroquinerie recommandée à Dakar",
-  },
-  {
-    id: "inv_bounced",
-    tokenHash: "tok_demo_bounced",
-    originalEmail: "introuvable.xyz@fakebox123.com",
-    canonicalEmail: "introuvable.xyz@fakebox123.com",
-    fullName: "Adresse Inexistante",
-    country: "BJ",
-    cohortId: "cohort_2",
-    status: "bounced",
-    bounceReason: "Adresse introuvable (Rebond permanent 550 Mailbox not found)",
-    resendCount: 1,
-    lastSentAt: "2026-11-14T11:00:00Z",
-    bouncedAt: "2026-11-14T11:02:40Z",
-    expiresAt: "2026-11-21T23:59:59Z",
-    invitedBy: "Promises Bedi (Admin)",
-    createdAt: "2026-11-14T11:00:00Z",
-  },
-  {
-    id: "inv_activated_sample",
-    tokenHash: "tok_activated_sample",
-    originalEmail: "aminata.diallo@glowlome.tg",
-    canonicalEmail: "aminata.diallo@glowlome.tg",
-    fullName: "Aminata Diallo",
-    country: "TG",
-    cohortId: "cohort_1",
-    status: "activated",
-    resendCount: 0,
-    lastSentAt: "2026-11-10T08:00:00Z",
-    deliveredAt: "2026-11-10T08:00:45Z",
-    activatedAt: "2026-11-10T09:15:20Z",
-    expiresAt: "2026-11-17T23:59:59Z",
-    invitedBy: "System (Landing)",
-    createdAt: "2026-11-10T08:00:00Z",
-  },
-];
+export const INITIAL_STRICT_INVITATIONS: StrictBetaInvitation[] = [];
 
 // État mémoire
 class BetaStoreService {
@@ -135,18 +41,7 @@ class BetaStoreService {
   private otps: EmailOtp[] = [];
 
   constructor() {
-    // Initialiser un OTP de démo pour token aicha
-    this.otps.push({
-      id: "otp_demo_aicha",
-      purpose: "invitation_activation",
-      canonicalEmail: "aichabadakar@gmail.com",
-      codeHash: "482915",
-      plainCodeForDemo: "482915",
-      attempts: 0,
-      maxAttempts: 5,
-      expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
-      createdAt: new Date().toISOString(),
-    });
+    // Aucun OTP de démo
   }
 
   public getCohorts(): BetaCohort[] {

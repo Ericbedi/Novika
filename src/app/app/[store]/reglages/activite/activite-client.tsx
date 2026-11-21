@@ -63,119 +63,9 @@ export interface InvitationEntry {
   shareUrl: string;
 }
 
-const INITIAL_LOGS: ActivityLogEntry[] = [
-  {
-    id: "act_01",
-    timestamp: "15/11/2026 à 14:42:10",
-    authorName: "Promises Bedi",
-    authorRole: "owner",
-    actionType: "reconcile",
-    actionLabel: "Réconciliation de caisse effectuée",
-    entityType: "Caisse Wave Business",
-    entityId: "acc_02",
-    diffBefore: { balance: 3815000, lastReconcile: "10/11/2026" },
-    diffAfter: { balance: 3820000, lastReconcile: "15/11/2026", discrepancy: 5000 },
-    ipAddress: "154.72.164.22 (Lomé, Togo)",
-    userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/130.0",
-    severity: "normal",
-  },
-  {
-    id: "act_02",
-    timestamp: "15/11/2026 à 13:15:02",
-    authorName: "Mamadou Express",
-    authorRole: "rider",
-    actionType: "status_change",
-    actionLabel: "Commande marquée Livrée & Espèces encaissées",
-    entityType: "Commande",
-    entityId: "CMD-2026-089",
-    diffBefore: { status: "scheduled", collected: 0 },
-    diffAfter: { status: "delivered", collected: 24900, rider: "Mamadou Express" },
-    ipAddress: "160.154.12.89 (Abidjan, CI)",
-    userAgent: "Mobile Safari 18.1 (iPhone 14 Pro)",
-    severity: "normal",
-  },
-  {
-    id: "act_03",
-    timestamp: "15/11/2026 à 12:05:44",
-    authorName: "Système de Contrôle RLS",
-    authorRole: "admin",
-    actionType: "security_alert",
-    actionLabel: "Tentative d'accès non autorisé bloquée (RLS)",
-    entityType: "Table Finances",
-    entityId: "ledger_entries",
-    diffBefore: { requestedBy: "closer_user_02", permission: "none" },
-    diffAfter: { status: "403_FORBIDDEN", action: "blocked_by_postgres_rls" },
-    ipAddress: "197.234.219.10 (Cotonou, Bénin)",
-    userAgent: "Android Mobile Chrome 129",
-    severity: "warning",
-  },
-  {
-    id: "act_04",
-    timestamp: "15/11/2026 à 10:20:18",
-    authorName: "Directeur Marketing",
-    authorRole: "admin",
-    actionType: "reversal",
-    actionLabel: "Annulation par contre-passation (Dépense erronée)",
-    entityType: "Dépense Pub",
-    entityId: "EXP-104",
-    diffBefore: { amount: 140000, status: "approved" },
-    diffAfter: { reversalId: "EXP-REV-104", amount: -140000, status: "reversed" },
-    ipAddress: "154.72.164.22 (Lomé, Togo)",
-    userAgent: "Chrome 130 on Windows 11",
-    severity: "normal",
-  },
-  {
-    id: "act_05",
-    timestamp: "14/11/2026 à 18:30:00",
-    authorName: "Système Sentinelle",
-    authorRole: "admin",
-    actionType: "security_alert",
-    actionLabel: "Alerte Sécurité : Export massif de contacts clients bloqué",
-    entityType: "Base Clients",
-    entityId: "customers_export",
-    diffBefore: { requestedRows: 250, limitAuthorized: 50 },
-    diffAfter: { result: "BLOCKED_RATE_LIMIT_EXCEEDED" },
-    ipAddress: "41.207.24.112 (Dakar, Sénégal)",
-    userAgent: "Automated Python Script / Request",
-    severity: "critical",
-  },
-];
+const INITIAL_LOGS: ActivityLogEntry[] = [];
 
-const INITIAL_INVITATIONS: InvitationEntry[] = [
-  {
-    id: "inv_01",
-    recipientIdentifier: "+225 07 99 88 11 22",
-    role: "closer",
-    tokenHash: "f48a9b2c...7d91",
-    invitedBy: "Promises Bedi",
-    createdAt: "15/11/2026",
-    expiresAt: "18/11/2026 (72h)",
-    status: "active",
-    shareUrl: "https://afribuilder.com/invite/tok_894f2a7b11c9",
-  },
-  {
-    id: "inv_02",
-    recipientIdentifier: "contact@express-livraison-ci.com",
-    role: "agency",
-    tokenHash: "119e7a88...4b33",
-    invitedBy: "Promises Bedi",
-    createdAt: "14/11/2026",
-    expiresAt: "17/11/2026 (72h)",
-    status: "accepted",
-    shareUrl: "https://afribuilder.com/invite/tok_339a1b8c44d1",
-  },
-  {
-    id: "inv_03",
-    recipientIdentifier: "+228 91 00 22 44",
-    role: "rider",
-    tokenHash: "0a8d6e11...99bc",
-    invitedBy: "Promises Bedi",
-    createdAt: "10/11/2026",
-    expiresAt: "13/11/2026",
-    status: "expired",
-    shareUrl: "https://afribuilder.com/invite/tok_expired_001",
-  },
-];
+const INITIAL_INVITATIONS: InvitationEntry[] = [];
 
 export function ActiviteClient({ storeSlug }: ActiviteClientProps) {
   const [activeTab, setActiveTab] = useState<"logs" | "security" | "invitations">("logs");
@@ -352,8 +242,15 @@ export function ActiviteClient({ storeSlug }: ActiviteClientProps) {
       {(activeTab === "logs" || activeTab === "security") && (
         <ScrollReveal delay={100}>
           <div className="rounded-3xl border border-black/[0.08] bg-white overflow-hidden shadow-2xs">
-            <div className="space-y-0 divide-y divide-black/[0.06]">
-              {filteredLogs.map((log) => {
+            {filteredLogs.length === 0 ? (
+              <div className="p-12 text-center space-y-2">
+                <Activity className="h-8 w-8 text-[#888880] mx-auto opacity-40" />
+                <p className="font-bold text-sm text-[#111111]">Aucun journal d'activité pour l'instant</p>
+                <p className="text-xs text-[#666660]">Les actions d'administration, expéditions et alertes de sécurité s'inscriront ici de manière inaltérable.</p>
+              </div>
+            ) : (
+              <div className="space-y-0 divide-y divide-black/[0.06]">
+                {filteredLogs.map((log) => {
                 const isAlert = log.severity === "warning" || log.severity === "critical";
 
                 return (
@@ -421,8 +318,9 @@ export function ActiviteClient({ storeSlug }: ActiviteClientProps) {
                     </div>
                   </div>
                 );
-              })}
-            </div>
+                })}
+              </div>
+            )}
           </div>
         </ScrollReveal>
       )}
@@ -455,7 +353,14 @@ export function ActiviteClient({ storeSlug }: ActiviteClientProps) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-black/[0.06]">
-                  {invitations.map((inv) => (
+                  {invitations.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-[#888880]">
+                        Aucune invitation active. Cliquez sur « Inviter un membre » pour générer un lien d'accès sécurisé.
+                      </td>
+                    </tr>
+                  ) : (
+                    invitations.map((inv) => (
                     <tr key={inv.id} className="hover:bg-[#FAF8F5]/60 transition-colors">
                       <td className="py-3 px-4 font-bold text-[#111111]">
                         {inv.recipientIdentifier}

@@ -66,7 +66,7 @@ export interface Receipt {
   storeId: string;
   orderId: string;
   orderNumber: string;
-  receiptNumber: string; // ex: REC-2026-000123 ou REC-2026-000123-1
+  receiptNumber: string; // ex: REC-000123 ou REC-000123-1
   token: string; // Jeton public unique long et sécurisé
   tokenHash: string; // SHA-256
   scope: "entire_order" | "single_item";

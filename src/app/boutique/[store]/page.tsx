@@ -1,6 +1,7 @@
 import React from "react";
 import { Metadata } from "next";
-import { resolveStorefrontData, formatStoreSlugToName } from "@/lib/storefront-resolver";
+import { formatStoreSlugToName } from "@/lib/storefront-resolver";
+import { resolveStorefrontDataAsync } from "@/lib/storefront-resolver-server";
 import { StorefrontHomeClient } from "./storefront-home-client";
 
 interface BoutiquePageProps {
@@ -10,7 +11,7 @@ interface BoutiquePageProps {
 
 export async function generateMetadata({ params }: BoutiquePageProps): Promise<Metadata> {
   const { store: storeSlug } = await params;
-  const resolved = resolveStorefrontData(storeSlug);
+  const resolved = await resolveStorefrontDataAsync(storeSlug);
   const storeName = resolved.store.name || formatStoreSlugToName(storeSlug);
 
   return {
@@ -25,7 +26,7 @@ export async function generateMetadata({ params }: BoutiquePageProps): Promise<M
 
 export default async function BoutiqueHomePage({ params }: BoutiquePageProps) {
   const { store: storeSlug } = await params;
-  const initialResolved = resolveStorefrontData(storeSlug);
+  const initialResolved = await resolveStorefrontDataAsync(storeSlug);
 
   return (
     <StorefrontHomeClient

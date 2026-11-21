@@ -48,7 +48,7 @@ export function DeliveriesClient({ storeSlug }: DeliveriesClientProps) {
   const [statusFilter, setStatusFilter] = useState<DeliveryStatus | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Pour le mode Livreur : choix du profil livreur (ex: Koffi Moto-Course à Lomé)
+  // Pour le mode Livreur : choix du profil livreur (ex: profil actif)
   const [activeRiderId, setActiveRiderId] = useState<string>("rdr_02");
 
   // Modale statut échec/retour
@@ -86,7 +86,19 @@ export function DeliveriesClient({ storeSlug }: DeliveriesClientProps) {
   });
 
   // Livraisons spécifiques pour le Livreur actif
-  const currentRider = riders.find((r) => r.id === activeRiderId) || riders[1];
+  const currentRider = riders.find((r) => r.id === activeRiderId) || riders[0] || {
+    id: "",
+    name: "Aucun livreur",
+    city: "",
+    phone: "",
+    country: "TG" as const,
+    zonesCovered: [],
+    defaultFee: 0,
+    activeDeliveriesCount: 0,
+    completedDeliveriesCount: 0,
+    rating: 5,
+    active: false,
+  };
   const riderDeliveries = deliveries.filter(
     (d) => d.riderId === activeRiderId || d.riderName === currentRider.name
   );
@@ -285,17 +297,22 @@ export function DeliveriesClient({ storeSlug }: DeliveriesClientProps) {
                 </div>
               </div>
 
-              {/* Sélecteur de test livreur */}
+              {/* Sélecteur de profil livreur */}
               <select
                 value={activeRiderId}
                 onChange={(e) => setActiveRiderId(e.target.value)}
                 className="text-xs p-1.5 rounded-xl border border-black/[0.1] bg-white text-[#111111] font-semibold"
-                title="Tester un autre profil coursier"
+                title="Sélectionner un profil coursier"
               >
-                <option value="rdr_02">Koffi (Lomé)</option>
-                <option value="rdr_01">Mamadou (Abidjan)</option>
-                <option value="rdr_03">Ibrahima (Dakar)</option>
-                <option value="rdr_04">Parfait (Cotonou)</option>
+                {riders.length > 0 ? (
+                  riders.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name} ({r.city})
+                    </option>
+                  ))
+                ) : (
+                  <option value="">Aucun livreur</option>
+                )}
               </select>
             </div>
 
@@ -678,7 +695,13 @@ export function DeliveriesClient({ storeSlug }: DeliveriesClientProps) {
 
               {/* LISTE DES LIVRAISONS GROUPÉES PAR LIVREUR */}
               <div className="space-y-6">
-                {groupedByRider.map(({ rider, items }) => {
+                {deliveries.length === 0 ? (
+                  <div className="p-12 text-center rounded-[24px] border border-black/[0.08] bg-[#FAF8F5] text-xs text-[#888880] space-y-2">
+                    <p className="font-bold text-[#111111]">Aucune course ni tournée en cours.</p>
+                    <p>Vos commandes prêtes à livrer apparaîtront ici dès leur expédition.</p>
+                  </div>
+                ) : (
+                  groupedByRider.map(({ rider, items }) => {
                   if (items.length === 0 && searchQuery !== "") return null;
 
                   const totalToCollect = items
@@ -858,7 +881,8 @@ export function DeliveriesClient({ storeSlug }: DeliveriesClientProps) {
                       )}
                     </div>
                   );
-                })}
+                })
+              )}
               </div>
             </div>
           )}
@@ -880,8 +904,14 @@ export function DeliveriesClient({ storeSlug }: DeliveriesClientProps) {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {riders.map((r) => (
+              {riders.length === 0 ? (
+                <div className="p-12 text-center rounded-[24px] border border-black/[0.08] bg-[#FAF8F5] text-xs text-[#888880] space-y-2">
+                  <p className="font-bold text-[#111111]">Aucun livreur partenaire enregistré.</p>
+                  <p>Ajoutez vos coursiers ou connectez vos agences logistiques pour distribuer vos commandes.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {riders.map((r) => (
                   <div
                     key={r.id}
                     className="rounded-[22px] border border-black/[0.08] bg-[#FAF8F5] p-5 shadow-2xs space-y-4 hover:border-black/[0.15] transition-all"
@@ -1050,7 +1080,7 @@ export function DeliveriesClient({ storeSlug }: DeliveriesClientProps) {
                   required
                   value={riderName}
                   onChange={(e) => setRiderName(e.target.value)}
-                  placeholder="Ex: Koffi Moto-Course"
+                  placeholder="Ex: Nom du livreur"
                   className="w-full p-2.5 rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
                 />
               </div>

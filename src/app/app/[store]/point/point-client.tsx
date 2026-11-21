@@ -75,114 +75,9 @@ interface CloserShift {
   targetTier2: { threshold: number; bonus: number };
 }
 
-const INITIAL_RIDERS: RiderShift[] = [
-  {
-    id: "r_01",
-    name: "Mamadou Express",
-    phone: "+225 07 45 89 22 10",
-    city: "Abidjan (Cocody / Yopougon)",
-    country: "CI",
-    cashInHand: 345000, // DÉPASSE LE PLAFOND !
-    cashLimit: 300000,
-    deliveredTodayCount: 8,
-    assignedStops: [
-      {
-        id: "stop_01",
-        orderNumber: "CMD-2026-092",
-        customerName: "Christelle Kouamé",
-        customerPhone: "+2250789451233",
-        address: "Angré 8ème tranche, près de la pharmacie",
-        amountToCollect: 24900,
-        status: "to_deliver",
-      },
-      {
-        id: "stop_02",
-        orderNumber: "CMD-2026-093",
-        customerName: "Armand Banny",
-        customerPhone: "+2250567123490",
-        address: "Zone 4, Rue du Canal, Résidence Tropic",
-        amountToCollect: 45000,
-        status: "to_deliver",
-      },
-      {
-        id: "stop_03",
-        orderNumber: "CMD-2026-089",
-        customerName: "Fatou Diop",
-        customerPhone: "+2250123456789",
-        address: "Plateau, Immeuble CCIA 4ème étage",
-        amountToCollect: 24900,
-        status: "delivered",
-      },
-    ],
-  },
-  {
-    id: "r_02",
-    name: "Koffi Moto-Course",
-    phone: "+228 90 22 44 88",
-    city: "Lomé (Bè / Agoè)",
-    country: "TG",
-    cashInHand: 185000,
-    cashLimit: 250000,
-    deliveredTodayCount: 5,
-    assignedStops: [
-      {
-        id: "stop_04",
-        orderNumber: "CMD-2026-088",
-        customerName: "Afi Mawuli",
-        customerPhone: "+22891234567",
-        address: "Agoè Assiyéyé, face total",
-        amountToCollect: 45000,
-        status: "delivered",
-      },
-      {
-        id: "stop_05",
-        orderNumber: "CMD-2026-095",
-        customerName: "Kodjo Mensah",
-        customerPhone: "+22892334455",
-        address: "Bè Klikamé carrefour 3 Dauphins",
-        amountToCollect: 19500,
-        status: "to_deliver",
-      },
-    ],
-  },
-];
+const INITIAL_RIDERS: RiderShift[] = [];
 
-const INITIAL_CLOSERS: CloserShift[] = [
-  {
-    id: "c_01",
-    name: "Aïcha Diallo",
-    phone: "+225 07 12 34 56 78",
-    country: "CI",
-    processedCount: 142,
-    confirmedCount: 126,
-    scheduledCount: 118,
-    deliveredCount: 94,
-    confirmationRate: 88.7,
-    commissionPerDelivery: 500,
-    currentCommissions: 47000, // 94 x 500
-    monthlyTarget: 150,
-    monthlyDeliveries: 94,
-    targetTier1: { threshold: 100, bonus: 50000 },
-    targetTier2: { threshold: 200, bonus: 120000 },
-  },
-  {
-    id: "c_02",
-    name: "Yasmine Touré",
-    phone: "+228 90 88 77 66",
-    country: "TG",
-    processedCount: 98,
-    confirmedCount: 84,
-    scheduledCount: 78,
-    deliveredCount: 62,
-    confirmationRate: 85.7,
-    commissionPerDelivery: 500,
-    currentCommissions: 31000,
-    monthlyTarget: 100,
-    monthlyDeliveries: 62,
-    targetTier1: { threshold: 80, bonus: 40000 },
-    targetTier2: { threshold: 150, bonus: 90000 },
-  },
-];
+const INITIAL_CLOSERS: CloserShift[] = [];
 
 export function PointClient({ storeSlug }: PointClientProps) {
   const { activeRole } = useApp();
@@ -310,9 +205,15 @@ export function PointClient({ storeSlug }: PointClientProps) {
       {/* ======================================================== */}
       {activeTab === "riders" && (
         <ScrollReveal delay={100} className="space-y-6">
-          {/* Cartes Livreurs avec Alerte Plafond Dépassé */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {riders.map((r) => {
+          {riders.length === 0 ? (
+            <div className="p-12 text-center rounded-3xl bg-white border border-black/[0.08] space-y-2">
+              <Truck className="h-8 w-8 text-[#888880] mx-auto opacity-40" />
+              <p className="font-bold text-sm text-[#111111]">Aucun coursier en tournée actuellement</p>
+              <p className="text-xs text-[#666660]">Les coursiers assignés et leurs encaissements s'afficheront ici lors des livraisons du jour.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              {riders.map((r) => {
               const isOverLimit = r.cashInHand >= r.cashLimit;
 
               return (
@@ -447,6 +348,7 @@ export function PointClient({ storeSlug }: PointClientProps) {
               );
             })}
           </div>
+          )}
         </ScrollReveal>
       )}
 
@@ -455,8 +357,15 @@ export function PointClient({ storeSlug }: PointClientProps) {
       {/* ======================================================== */}
       {activeTab === "closers" && (
         <ScrollReveal delay={100} className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {closers.map((c) => {
+          {closers.length === 0 ? (
+            <div className="p-12 text-center rounded-3xl bg-white border border-black/[0.08] space-y-2">
+              <Headphones className="h-8 w-8 text-[#888880] mx-auto opacity-40" />
+              <p className="font-bold text-sm text-[#111111]">Aucune closeuse active actuellement</p>
+              <p className="text-xs text-[#666660]">Le suivi des appels, des confirmations et des commissions de votre équipe s'affichera ici.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              {closers.map((c) => {
               const progressPct = Math.min(100, Math.round((c.monthlyDeliveries / c.monthlyTarget) * 100));
 
               return (
@@ -558,6 +467,7 @@ export function PointClient({ storeSlug }: PointClientProps) {
               );
             })}
           </div>
+          )}
         </ScrollReveal>
       )}
 

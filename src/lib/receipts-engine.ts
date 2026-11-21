@@ -162,7 +162,7 @@ export function createReceiptsForDeliveredOrder(
   // CAS 1 : Mode « Un reçu par commande » (par défaut)
   if (settings.mode === "per_order") {
     const orderToken = generateReceiptToken(order.orderNumber);
-    const receiptNum = `REC-2026-${order.orderNumber.replace(/[^0-9]/g, "").padStart(6, "0")}`;
+    const receiptNum = `REC-${new Date().getFullYear()}-${order.orderNumber.replace(/[^0-9]/g, "").padStart(6, "0")}`;
 
     const receipt: Receipt = {
       id: `rcp_${order.id}`,
@@ -206,7 +206,7 @@ export function createReceiptsForDeliveredOrder(
   itemSnapshots.forEach((itemSnap, idx) => {
     const itemIndex = idx + 1;
     const itemToken = generateReceiptToken(order.orderNumber, itemIndex);
-    const itemReceiptNum = `REC-2026-${baseOrderNum}-${itemIndex}`;
+    const itemReceiptNum = `REC-${new Date().getFullYear()}-${baseOrderNum}-${itemIndex}`;
 
     const itemReceipt: Receipt = {
       id: `rcp_${order.id}_${itemSnap.orderItemId}`,

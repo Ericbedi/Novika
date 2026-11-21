@@ -56,8 +56,8 @@ export function MobilePwaClient({ storeSlug }: MobilePwaClientProps) {
       userId: "usr_rider_01",
       actionType: "mark_delivered",
       payload: {
-        orderId: "ord_10482",
-        orderNumber: "CMD-10482",
+        orderId: "ord_demo_offline",
+        orderNumber: "CMD-OFFLINE-001",
         proofType: "code",
         codeEntered: "4821",
         amountCollected: 26900,

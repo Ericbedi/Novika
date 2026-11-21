@@ -1,32 +1,7 @@
 import { ProductReview, ReviewToken } from "@/server/data/product-page-types";
 
 // In-memory tokens de collecte d'avis post-livraison
-export const MOCK_REVIEW_TOKENS: ReviewToken[] = [
-  {
-    id: "rt_delivered_order_10482",
-    tokenHash: "hash_tok_rev_awa_traore_abidjan_2026",
-    rawToken: "rev_tok_awa_traore_valid_delivered_10482",
-    orderId: "ord_10482",
-    storeId: "store_lome_glow",
-    productId: "prod_coffee",
-    customerName: "Awa Traoré",
-    customerPhone: "+2250748291102",
-    expiresAt: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
-    isUsed: false,
-  },
-  {
-    id: "rt_expired_order_9999",
-    tokenHash: "hash_tok_rev_expired_koffi",
-    rawToken: "rev_tok_expired_sample_30days",
-    orderId: "ord_9999",
-    storeId: "store_lome_glow",
-    productId: "prod_serum",
-    customerName: "Koffi Mensah",
-    customerPhone: "+22890123456",
-    expiresAt: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString(),
-    isUsed: false,
-  },
-];
+export const MOCK_REVIEW_TOKENS: ReviewToken[] = [];
 
 export function validateReviewToken(
   rawToken: string

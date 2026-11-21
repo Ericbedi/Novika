@@ -548,7 +548,7 @@ export function SuppliersClient({ storeSlug }: SuppliersClientProps) {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Ex: Guangzhou Beauty & Health Supply Co."
+                  placeholder="Ex: Laboratoires Cosmétiques Internationaux"
                   className="w-full px-3 py-2 rounded-xl border border-black/[0.08] bg-white text-[#111111] font-semibold focus:outline-none"
                 />
               </div>
