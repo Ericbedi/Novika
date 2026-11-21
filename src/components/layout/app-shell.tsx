@@ -155,8 +155,25 @@ function AppShellInner({
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const userEmail = localStorage.getItem("novika_user_email") || "";
-      const userFullName = localStorage.getItem("novika_user_fullname") || (userEmail ? userEmail.split("@")[0] : null);
+      let userEmail = localStorage.getItem("novika_user_email") || "";
+      let userFullName = localStorage.getItem("novika_user_fullname");
+
+      if (!userEmail) {
+        try {
+          const rawUser = localStorage.getItem("novika_user");
+          if (rawUser) {
+            const parsedUser = JSON.parse(rawUser);
+            if (parsedUser?.email) {
+              userEmail = parsedUser.email;
+              userFullName = parsedUser.fullName || parsedUser.name || userFullName;
+            }
+          }
+        } catch (err) {
+          console.warn("[App Shell] Erreur parsing novika_user:", err);
+        }
+      }
+
+      userFullName = userFullName || (userEmail ? userEmail.split("@")[0] : null);
 
       if (userEmail) {
         const displayName = userFullName || userEmail.split("@")[0];
@@ -170,29 +187,49 @@ function AppShellInner({
         });
       }
 
-      const isDemoAdmin = userEmail === "admin@novika.com" || userEmail === "promises@afribuilder.africa" || !userEmail;
-
-      if (!isDemoAdmin) {
-        // Utilisateur réel : récupérer ses boutiques dédiées
-        const customStoresKey = `novika_user_stores_${userEmail}`;
+      let userStores: Store[] = [];
+      const customStoresKey = userEmail ? `novika_user_stores_${userEmail}` : "";
+      if (customStoresKey) {
         const savedCustomStores = localStorage.getItem(customStoresKey);
         if (savedCustomStores) {
           try {
             const parsed = JSON.parse(savedCustomStores) as Store[];
             if (Array.isArray(parsed) && parsed.length > 0) {
-              setStoresList(parsed);
-              const found = parsed.find((s) => s.slug === initialStoreSlug) || parsed[0];
-              setActiveStore(found);
-              return;
+              userStores = parsed;
             }
-          } catch {}
+          } catch (err) {
+            console.warn("[App Shell] Erreur lecture custom stores:", err);
+          }
         }
+      }
 
-        // Si aucune boutique créée : liste vide, ne pas afficher les boutiques démo de Promises Bedi !
-        setStoresList([]);
-        setIsCreateStoreOpen(true);
+      // Si aucune boutique dans le localStorage pour cet utilisateur, vérifier MOCK_STORES ou fallback de la route active
+      if (userStores.length === 0) {
+        if (Array.isArray(MOCK_STORES) && MOCK_STORES.length > 0) {
+          userStores = MOCK_STORES;
+        } else if (initialStoreSlug) {
+          const fallbackStore: Store = {
+            id: `store_${initialStoreSlug}`,
+            name: initialStoreSlug.charAt(0).toUpperCase() + initialStoreSlug.slice(1),
+            slug: initialStoreSlug,
+            country: "TG",
+            countryName: "Togo",
+            flag: "🇹🇬",
+            currency: "XOF",
+            whatsappNumber: "+22890000000",
+            role: "owner",
+            status: "active",
+          };
+          userStores = [fallbackStore];
+        }
+      }
+
+      setStoresList(userStores);
+      if (userStores.length > 0) {
+        const found = userStores.find((s) => s.slug === initialStoreSlug) || userStores[0];
+        setActiveStore(found);
       } else {
-        setStoresList(MOCK_STORES);
+        setIsCreateStoreOpen(true);
       }
 
       const savedRole = (localStorage.getItem("novika_active_role") || localStorage.getItem("afribuilder_active_role")) as UserRole | null;

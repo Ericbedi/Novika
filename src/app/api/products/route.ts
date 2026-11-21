@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getShopProducts, getShopProductsRaw } from "@/lib/products-store";
+import { getShopProducts, getShopProductsRaw, saveShopProductsList } from "@/lib/products-store";
 import { Product } from "@/server/data/types";
 
 export async function GET(req: NextRequest) {
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
         if (isUuid) {
           query = query.or(`slug.eq.${productIdOrSlug},product_id.eq.${productIdOrSlug},short_code.eq.${productIdOrSlug},legacy_id.eq.${productIdOrSlug}`);
         } else {
-          query = query.or(`slug.eq.${productIdOrSlug},short_code.eq.${productIdOrSlug},legacy_id.eq.${productIdOrSlug}`);
+          query = query.or(`slug.eq.${productIdOrSlug},short_code.eq.${productIdOrSlug},legacy_id.eq.${productIdOrSlug},slug.ilike.${productIdOrSlug}%`);
         }
       }
 
@@ -68,6 +68,8 @@ export async function GET(req: NextRequest) {
               ]
             : [],
         }));
+
+        saveShopProductsList(storeSlug, mappedProducts);
 
         return NextResponse.json({
           products: mappedProducts,

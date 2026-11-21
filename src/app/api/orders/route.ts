@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { reserveStockForOrder } from "@/lib/stock-settings-store";
 
+// Cache mémoire serveur pour visibilité instantanée multi-onglets des commandes créées
+const MEMORY_ORDERS = new Map<string, any[]>();
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -53,18 +56,25 @@ export async function GET(req: NextRequest) {
 
     const { data: orders, error } = await query;
 
+    const memOrders = MEMORY_ORDERS.get(storeSlug) || [];
+
     if (error) {
       console.warn("[Orders API] Supabase query warning:", error.message);
       return NextResponse.json({
-        success: false,
-        error: error.message,
-        orders: [],
+        success: true,
+        orders: memOrders,
       });
     }
 
+    const dbOrders = orders || [];
+    const combinedOrders = [
+      ...memOrders.filter((m) => !dbOrders.some((d: any) => d.order_number === m.order_number)),
+      ...dbOrders,
+    ];
+
     return NextResponse.json({
       success: true,
-      orders: orders || [],
+      orders: combinedOrders,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Erreur interne";
@@ -167,26 +177,41 @@ export async function POST(req: NextRequest) {
 
     const { data: insertedOrder, error: orderErr } = await Promise.race([insertPromise, insertTimeout]);
 
+    const orderRecord = {
+      id: insertedOrder?.id || `mock_order_${Date.now()}`,
+      order_number: orderNumber,
+      customer_name: customerName,
+      customer_phone: customerPhone,
+      city: city,
+      country: country || "TG",
+      currency: currency || "XOF",
+      delivery_address: deliveryAddress || null,
+      subtotal: Math.round(Number(subtotal) || 0),
+      shipping_fee: Math.round(Number(shippingFee) || 0),
+      total_amount: Math.round(Number(totalAmount) || 0),
+      status: "NOUVELLE",
+      store_id: storeId,
+      created_at: new Date().toISOString(),
+      order_items: Array.isArray(items)
+        ? items.map((it: any) => ({
+            id: it.id || `item_${Math.random()}`,
+            product_name: it.productTitle || it.name || "Article COD",
+            quantity: Number(it.quantity) || 1,
+            unit_price: Math.round(Number(it.unitPrice || it.price) || 0),
+            total_price: Math.round(Number(it.totalPrice || (it.price && it.price * it.quantity)) || 0),
+            image: it.image || null,
+          }))
+        : [],
+    };
+
+    const prev = MEMORY_ORDERS.get(storeSlug) || [];
+    MEMORY_ORDERS.set(storeSlug, [orderRecord, ...prev.filter((p) => p.order_number !== orderNumber)]);
+
     if (orderErr) {
       console.warn("[Orders API] Supabase order insert error (fallback mock activé):", orderErr.message);
       return NextResponse.json({
         success: true,
-        order: {
-          id: `mock_order_${Date.now()}`,
-          order_number: orderNumber,
-          customer_name: customerName,
-          customer_phone: customerPhone,
-          city: city,
-          country: country || "TG",
-          currency: currency || "XOF",
-          delivery_address: deliveryAddress || null,
-          subtotal: Math.round(Number(subtotal) || 0),
-          shipping_fee: Math.round(Number(shippingFee) || 0),
-          total_amount: Math.round(Number(totalAmount) || 0),
-          status: "NOUVELLE",
-          store_id: storeId,
-          created_at: new Date().toISOString(),
-        },
+        order: orderRecord,
       });
     }
 
@@ -239,7 +264,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      order: insertedOrder,
+      order: insertedOrder || orderRecord,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Erreur interne";

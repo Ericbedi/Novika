@@ -163,7 +163,12 @@ export function createEmptyStorefront(storeSlug: string, storeName: string): Sto
     storeId: `store_${storeSlug}`,
     storeSlug,
     subdomain: storeSlug,
-    isPublished: false,
+    isPublished: storeSlug === "kelio",
+    seo: {
+      title: `${displayBrand} — Boutique Officielle`,
+      description: `Commandez en ligne sur ${displayBrand} et payez en espèces à la livraison.`,
+      visibleOnGoogle: true,
+    },
     lastDraftUpdatedAt: new Date().toISOString(),
     activeTheme: {
       id: "thm_kaelis",

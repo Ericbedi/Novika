@@ -80,7 +80,6 @@ export async function middleware(request: NextRequest) {
       pathname.startsWith("/collections") ||
       pathname.startsWith("/recherche") ||
       pathname.startsWith("/blog") ||
-      pathname.startsWith("/panier") ||
       pathname === "/a-propos";
 
     if (isRemovedStorefrontRoute) {
@@ -98,7 +97,7 @@ export async function middleware(request: NextRequest) {
 
   // Redirection 301 des routes supprimées sur l'adresse de secours (Prompt 21-b)
   const matchBoutiqueRemoved = pathname.match(
-    /^\/boutique\/([^/]+)\/(collections|recherche|blog|panier|a-propos)(\/.*)?$/
+    /^\/boutique\/([^/]+)\/(collections|recherche|blog|a-propos)(\/.*)?$/
   );
   if (matchBoutiqueRemoved) {
     const store = matchBoutiqueRemoved[1];
@@ -167,9 +166,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 3. Définition des routes privées
+  // 3. Définition des routes privées (Dashboard et APIs d'administration)
   const isPrivatePage =
     pathname.startsWith("/app") ||
+    pathname.startsWith("/dashboard") ||
     pathname.startsWith("/demarrer") ||
     pathname.startsWith("/platform-admin");
 
@@ -180,13 +180,11 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/api/team") ||
     (pathname.startsWith("/api/live") && request.method !== "POST");
 
-  // 4. Si la route est privée
+  // 4. Si la route est privée : authentification obligatoire (promisesbedi@gmail.com ou membre invité)
   if (isPrivatePage || isPrivateApi) {
-    // Exception pour tests E2E / mode démo fondateur de lome-glow
-    const isFounderDemoPath = pathname === "/app/lome-glow" || pathname.startsWith("/app/lome-glow/");
     const isE2EEnv = process.env.E2E_PROD === "1" || process.env.NODE_ENV === "test";
 
-    if (!hasValidSession && !isFounderDemoPath && !isE2EEnv) {
+    if (!hasValidSession && !isE2EEnv) {
       if (isPrivateApi) {
         return NextResponse.json(
           { error: "Non autorisé. Session absente ou expirée.", code: "UNAUTHORIZED" },
@@ -208,6 +206,11 @@ export async function middleware(request: NextRequest) {
     }
 
     // Réponse autorisée avec en-têtes Cache-Control: no-store stricts
+    if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
+      const target = pathname.replace(/^\/dashboard/, "/app");
+      return NextResponse.redirect(new URL(target + search, request.url));
+    }
+
     const response = NextResponse.next();
     Object.entries(NO_STORE_HEADERS).forEach(([k, v]) => {
       response.headers.set(k, v);

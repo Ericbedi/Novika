@@ -159,6 +159,44 @@ export default function CartAndCodCheckoutPage({ params }: PageProps) {
         throw new Error(data.error || "Impossible d'enregistrer la commande. Réessayez.");
       }
 
+      // Sauvegarder la commande en local pour visibilité immédiate dans le tableau de bord
+      if (typeof window !== "undefined") {
+        try {
+          const storageKey = `novika_store_orders_${storeSlug}`;
+          const existingRaw = localStorage.getItem(storageKey);
+          const existingOrders = existingRaw ? JSON.parse(existingRaw) : [];
+          const newOrder = {
+            id: orderNumber,
+            orderNumber,
+            customerName: customerName.trim(),
+            customerPhone: fullPhone,
+            city: city.trim(),
+            district: "",
+            country: selectedCountryCode,
+            currency: store.currency || "XOF",
+            deliveryAddress: deliveryAddress.trim() || null,
+            subtotal,
+            shippingFee: 0,
+            totalAmount: subtotal,
+            status: "pending",
+            statusReason: null,
+            createdAt: new Date().toISOString(),
+            trackingToken,
+            items: cartItems.map((it) => ({
+              id: it.id,
+              productName: it.productTitle,
+              quantity: it.quantity,
+              unitPrice: it.price,
+              totalPrice: it.price * it.quantity,
+              image: it.image,
+            })),
+          };
+          localStorage.setItem(storageKey, JSON.stringify([newOrder, ...existingOrders]));
+        } catch (storageErr) {
+          console.warn("[Panier] Erreur sauvegarde commande localStorage:", storageErr);
+        }
+      }
+
       // Vider le panier
       clearCart(storeSlug);
 

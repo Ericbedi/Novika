@@ -223,13 +223,15 @@ export default function StorefrontLayout({
             )}
           </Link>
 
-          {/* Raccourcis Droite : Pays, WhatsApp & Panier */}
+          {/* Raccourcis Droite : Pays, Panier & WhatsApp */}
           <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             <StorefrontCountrySelector
               storeSlug={storeSlug}
               storeCurrency={store.currency || "XOF"}
               defaultCountryCode={store.country || "TG"}
             />
+
+            <HeaderCartButton storeSlug={storeSlug} />
 
             <a
               href={`https://wa.me/${storefront.contact?.whatsappNumber ? storefront.contact.whatsappNumber.replace(/[^0-9]/g, "") : ""}?text=${encodeURIComponent(
@@ -469,6 +471,9 @@ export default function StorefrontLayout({
           </div>
         </div>
       )}
+
+      {/* Tiroir Panier latéral & Commande COD */}
+      <CartDrawer storeSlug={storeSlug} />
 
       {/* Exécuteur sécurisé des Pixels Meta (respect absolu du consentement et non bloquant) */}
       <MetaPixelRunner storeSlug={storeSlug} />

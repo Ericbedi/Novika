@@ -70,25 +70,64 @@ export function OrdersListClient({ storeSlug }: OrdersListClientProps) {
   });
 
   useEffect(() => {
+    let isMounted = true;
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem(`novika_store_orders_${storeSlug}`);
       if (saved) {
         try {
-          setOrders(JSON.parse(saved));
-          return;
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setOrders(parsed);
+          }
         } catch {}
       }
-      if (!isFounderDemoStore) {
-        setOrders([]);
-      }
-    }
-  }, [storeSlug, isFounderDemoStore]);
 
-  useEffect(() => {
-    if (typeof window !== "undefined" && !isFounderDemoStore) {
-      localStorage.setItem(`novika_store_orders_${storeSlug}`, JSON.stringify(orders));
+      // Synchronisation avec les commandes enregistrées sur le serveur
+      fetch(`/api/orders?store=${encodeURIComponent(storeSlug)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (!isMounted) return;
+          if (data?.orders && Array.isArray(data.orders) && data.orders.length > 0) {
+            setOrders((prev) => {
+              const combined = [...prev];
+              for (const o of data.orders) {
+                const mapped: Order = {
+                  id: o.id || o.order_number,
+                  orderNumber: o.order_number || o.orderNumber,
+                  customerName: o.customer_name || o.customerName,
+                  customerPhone: o.customer_phone || o.customerPhone,
+                  city: o.city,
+                  district: o.district || "",
+                  country: o.country || "TG",
+                  currency: o.currency || "XOF",
+                  deliveryAddress: o.delivery_address || o.deliveryAddress,
+                  status: (o.status === "NOUVELLE" ? "pending" : (o.status || "pending")) as OrderStatus,
+                  statusReason: o.status_reason || null,
+                  subtotal: Number(o.subtotal) || Number(o.total_amount) || 0,
+                  shippingFee: Number(o.shipping_fee) || 0,
+                  totalAmount: Number(o.total_amount) || Number(o.subtotal) || 0,
+                  createdAt: o.created_at || new Date().toISOString(),
+                  items: o.order_items || o.items || [],
+                };
+                if (!combined.some((c) => c.orderNumber === mapped.orderNumber)) {
+                  combined.unshift(mapped);
+                }
+              }
+              try {
+                localStorage.setItem(`novika_store_orders_${storeSlug}`, JSON.stringify(combined));
+              } catch {}
+              return combined;
+            });
+          }
+        })
+        .catch((err) => {
+          console.warn("[Orders List] Erreur fetch API:", err);
+        });
     }
-  }, [orders, storeSlug, isFounderDemoStore]);
+    return () => {
+      isMounted = false;
+    };
+  }, [storeSlug]);
   const [activeTab, setActiveTab] = useState<TabStatus>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCountry, setSelectedCountry] = useState<string>("all");

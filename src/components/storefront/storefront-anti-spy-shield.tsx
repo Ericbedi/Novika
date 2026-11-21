@@ -152,18 +152,6 @@ export function StorefrontAntiSpyShield({
       }, 3500);
     }
 
-    // 6. Injection des balises meta anti-indexation / anti-archivage pour scrapers
-    let metaRobots = document.querySelector('meta[name="robots"]');
-    if (!metaRobots) {
-      metaRobots = document.createElement("meta");
-      metaRobots.setAttribute("name", "robots");
-      metaRobots.setAttribute(
-        "content",
-        "noindex, nofollow, noarchive, nosnippet, max-image-preview:none"
-      );
-      document.head.appendChild(metaRobots);
-    }
-
     if (enableAntiInspect) {
       document.addEventListener("contextmenu", handleContextMenu, { capture: true });
       window.addEventListener("keydown", handleKeyDown, { capture: true });

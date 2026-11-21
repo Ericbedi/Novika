@@ -101,11 +101,9 @@ export async function resolveStorefrontDataAsync(storeSlug: string): Promise<Res
   );
 
   const storefront: StorefrontData = createEmptyStorefront(storeSlug, store.name);
-  if (activeProducts.length > 0) {
-    storefront.isPublished = true;
-  }
+  storefront.isPublished = true;
 
-  const isPreparationMode = !storefront.isPublished || activeProducts.length === 0;
+  const isPreparationMode = storefront.isPublished === false;
 
   setMemoryStore(storeSlug, store);
   setMemoryStorefront(storeSlug, storefront);

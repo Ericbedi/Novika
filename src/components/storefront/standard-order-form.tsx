@@ -313,6 +313,70 @@ export function StandardOrderForm({
         return;
       }
 
+      // Enregistrement de la commande pour affichage immédiat dans le tableau de bord
+      if (typeof window !== "undefined") {
+        try {
+          const storageKey = `novika_store_orders_${storeSlug}`;
+          const existingRaw = localStorage.getItem(storageKey);
+          const existingOrders = existingRaw ? JSON.parse(existingRaw) : [];
+          const newOrder = {
+            id: result.recalculatedOrder.orderNumber,
+            orderNumber: result.recalculatedOrder.orderNumber,
+            customerName: result.recalculatedOrder.customerName,
+            customerPhone: result.recalculatedOrder.customerPhone,
+            city: result.recalculatedOrder.city,
+            district: district.trim() || "",
+            country: countryCode || "TG",
+            currency: "XOF",
+            deliveryAddress: result.recalculatedOrder.address,
+            subtotal: result.recalculatedOrder.subtotal,
+            shippingFee: 0,
+            totalAmount: result.recalculatedOrder.totalAmount,
+            status: "pending",
+            statusReason: null,
+            createdAt: new Date().toISOString(),
+            trackingToken: result.recalculatedOrder.trackingToken,
+            items: [
+              {
+                id: product.id,
+                productName: product.name,
+                quantity: activeOffer.quantity || 1,
+                unitPrice: activeOffer.unitPrice || product.price,
+                totalPrice: result.recalculatedOrder.totalAmount,
+                image: (product.images && product.images[0]) || (product as any).image,
+              },
+            ],
+          };
+          localStorage.setItem(storageKey, JSON.stringify([newOrder, ...existingOrders]));
+
+          // Envoi asynchrone non-bloquant vers /api/orders
+          fetch("/api/orders", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              orderNumber: result.recalculatedOrder.orderNumber,
+              customerName: result.recalculatedOrder.customerName,
+              customerPhone: result.recalculatedOrder.customerPhone,
+              city: result.recalculatedOrder.city,
+              country: countryCode || "TG",
+              currency: "XOF",
+              deliveryAddress: result.recalculatedOrder.address,
+              subtotal: result.recalculatedOrder.subtotal,
+              shippingFee: 0,
+              totalAmount: result.recalculatedOrder.totalAmount,
+              storeSlug,
+              trackingToken: result.recalculatedOrder.trackingToken,
+              productId: product.id,
+              productTitle: product.name,
+              quantity: activeOffer.quantity || 1,
+              items: newOrder.items,
+            }),
+          }).catch(() => {});
+        } catch (e) {
+          console.warn("[Order Form] Erreur sauvegarde locale commande:", e);
+        }
+      }
+
       setSuccessOrder({
         ...result.recalculatedOrder,
         zoneType: cityZone.zoneType,

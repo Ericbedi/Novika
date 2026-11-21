@@ -126,36 +126,7 @@ export function StorefrontHomeClient({
     }));
   };
 
-  // Cas 1 : Boutique en préparation et visiteur public -> Écran neutre strict
-  if (data.isPreparationMode && !isOwner) {
-    return (
-      <StorePreparationScreen
-        storeName={store.name}
-        storeSlug={storeSlug}
-        isOwner={false}
-      />
-    );
-  }
-
-  // Cas 2 : Boutique en préparation mais visiteur propriétaire -> Écran de préparation avec barre admin
-  if (data.isPreparationMode && isOwner && !isEditMode) {
-    return (
-      <>
-        <StorePreparationScreen
-          storeName={store.name}
-          storeSlug={storeSlug}
-          isOwner={true}
-        />
-        <StorefrontAdminBar
-          storeSlug={storeSlug}
-          isPublished={storefront.isPublished}
-          isEditMode={isEditMode}
-          onToggleEditMode={handleToggleEditMode}
-          onTogglePublish={handleTogglePublish}
-        />
-      </>
-    );
-  }
+  // La vitrine est 100% publique pour tous les clients (aucun écran de préparation ni blocage)
 
   // Sections du modèle Kaelis
   const heroSection = storefront.sections?.find((s) => s.id === "sec_hero");
@@ -574,18 +545,17 @@ export function StorefrontHomeClient({
       {/* ========================================================================= */}
       {/* 6. PRODUITS DISPONIBLES (GRILLE VENTE DIRECTE COD) */}
       {/* ========================================================================= */}
-      {activeProducts.length > 0 && (
-        <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-12 space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 border-b border-black/[0.08] pb-4">
-            <div>
-              <h2 className="text-2xl sm:text-3xl font-black text-[#111111] tracking-tight">
-                Produits Disponibles
-              </h2>
-              <p className="text-xs text-[#666660] mt-0.5">
-                Commandez directement en ligne avec règlement en espèces à la
-                livraison.
-              </p>
-            </div>
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-12 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 border-b border-black/[0.08] pb-4">
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-black text-[#111111] tracking-tight">
+              Produits Disponibles
+            </h2>
+            <p className="text-xs text-[#666660] mt-0.5">
+              Commandez directement en ligne avec règlement en espèces à la livraison.
+            </p>
+          </div>
+          {activeProducts.length > 0 && (
             <Link
               href={`/boutique/${storeSlug}/catalogue`}
               className="text-xs font-bold text-[#111111] hover:underline inline-flex items-center gap-1"
@@ -593,8 +563,10 @@ export function StorefrontHomeClient({
               <span>Découvrir tout le catalogue ({activeProducts.length})</span>
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
-          </div>
+          )}
+        </div>
 
+        {activeProducts.length > 0 ? (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-6">
             {activeProducts.map((prod) => {
               const isOutOfStock = prod.stock <= 0;
@@ -687,8 +659,14 @@ export function StorefrontHomeClient({
               );
             })}
           </div>
-        </section>
-      )}
+        ) : (
+          <div className="py-12 px-6 rounded-3xl border border-black/[0.06] bg-[#FAF8F5] text-center max-w-md mx-auto space-y-2">
+            <p className="text-xs font-semibold text-[#666660]">
+              Aucun produit n'est actuellement publié sur cette boutique.
+            </p>
+          </div>
+        )}
+      </section>
 
       {/* TIROIR D'ÉDITION EN DIRECT (MODE ADMIN PROPRIÉTAIRE) */}
       <SectionEditorDrawer

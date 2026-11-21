@@ -100,6 +100,7 @@ export function ProductCanonicalDetailPageClient({
               (p: Product) =>
                 p.id === productId ||
                 p.slug === productId ||
+                (p.slug && p.slug.startsWith(productId)) ||
                 p.shortCode === productId ||
                 p.short_code === productId ||
                 (p as any).legacy_id === productId
