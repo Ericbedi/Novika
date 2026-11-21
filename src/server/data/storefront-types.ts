@@ -83,14 +83,14 @@ export interface StoreContactInfo {
   address: string;
   city: string;
   country: string;
-  openingHours: string;
-  socials: {
+  openingHours?: string;
+  socials?: {
     facebook?: string;
     instagram?: string;
     tiktok?: string;
     youtube?: string;
   };
-  deliveryZones: Array<{
+  deliveryZones?: Array<{
     country: string;
     city: string;
     delayDays: string;
@@ -166,6 +166,7 @@ export interface StorefrontData {
   contact: StoreContactInfo;
   reviews: CustomerReview[];
   versions: StorefrontVersion[];
+  onboarding?: any;
   seo?: {
     visibleOnGoogle?: boolean;
     metaTitle?: string;

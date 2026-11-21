@@ -165,8 +165,8 @@ export function createEmptyStorefront(storeSlug: string, storeName: string): Sto
     subdomain: storeSlug,
     isPublished: storeSlug === "kelio",
     seo: {
-      title: `${displayBrand} — Boutique Officielle`,
-      description: `Commandez en ligne sur ${displayBrand} et payez en espèces à la livraison.`,
+      metaTitle: `${displayBrand} — Boutique Officielle`,
+      metaDescription: `Commandez en ligne sur ${displayBrand} et payez en espèces à la livraison.`,
       visibleOnGoogle: true,
     },
     lastDraftUpdatedAt: new Date().toISOString(),

@@ -405,7 +405,7 @@ export function FollowupsClient({ storeSlug }: FollowupsClientProps) {
         f.id === followupId
           ? {
             ...f,
-            assignedTo: { id: "cls_assigned", name: activeUser?.name || "Membre de l'équipe" },
+            assignedTo: { id: "cls_assigned", name: currentUser?.name || currentUser?.fullName || "Membre de l'équipe" },
             notes: `${f.notes || ""}\n[Réassigné par le Manager]`.trim(),
           }
           : f

@@ -18,6 +18,7 @@ describe("Prompt 17-O : Persistance Supabase, legacy_id et Sécurisation des Ide
     const draft: MappedProductDraft = {
       handle: "the-vert-bio",
       title: "Thé Vert Bio Vitalité",
+      brand: "Fournisseur Kelio",
       descriptionHtml: "<p>Thé vert stimulant</p>",
       descriptionPlain: "Thé vert stimulant",
       rawBodyHtml: "<p>Thé vert stimulant</p>",

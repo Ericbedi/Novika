@@ -57,6 +57,7 @@ export interface Store {
   whatsappNumber: string;
   logo?: string;
   role: UserRole;
+  status?: "active" | "inactive" | "archived" | "pending_deletion";
 }
 
 export interface OrderItem {
@@ -84,6 +85,7 @@ export interface Order {
   customerPhone: string;
   country: "BJ" | "CI" | "SN" | "TG";
   city: string;
+  district?: string;
   deliveryAddress: string;
   items: OrderItem[];
   subtotal: number;
@@ -146,10 +148,10 @@ export interface ProductAuditEntry {
 
 export interface ProductVariant {
   id: string;
-  name: string;
+  name?: string;
   title?: string;
   price: number;
-  costPrice: number;
+  costPrice?: number;
   stock: number;
   stockCount?: number;
   sku?: string;
@@ -223,6 +225,9 @@ export interface StoreStockSettings {
 
 export interface Product {
   id: string;
+  legacy_id?: string;
+  legacyId?: string;
+  trackInventory?: boolean;
   storeId?: string;
   shop_id?: string;
   storeSlug?: string;

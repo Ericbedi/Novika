@@ -69,6 +69,35 @@ export function ImagePicker({
       contextType: context,
     });
 
+  const loadLibrary = async () => {
+    setIsLoadingLibrary(true);
+    try {
+      const res = await fetch(`/api/media/library?storeSlug=${encodeURIComponent(storeSlug)}`);
+      const data = await res.json();
+      if (data.items) {
+        setLibraryItems(data.items);
+      }
+    } catch {
+      // Fallback
+    } finally {
+      setIsLoadingLibrary(false);
+    }
+  };
+
+  const handleProcessFile = async (file: File) => {
+    clearError();
+    const media = await uploadFile(file, altText);
+    if (media) {
+      onSelectImage({
+        url: media.url,
+        altText: altText.trim() || media.altText || defaultAlt,
+        align: alignment,
+        width: widthOption,
+      });
+      onClose();
+    }
+  };
+
   // Chargement de la médiathèque quand l'onglet s'ouvre
   useEffect(() => {
     if (isOpen && activeTab === "library") {
@@ -98,35 +127,6 @@ export function ImagePicker({
     window.addEventListener("paste", handlePaste);
     return () => window.removeEventListener("paste", handlePaste);
   }, [isOpen]);
-
-  const loadLibrary = async () => {
-    setIsLoadingLibrary(true);
-    try {
-      const res = await fetch(`/api/media/library?storeSlug=${encodeURIComponent(storeSlug)}`);
-      const data = await res.json();
-      if (data.items) {
-        setLibraryItems(data.items);
-      }
-    } catch {
-      // Fallback
-    } finally {
-      setIsLoadingLibrary(false);
-    }
-  };
-
-  const handleProcessFile = async (file: File) => {
-    clearError();
-    const media = await uploadFile(file, altText);
-    if (media) {
-      onSelectImage({
-        url: media.url,
-        altText: altText.trim() || media.altText || defaultAlt,
-        align: alignment,
-        width: widthOption,
-      });
-      onClose();
-    }
-  };
 
   const handleUrlSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

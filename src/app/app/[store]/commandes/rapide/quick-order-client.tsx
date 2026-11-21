@@ -398,7 +398,7 @@ export function QuickOrderClient({ storeSlug }: QuickOrderClientProps) {
             {/* Aperçu du message avec variables automatiquement insérées */}
             <div className="p-4 rounded-2xl bg-white border border-black/[0.08] space-y-2">
               <div className="flex items-center justify-between border-b border-black/[0.06] pb-2">
-                <span className="text-xs font-bold text-[#111111]">{activeTemplate.title}</span>
+                <span className="text-xs font-bold text-[#111111]">{(activeTemplate as any).title || (activeTemplate as any).name}</span>
                 <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full">
                   Variables auto
                 </span>

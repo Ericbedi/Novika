@@ -35,7 +35,7 @@ describe("Prompt 18 & 2FA Email : Double Authentification & Résolution Vitrine"
   });
 
   it("2. send2FAEmail en environnement de dev affiche le code et réussit avec fallback console", async () => {
-    process.env.NODE_ENV = "development";
+    (process.env as any).NODE_ENV = "development";
     delete process.env.RESEND_API_KEY;
     delete process.env.SMTP_HOST;
     delete process.env.GMAIL_USER;
@@ -49,7 +49,7 @@ describe("Prompt 18 & 2FA Email : Double Authentification & Résolution Vitrine"
   });
 
   it("3. send2FAEmail en production sans configuration renvoie une erreur explicite", async () => {
-    process.env.NODE_ENV = "production";
+    (process.env as any).NODE_ENV = "production";
     delete process.env.RESEND_API_KEY;
     delete process.env.SMTP_HOST;
     delete process.env.GMAIL_USER;
@@ -140,7 +140,7 @@ describe("Prompt 18 & 2FA Email : Double Authentification & Résolution Vitrine"
 
   it("7. Quand ENABLE_2FA=true, la double authentification 2FA est exigée", async () => {
     process.env.ENABLE_2FA = "true";
-    process.env.NODE_ENV = "development";
+    (process.env as any).NODE_ENV = "development";
 
     const req = new NextRequest("http://localhost:3000/api/auth/login", {
       method: "POST",

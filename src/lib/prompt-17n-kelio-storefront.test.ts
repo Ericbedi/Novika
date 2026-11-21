@@ -32,7 +32,7 @@ describe("Prompt 17-N : Affichage Catalogue et Fiche Produit Vitrine Kelio (Rôl
       updatedAt: new Date().toISOString(),
     });
 
-    const testGlycemie: Product = {
+    const testGlycemie: any = {
       id: "c8f6d031-521b-4b30-a902-96f9e4920002",
       slug: "accompagnez-votre-equilibre-glycemique",
       title: "Accompagnez votre équilibre glycémique",

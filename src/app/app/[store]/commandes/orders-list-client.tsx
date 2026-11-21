@@ -54,19 +54,20 @@ type TabStatus = "all" | OrderStatus | "rejected_cancelled";
 export function OrdersListClient({ storeSlug }: OrdersListClientProps) {
   const router = useRouter();
   const { activeRole } = useApp();
-  const isFounderDemoStore = storeSlug === "lome-glow";
 
   const [orders, setOrders] = useState<Order[]>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem(`novika_store_orders_${storeSlug}`);
       if (saved) {
         try {
-          return JSON.parse(saved);
-        } catch {}
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        } catch (err) {
+          console.warn("[Orders List] Erreur lecture initial localStorage:", err);
+        }
       }
-      if (!isFounderDemoStore) return [];
     }
-    return isFounderDemoStore ? MOCK_ORDERS : [];
+    return [];
   });
 
   useEffect(() => {
@@ -79,7 +80,9 @@ export function OrdersListClient({ storeSlug }: OrdersListClientProps) {
           if (Array.isArray(parsed) && parsed.length > 0) {
             setOrders(parsed);
           }
-        } catch {}
+        } catch (err) {
+          console.warn("[Orders List] Erreur parsing localStorage:", err);
+        }
       }
 
       // Synchronisation avec les commandes enregistrées sur le serveur
@@ -107,6 +110,7 @@ export function OrdersListClient({ storeSlug }: OrdersListClientProps) {
                   shippingFee: Number(o.shipping_fee) || 0,
                   totalAmount: Number(o.total_amount) || Number(o.subtotal) || 0,
                   createdAt: o.created_at || new Date().toISOString(),
+                  updatedAt: o.updated_at || o.updatedAt || o.created_at || new Date().toISOString(),
                   items: o.order_items || o.items || [],
                 };
                 if (!combined.some((c) => c.orderNumber === mapped.orderNumber)) {
@@ -115,7 +119,9 @@ export function OrdersListClient({ storeSlug }: OrdersListClientProps) {
               }
               try {
                 localStorage.setItem(`novika_store_orders_${storeSlug}`, JSON.stringify(combined));
-              } catch {}
+              } catch (err) {
+                console.warn("[Orders List] Erreur sauvegarde localStorage:", err);
+              }
               return combined;
             });
           }

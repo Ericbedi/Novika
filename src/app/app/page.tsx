@@ -19,5 +19,5 @@ export default async function AppIndexPage() {
   }
 
   // Si aucune boutique n'existe en base : AppShell affiche proprement l'état zéro
-  return <AppShell initialStoreSlug="" children={null} />;
+  return <AppShell initialStoreSlug="">{null}</AppShell>;
 }

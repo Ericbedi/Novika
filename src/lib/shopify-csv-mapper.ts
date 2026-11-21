@@ -25,6 +25,7 @@ export type DuplicateStrategy = "skip" | "update" | "copy";
 export interface MappedProductDraft {
   handle: string;
   title: string;
+  vendor?: string;
   descriptionHtml: string;
   descriptionPlain: string;
   rawBodyHtml?: string;
@@ -42,7 +43,7 @@ export interface MappedProductDraft {
   weightGrams?: number;
   images: {
     src: string;
-    position: number;
+    position?: number;
     altText?: string;
     isSafe: boolean;
     failReason?: string;
@@ -560,7 +561,7 @@ export function mapShopifyCsvRows(
     });
 
     // Tri des images par position
-    imagesList.sort((a, b) => a.position - b.position);
+    imagesList.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 
     // Calculs agrégés du produit
     const primaryVariant = variantsList[0];

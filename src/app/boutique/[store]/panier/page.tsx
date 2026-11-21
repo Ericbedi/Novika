@@ -184,10 +184,10 @@ export default function CartAndCodCheckoutPage({ params }: PageProps) {
             trackingToken,
             items: cartItems.map((it) => ({
               id: it.id,
-              productName: it.productTitle,
+              productName: (it as any).productTitle || it.name,
               quantity: it.quantity,
-              unitPrice: it.price,
-              totalPrice: it.price * it.quantity,
+              unitPrice: (it as any).price || it.unitPrice,
+              totalPrice: ((it as any).price || it.unitPrice) * it.quantity,
               image: it.image,
             })),
           };

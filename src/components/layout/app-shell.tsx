@@ -61,6 +61,7 @@ interface AppContextType {
   activeRole: UserRole;
   setActiveRole: (role: UserRole) => void;
   stores: Store[];
+  currentUser?: any;
   openCreateStoreModal: () => void;
 }
 
@@ -453,6 +454,7 @@ function AppShellInner({
         activeRole,
         setActiveRole,
         stores: storesList,
+        currentUser,
         openCreateStoreModal: () => {
           if (
             storesList.length >= 1 &&
