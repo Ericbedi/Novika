@@ -556,12 +556,12 @@ export function PurchaseOrdersClient({ storeSlug }: PurchaseOrdersClientProps) {
                       isSelected
                         ? "bg-white/20 text-white"
                         : po.status === "received"
-                        ? "bg-emerald-100 text-emerald-800"
-                        : po.status === "shipped"
-                        ? "bg-blue-100 text-blue-800"
-                        : po.status === "ordered"
-                        ? "bg-amber-100 text-amber-800"
-                        : "bg-stone-200 text-stone-700"
+                          ? "bg-emerald-100 text-emerald-800"
+                          : po.status === "shipped"
+                            ? "bg-blue-100 text-blue-800"
+                            : po.status === "ordered"
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-stone-200 text-stone-700"
                     )}
                   >
                     {PURCHASE_ORDER_STATUS_LABELS[po.status]}
@@ -607,10 +607,10 @@ export function PurchaseOrdersClient({ storeSlug }: PurchaseOrdersClientProps) {
                           selectedOrder.status === "received"
                             ? "bg-emerald-100 text-emerald-800"
                             : selectedOrder.status === "shipped"
-                            ? "bg-blue-100 text-blue-800"
-                            : selectedOrder.status === "ordered"
-                            ? "bg-amber-100 text-amber-800"
-                            : "bg-stone-200 text-stone-700"
+                              ? "bg-blue-100 text-blue-800"
+                              : selectedOrder.status === "ordered"
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-stone-200 text-stone-700"
                         )}
                       >
                         {PURCHASE_ORDER_STATUS_LABELS[selectedOrder.status]}

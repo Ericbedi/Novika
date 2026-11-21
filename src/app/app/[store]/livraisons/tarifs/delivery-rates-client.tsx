@@ -66,17 +66,17 @@ export function DeliveryRatesClient({ storeSlug }: { storeSlug: string }) {
         prev.map((r) =>
           r.id === editingRateId
             ? {
-                ...r,
-                country,
-                city,
-                zone,
-                entityType,
-                entityName,
-                standardFee,
-                expressFee,
-                suburbFee,
-                updatedAt: "Aujourd'hui",
-              }
+              ...r,
+              country,
+              city,
+              zone,
+              entityType,
+              entityName,
+              standardFee,
+              expressFee,
+              suburbFee,
+              updatedAt: "Aujourd'hui",
+            }
             : r
         )
       );

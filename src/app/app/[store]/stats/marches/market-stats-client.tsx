@@ -241,191 +241,191 @@ export function MarketStatsClient({ storeSlug }: MarketStatsClientProps) {
         </div>
       ) : selectedMarket ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Colonne Gauche (7 cols) : Tableau & Barres de classement */}
-        <div className="lg:col-span-7 bg-white rounded-2xl border border-black/[0.08] shadow-2xs p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <BarChart2 className="h-4 w-4 text-[#888880]" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-[#111111]">
-                Classement des Marchés par Rentabilité
-              </h2>
-            </div>
-            <span className="text-[11px] text-[#888880]">Du plus au moins rentable</span>
-          </div>
-
-          <div className="space-y-3">
-            {overview.markets
-              .slice()
-              .sort((a, b) => b.netMarginPercent - a.netMarginPercent)
-              .map((market) => (
-                <div
-                  key={market.id}
-                  onClick={() => setSelectedMarketId(market.id)}
-                  className={cn(
-                    "p-3.5 rounded-xl border transition-all cursor-pointer",
-                    selectedMarketId === market.id
-                      ? "border-[#111111] bg-[#FAF8F5] shadow-xs"
-                      : "border-black/[0.06] bg-white hover:border-black/[0.15]"
-                  )}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">{market.flag}</span>
-                      <span className="font-bold text-xs text-[#111111]">{market.countryName}</span>
-                    </div>
-                    {getVerdictBadge(market.verdict, market.verdictLabel)}
-                  </div>
-
-                  {/* Barre horizontale de marge % */}
-                  {!isManager && (
-                    <div className="space-y-1 mb-2">
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-[#888880]">Marge nette sur CA livré :</span>
-                        <span
-                          className={cn(
-                            "font-black",
-                            market.netMarginPercent >= 10
-                              ? "text-[#16A34A]"
-                              : market.netMarginPercent >= 0
-                              ? "text-[#D97706]"
-                              : "text-[#DC2626]"
-                          )}
-                        >
-                          {market.netMarginPercent > 0 ? `+${market.netMarginPercent}%` : `${market.netMarginPercent}%`}
-                          {" "}
-                          ({market.netMargin.toLocaleString("fr-FR")} FCFA)
-                        </span>
-                      </div>
-                      <div className="h-2 w-full rounded-full bg-black/[0.04] overflow-hidden flex">
-                        <div
-                          className={cn(
-                            "h-full rounded-full transition-all duration-500",
-                            market.netMarginPercent >= 10
-                              ? "bg-[#22C55E]"
-                              : market.netMarginPercent >= 0
-                              ? "bg-[#F59E0B]"
-                              : "bg-[#EF4444]"
-                          )}
-                          style={{
-                            width: `${Math.max(5, Math.min(100, Math.abs(market.netMarginPercent) * 2.5))}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Métriques clés en ligne */}
-                  <div className="grid grid-cols-4 gap-2 text-[10px] pt-1 border-t border-black/[0.04]">
-                    <div>
-                      <span className="text-[#888880] block">Reçues</span>
-                      <span className="font-bold text-[#111111]">{market.receivedOrders}</span>
-                    </div>
-                    <div>
-                      <span className="text-[#888880] block">Livrées</span>
-                      <span className="font-bold text-[#111111]">{market.deliveredOrders}</span>
-                    </div>
-                    <div>
-                      <span className="text-[#888880] block">Taux livr. (d)</span>
-                      <span className="font-bold text-[#111111]">{market.deliveryRate}%</span>
-                    </div>
-                    <div>
-                      <span className="text-[#888880] block">Seuil d*</span>
-                      <span className="font-bold text-[#C2410C]">{market.breakevenDeliveryRate}%</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-          </div>
-        </div>
-
-        {/* Colonne Droite (5 cols) : Fiche détaillée du marché sélectionné & Décomposition en cascade */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="bg-white rounded-2xl border border-black/[0.08] shadow-2xs p-5 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-black/[0.06]">
+          {/* Colonne Gauche (7 cols) : Tableau & Barres de classement */}
+          <div className="lg:col-span-7 bg-white rounded-2xl border border-black/[0.08] shadow-2xs p-5 space-y-4">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-xl">{selectedMarket.flag}</span>
-                <div>
-                  <h3 className="font-black text-sm text-[#111111]">{selectedMarket.countryName}</h3>
-                  <span className="text-[10px] text-[#888880]">Code : {selectedMarket.countryCode}</span>
-                </div>
+                <BarChart2 className="h-4 w-4 text-[#888880]" />
+                <h2 className="text-xs font-bold uppercase tracking-wider text-[#111111]">
+                  Classement des Marchés par Rentabilité
+                </h2>
               </div>
-              {getVerdictBadge(selectedMarket.verdict, selectedMarket.verdictLabel)}
+              <span className="text-[11px] text-[#888880]">Du plus au moins rentable</span>
             </div>
 
-            {/* Verdict et recommandation */}
-            <div className="p-3 rounded-xl bg-[#FAF8F5] border border-black/[0.06] space-y-1.5 text-xs">
-              <p className="text-[#111111] font-medium leading-relaxed">
-                {selectedMarket.verdictExplanation}
-              </p>
-              <div className="pt-1 text-[11px] text-[#C2410C] font-bold flex items-start gap-1">
-                <span>Action recommandée :</span>
-                <span>{selectedMarket.recommendation}</span>
-              </div>
+            <div className="space-y-3">
+              {overview.markets
+                .slice()
+                .sort((a, b) => b.netMarginPercent - a.netMarginPercent)
+                .map((market) => (
+                  <div
+                    key={market.id}
+                    onClick={() => setSelectedMarketId(market.id)}
+                    className={cn(
+                      "p-3.5 rounded-xl border transition-all cursor-pointer",
+                      selectedMarketId === market.id
+                        ? "border-[#111111] bg-[#FAF8F5] shadow-xs"
+                        : "border-black/[0.06] bg-white hover:border-black/[0.15]"
+                    )}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">{market.flag}</span>
+                        <span className="font-bold text-xs text-[#111111]">{market.countryName}</span>
+                      </div>
+                      {getVerdictBadge(market.verdict, market.verdictLabel)}
+                    </div>
+
+                    {/* Barre horizontale de marge % */}
+                    {!isManager && (
+                      <div className="space-y-1 mb-2">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-[#888880]">Marge nette sur CA livré :</span>
+                          <span
+                            className={cn(
+                              "font-black",
+                              market.netMarginPercent >= 10
+                                ? "text-[#16A34A]"
+                                : market.netMarginPercent >= 0
+                                  ? "text-[#D97706]"
+                                  : "text-[#DC2626]"
+                            )}
+                          >
+                            {market.netMarginPercent > 0 ? `+${market.netMarginPercent}%` : `${market.netMarginPercent}%`}
+                            {" "}
+                            ({market.netMargin.toLocaleString("fr-FR")} FCFA)
+                          </span>
+                        </div>
+                        <div className="h-2 w-full rounded-full bg-black/[0.04] overflow-hidden flex">
+                          <div
+                            className={cn(
+                              "h-full rounded-full transition-all duration-500",
+                              market.netMarginPercent >= 10
+                                ? "bg-[#22C55E]"
+                                : market.netMarginPercent >= 0
+                                  ? "bg-[#F59E0B]"
+                                  : "bg-[#EF4444]"
+                            )}
+                            style={{
+                              width: `${Math.max(5, Math.min(100, Math.abs(market.netMarginPercent) * 2.5))}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Métriques clés en ligne */}
+                    <div className="grid grid-cols-4 gap-2 text-[10px] pt-1 border-t border-black/[0.04]">
+                      <div>
+                        <span className="text-[#888880] block">Reçues</span>
+                        <span className="font-bold text-[#111111]">{market.receivedOrders}</span>
+                      </div>
+                      <div>
+                        <span className="text-[#888880] block">Livrées</span>
+                        <span className="font-bold text-[#111111]">{market.deliveredOrders}</span>
+                      </div>
+                      <div>
+                        <span className="text-[#888880] block">Taux livr. (d)</span>
+                        <span className="font-bold text-[#111111]">{market.deliveryRate}%</span>
+                      </div>
+                      <div>
+                        <span className="text-[#888880] block">Seuil d*</span>
+                        <span className="font-bold text-[#C2410C]">{market.breakevenDeliveryRate}%</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
             </div>
+          </div>
 
-            {/* Décomposition de la marge en cascade (Waterfall) */}
-            {!isManager && (
-              <div className="space-y-2 pt-1 text-xs">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#888880] block">
-                  Décomposition en cascade (P&L Marché)
-                </span>
-
-                <div className="space-y-1.5 text-[11px]">
-                  <div className="flex items-center justify-between p-1.5 rounded-lg bg-[#22C55E]/5 text-[#16A34A] font-bold">
-                    <span>CA Livré (GMV)</span>
-                    <span>+{selectedMarket.deliveredGmv.toLocaleString("fr-FR")} FCFA</span>
-                  </div>
-
-                  <div className="flex items-center justify-between p-1.5 rounded-lg bg-black/[0.02] text-[#666660]">
-                    <span>− Coût d'achat produits (COGS)</span>
-                    <span>−{selectedMarket.productCost.toLocaleString("fr-FR")} FCFA</span>
-                  </div>
-
-                  <div className="flex items-center justify-between p-1.5 rounded-lg bg-black/[0.02] text-[#666660]">
-                    <span>− Frais livraisons réussies</span>
-                    <span>−{selectedMarket.shippingCost.toLocaleString("fr-FR")} FCFA</span>
-                  </div>
-
-                  <div className="flex items-center justify-between p-1.5 rounded-lg bg-black/[0.02] text-[#EF4444]">
-                    <span>− Coût livraisons échouées ({selectedMarket.refusedOrders + selectedMarket.uncollectedOrders} colis)</span>
-                    <span>−{selectedMarket.failedDeliveryCost.toLocaleString("fr-FR")} FCFA</span>
-                  </div>
-
-                  <div className="flex items-center justify-between p-1.5 rounded-lg bg-black/[0.02] text-[#EF4444]">
-                    <span>− Dépenses publicitaires (Ads)</span>
-                    <span>−{selectedMarket.adSpend.toLocaleString("fr-FR")} FCFA</span>
-                  </div>
-
-                  <div className="flex items-center justify-between p-2 rounded-lg bg-[#111111] text-[#FAF8F5] font-black mt-2">
-                    <span>= Marge Nette Réelle</span>
-                    <span>
-                      {selectedMarket.netMargin > 0 ? "+" : ""}
-                      {selectedMarket.netMargin.toLocaleString("fr-FR")} FCFA ({selectedMarket.netMarginPercent}%)
-                    </span>
+          {/* Colonne Droite (5 cols) : Fiche détaillée du marché sélectionné & Décomposition en cascade */}
+          <div className="lg:col-span-5 space-y-4">
+            <div className="bg-white rounded-2xl border border-black/[0.08] shadow-2xs p-5 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-black/[0.06]">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{selectedMarket.flag}</span>
+                  <div>
+                    <h3 className="font-black text-sm text-[#111111]">{selectedMarket.countryName}</h3>
+                    <span className="text-[10px] text-[#888880]">Code : {selectedMarket.countryCode}</span>
                   </div>
                 </div>
+                {getVerdictBadge(selectedMarket.verdict, selectedMarket.verdictLabel)}
               </div>
-            )}
 
-            {/* Comparaison d vs d* */}
-            <div className="p-3 rounded-xl bg-white border border-black/[0.08] space-y-2 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[#888880]">Taux de livraison actuel (d) :</span>
-                <span className="font-black text-[#111111]">{selectedMarket.deliveryRate}%</span>
+              {/* Verdict et recommandation */}
+              <div className="p-3 rounded-xl bg-[#FAF8F5] border border-black/[0.06] space-y-1.5 text-xs">
+                <p className="text-[#111111] font-medium leading-relaxed">
+                  {selectedMarket.verdictExplanation}
+                </p>
+                <div className="pt-1 text-[11px] text-[#C2410C] font-bold flex items-start gap-1">
+                  <span>Action recommandée :</span>
+                  <span>{selectedMarket.recommendation}</span>
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[#888880]">Seuil de rentabilité d* = (c+f)/(m+f) :</span>
-                <span className="font-black text-[#C2410C]">{selectedMarket.breakevenDeliveryRate}%</span>
-              </div>
-              <div className="text-[10px] text-[#666660] italic">
-                {selectedMarket.deliveryRate >= selectedMarket.breakevenDeliveryRate
-                  ? `✓ Au-dessus du seuil (+${(selectedMarket.deliveryRate - selectedMarket.breakevenDeliveryRate).toFixed(1)} points) : le marché dégage un profit net.`
-                  : `⚠️ En-dessous du seuil (-${(selectedMarket.breakevenDeliveryRate - selectedMarket.deliveryRate).toFixed(1)} points) : chaque livraison rapporte moins que les coûts d'acquisition et d'échec.`}
+
+              {/* Décomposition de la marge en cascade (Waterfall) */}
+              {!isManager && (
+                <div className="space-y-2 pt-1 text-xs">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#888880] block">
+                    Décomposition en cascade (P&L Marché)
+                  </span>
+
+                  <div className="space-y-1.5 text-[11px]">
+                    <div className="flex items-center justify-between p-1.5 rounded-lg bg-[#22C55E]/5 text-[#16A34A] font-bold">
+                      <span>CA Livré (GMV)</span>
+                      <span>+{selectedMarket.deliveredGmv.toLocaleString("fr-FR")} FCFA</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-1.5 rounded-lg bg-black/[0.02] text-[#666660]">
+                      <span>− Coût d'achat produits (COGS)</span>
+                      <span>−{selectedMarket.productCost.toLocaleString("fr-FR")} FCFA</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-1.5 rounded-lg bg-black/[0.02] text-[#666660]">
+                      <span>− Frais livraisons réussies</span>
+                      <span>−{selectedMarket.shippingCost.toLocaleString("fr-FR")} FCFA</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-1.5 rounded-lg bg-black/[0.02] text-[#EF4444]">
+                      <span>− Coût livraisons échouées ({selectedMarket.refusedOrders + selectedMarket.uncollectedOrders} colis)</span>
+                      <span>−{selectedMarket.failedDeliveryCost.toLocaleString("fr-FR")} FCFA</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-1.5 rounded-lg bg-black/[0.02] text-[#EF4444]">
+                      <span>− Dépenses publicitaires (Ads)</span>
+                      <span>−{selectedMarket.adSpend.toLocaleString("fr-FR")} FCFA</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-[#111111] text-[#FAF8F5] font-black mt-2">
+                      <span>= Marge Nette Réelle</span>
+                      <span>
+                        {selectedMarket.netMargin > 0 ? "+" : ""}
+                        {selectedMarket.netMargin.toLocaleString("fr-FR")} FCFA ({selectedMarket.netMarginPercent}%)
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Comparaison d vs d* */}
+              <div className="p-3 rounded-xl bg-white border border-black/[0.08] space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[#888880]">Taux de livraison actuel (d) :</span>
+                  <span className="font-black text-[#111111]">{selectedMarket.deliveryRate}%</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#888880]">Seuil de rentabilité d* = (c+f)/(m+f) :</span>
+                  <span className="font-black text-[#C2410C]">{selectedMarket.breakevenDeliveryRate}%</span>
+                </div>
+                <div className="text-[10px] text-[#666660] italic">
+                  {selectedMarket.deliveryRate >= selectedMarket.breakevenDeliveryRate
+                    ? `✓ Au-dessus du seuil (+${(selectedMarket.deliveryRate - selectedMarket.breakevenDeliveryRate).toFixed(1)} points) : le marché dégage un profit net.`
+                    : `⚠️ En-dessous du seuil (-${(selectedMarket.breakevenDeliveryRate - selectedMarket.deliveryRate).toFixed(1)} points) : chaque livraison rapporte moins que les coûts d'acquisition et d'échec.`}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
       ) : null}
 
       {/* Simulateur interactif de rentabilité de marché */}

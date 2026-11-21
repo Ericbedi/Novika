@@ -5,13 +5,19 @@ import { THEME_PRESETS } from "@/mock-data/storefront-data";
 import { getShopProducts } from "@/lib/products-store";
 
 const MEMORY_STOREFRONTS: Map<string, StorefrontData> = new Map();
+const MEMORY_STORES: Map<string, Store> = new Map();
 
 export function setMemoryStorefront(storeSlug: string, data: StorefrontData): void {
   MEMORY_STOREFRONTS.set(storeSlug, data);
 }
 
+export function setMemoryStore(storeSlug: string, store: Store): void {
+  MEMORY_STORES.set(storeSlug, store);
+}
+
 export function clearMemoryStorefronts(): void {
   MEMORY_STOREFRONTS.clear();
+  MEMORY_STORES.clear();
 }
 
 export interface ResolvedStorefront {
@@ -42,6 +48,7 @@ export function formatStoreSlugToName(slug: string): string {
 export function resolveStorefrontData(storeSlug: string): ResolvedStorefront {
   // 1. Boutique (Store)
   let store: Store =
+    MEMORY_STORES.get(storeSlug) ||
     MOCK_STORES.find((s) => s.slug === storeSlug) || {
       id: `store_${storeSlug}`,
       name: formatStoreSlugToName(storeSlug),

@@ -1,6 +1,6 @@
 import { Store, Product } from "@/server/data/types";
 import { StorefrontData } from "@/server/data/storefront-types";
-import { formatStoreSlugToName, createEmptyStorefront, ResolvedStorefront } from "./storefront-resolver";
+import { formatStoreSlugToName, createEmptyStorefront, ResolvedStorefront, setMemoryStore, setMemoryStorefront } from "./storefront-resolver";
 import { saveShopProductsList } from "./products-store";
 import { createClient } from "./supabase/server";
 
@@ -106,6 +106,9 @@ export async function resolveStorefrontDataAsync(storeSlug: string): Promise<Res
   }
 
   const isPreparationMode = !storefront.isPublished || activeProducts.length === 0;
+
+  setMemoryStore(storeSlug, store);
+  setMemoryStorefront(storeSlug, storefront);
 
   return {
     store,
