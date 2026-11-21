@@ -970,8 +970,9 @@ export function DeliveriesClient({ storeSlug }: DeliveriesClientProps) {
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
+        )}
         </div>
       )}
 

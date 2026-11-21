@@ -92,14 +92,27 @@ describe("Prompt 08 : Résolution de la Vitrine & Étanchéité des Données", (
     }
   });
 
-  it("4. Les sections d'une nouvelle vitrine sont invisibles par défaut pour le public", () => {
-    const emptyStorefront = createEmptyStorefront("kelio", "Kelio");
+  it("4. Les sections d'une nouvelle vitrine utilisent le modèle Kaelis prérempli par défaut", () => {
+    const defaultStorefront = createEmptyStorefront("kelio", "Kelio");
 
-    expect(emptyStorefront.sections.length).toBeGreaterThan(0);
-    for (const section of emptyStorefront.sections) {
-      expect(section.isVisible).toBe(false);
-    }
-    expect(emptyStorefront.announcementBar.isEnabled).toBe(false);
+    expect(defaultStorefront.sections.length).toBeGreaterThan(0);
+    expect(defaultStorefront.announcementBar.isEnabled).toBe(true);
+    expect(defaultStorefront.announcementBar.text).toContain("Livraison Gratuite");
+
+    // Vérification des blocs préremplis Kaelis
+    const hero = defaultStorefront.sections.find((s) => s.type === "hero");
+    expect(hero?.content?.headline).toContain("Bienvenue chez");
+    expect(hero?.content?.ctaText).toBe("Découvrir nos collections");
+    expect(hero?.content?.ctaUrl).toBe("/boutique/kelio/catalogue");
+
+    const benefits = defaultStorefront.sections.find((s) => s.type === "benefits");
+    expect(benefits?.content?.items?.length).toBe(4);
+
+    const story = defaultStorefront.sections.find((s) => s.type === "brand_story");
+    expect(story?.content?.text).toContain("kairos");
+
+    const newsletter = defaultStorefront.sections.find((s) => s.type === "custom_banner");
+    expect(newsletter?.content?.title).toContain("Rejoignez la Communauté");
   });
 
   it("5. Les avis ne calculent une note moyenne que si au moins 5 avis réels sont présents", () => {

@@ -77,21 +77,16 @@ export function resolveStorefrontData(storeSlug: string): ResolvedStorefront {
   );
 
   // 3. Réglages de la vitrine (Storefront Settings réels)
-  let storefront: StorefrontData | undefined = MEMORY_STOREFRONTS.get(storeSlug);
+  let storefront: StorefrontData =
+    MEMORY_STOREFRONTS.get(storeSlug) || createEmptyStorefront(storeSlug, store.name);
 
-  if (!storefront && typeof window !== "undefined") {
+  if (typeof window !== "undefined") {
     const savedStorefront = localStorage.getItem(`novika_storefront_settings_${storeSlug}`);
     if (savedStorefront) {
       try {
         storefront = JSON.parse(savedStorefront);
-      } catch {
-        storefront = createEmptyStorefront(storeSlug, store.name);
-      }
-    } else {
-      storefront = createEmptyStorefront(storeSlug, store.name);
+      } catch {}
     }
-  } else if (!storefront) {
-    storefront = createEmptyStorefront(storeSlug, store.name);
   }
 
   // 4. Calculs des métriques réelles (Aucun chiffre inventé)
@@ -143,24 +138,26 @@ export function resolveStorefrontData(storeSlug: string): ResolvedStorefront {
  * Zéro nom de démonstration, zéro avis inventé, zéro faux numéro.
  */
 export function createEmptyStorefront(storeSlug: string, storeName: string): StorefrontData {
+  const displayBrand = storeName && storeName !== "Ma Boutique" ? storeName : "Kaelis";
+
   return {
     storeId: `store_${storeSlug}`,
     storeSlug,
     subdomain: storeSlug,
     isPublished: false,
     lastDraftUpdatedAt: new Date().toISOString(),
-    activeTheme: THEME_PRESETS.novika || {
-      id: "thm_default",
-      name: "Novika Signature",
-      preset: "novika" as any,
+    activeTheme: {
+      id: "thm_kaelis",
+      name: "Kaelis Épuré",
+      preset: "minimal_modern",
       colors: {
-        primary: "#C2410C",
-        secondary: "#EA580C",
-        background: "#FAF8F5",
+        primary: "#111111",
+        secondary: "#333333",
+        background: "#FFFFFF",
         cardBackground: "#FFFFFF",
         text: "#111111",
         textMuted: "#666660",
-        buttonText: "#FAF8F5",
+        buttonText: "#FFFFFF",
       },
       typography: {
         fontFamily: "Poppins",
@@ -173,13 +170,36 @@ export function createEmptyStorefront(storeSlug: string, storeName: string): Sto
         showShadows: true,
       },
     },
-    draftTheme: THEME_PRESETS.novika,
+    draftTheme: {
+      id: "thm_kaelis",
+      name: "Kaelis Épuré",
+      preset: "minimal_modern",
+      colors: {
+        primary: "#111111",
+        secondary: "#333333",
+        background: "#FFFFFF",
+        cardBackground: "#FFFFFF",
+        text: "#111111",
+        textMuted: "#666660",
+        buttonText: "#FFFFFF",
+      },
+      typography: {
+        fontFamily: "Poppins",
+        headingFont: "Poppins",
+        baseSize: "16px",
+      },
+      styles: {
+        buttonStyle: "rounded",
+        borderRadius: "lg",
+        showShadows: true,
+      },
+    },
     announcementBar: {
-      isEnabled: false,
-      text: "",
+      isEnabled: true,
+      text: "Livraison Gratuite Pour toutes les commandes supérieurs à 10000 XOF",
     },
     header: {
-      logoPosition: "left",
+      logoPosition: "center",
       logoHeight: 36,
       showSearch: false,
       showCountryPicker: true,
@@ -189,12 +209,13 @@ export function createEmptyStorefront(storeSlug: string, storeName: string): Sto
         id: "sec_hero",
         type: "hero",
         title: "Bannière d'accueil (Hero)",
-        isVisible: false,
+        isVisible: true,
         order: 1,
         content: {
-          headline: "",
-          subheadline: "",
-          ctaText: "Découvrir le catalogue",
+          headline: `Bienvenue chez ${displayBrand.toUpperCase()}.`,
+          subheadline:
+            "Ici, on n'achète pas un logo — on construit une allure. Chaque pièce est choisie pour notre climat, nos morphologies et nos journées qui commencent tôt et finissent après la nuit tombée.",
+          ctaText: "Découvrir nos collections",
           ctaUrl: `/boutique/${storeSlug}/catalogue`,
           imageUrl: "",
           badgeText: "",
@@ -203,60 +224,115 @@ export function createEmptyStorefront(storeSlug: string, storeName: string): Sto
       {
         id: "sec_benefits",
         type: "benefits",
-        title: "Réassurance (Livraison, Paiement, Garantie)",
-        isVisible: false,
+        title: `Pourquoi Choisir ${displayBrand} ?`,
+        isVisible: true,
         order: 2,
         content: {
-          items: [],
-        },
-      },
-      {
-        id: "sec_featured_products",
-        type: "featured_products",
-        title: "Produits en Vedette",
-        isVisible: false,
-        order: 3,
-        content: {
-          title: "Nos Produits Vedettes",
-          maxProducts: 4,
-          showDiscountBadge: true,
-        },
-      },
-      {
-        id: "sec_brand_story",
-        type: "brand_story",
-        title: "À propos / Mission & Chiffres",
-        isVisible: false,
-        order: 4,
-        content: {
-          title: "",
-          tagline: "",
-          text: "",
-          showDeliveredCount: false,
+          title: `Pourquoi Choisir ${displayBrand} ?`,
+          subtitle:
+            "Nous mettons tout en œuvre pour vous offrir une expérience d'achat simple, sûre et satisfaisante.",
+          items: [
+            {
+              id: "b1",
+              title: "Livraison Rapide",
+              description:
+                "Vos commandes sont expédiées en 24 à 48 heures pour une réception ultra-rapide.",
+              icon: "truck",
+            },
+            {
+              id: "b2",
+              title: "Paiement Sécurisé",
+              description:
+                "Toutes vos transactions sont protégées par un cryptage SSL de haute sécurité.",
+              icon: "shield",
+            },
+            {
+              id: "b3",
+              title: "Retours Faciles",
+              description:
+                "Profitez de 30 jours pour retourner votre article sans aucune question posée.",
+              icon: "rotate-ccw",
+            },
+            {
+              id: "b4",
+              title: "Qualité Garantie",
+              description:
+                "Chaque produit est sélectionné avec soin pour vous garantir un niveau de qualité irréprochable.",
+              icon: "award",
+            },
+          ],
         },
       },
       {
         id: "sec_customer_reviews",
         type: "customer_reviews",
-        title: "Avis Clients Réels",
-        isVisible: false,
-        order: 5,
+        title: "Ce Que Disent Nos Clients",
+        isVisible: true,
+        order: 3,
         content: {
-          showOnlyDelivered: true,
-          minReviewsThreshold: 5,
+          title: "Ce Que Disent Nos Clients",
+          showOnlyDelivered: false,
+          minReviewsThreshold: 1,
         },
       },
       {
-        id: "sec_faq",
-        type: "faq",
-        title: "Foire Aux Questions (FAQ)",
-        isVisible: false,
+        id: "sec_newsletter",
+        type: "custom_banner",
+        title: "Rejoignez la Communauté",
+        isVisible: true,
+        order: 4,
+        content: {
+          title: `Rejoignez la Communauté ${displayBrand}`,
+          subtitle:
+            "Inscrivez-vous à notre newsletter et soyez le premier à découvrir nos nouvelles collections et offres exclusives.",
+          buttonText: "S'abonner",
+          placeholder: "Votre adresse e-mail",
+        },
+      },
+      {
+        id: "sec_brand_story",
+        type: "brand_story",
+        title: "Notre Histoire",
+        isVisible: true,
+        order: 5,
+        content: {
+          title: "Notre Histoire",
+          text: `${displayBrand.toUpperCase()} vient de kairos : le moment qui compte. On apprend aux hommes que l'apparence est secondaire. Puis on les juge dessus en huit secondes. Personne ne vous dira jamais que votre allure a joué — mais chaque homme, au fond, le sait. L'élégance masculine n'a pas été importée sur ce continent : elle y était déjà. Nos pères savaient qu'on ne se présente pas devant une famille ou une assemblée sans soigner ce qu'on donne à voir. Ce n'était pas de la vanité. C'était du respect. Il manquait simplement une maison à la hauteur de cet héritage. Nous l'avons construite. Pièces pensées pour notre climat et nos morphologies. Livraison à domicile et paiement à la réception. ${displayBrand.toUpperCase()} — Soyez prêt.`,
+          imageUrl: "/brand/kaelis-story.jpg",
+          ctaText: "Voir nos collections",
+          ctaUrl: `/boutique/${storeSlug}/catalogue`,
+        },
+      },
+      {
+        id: "sec_featured_products",
+        type: "featured_products",
+        title: "Produits Disponibles",
+        isVisible: true,
         order: 6,
         content: {
-          questions: [],
+          title: "Produits Disponibles",
+          maxProducts: 8,
+          showDiscountBadge: true,
         },
       },
     ],
+    reviews: [],
+    footer: {
+      tagline: `${displayBrand} — La mode qui vous ressemble, chaque jour.`,
+      quickLinks: [
+        { label: "Notre Histoire", href: "#notre-histoire" },
+        { label: "Nous Contacter", href: `/boutique/${storeSlug}/contact` },
+      ],
+      customerServiceLinks: [
+        { label: "Questions Fréquentes", href: `/boutique/${storeSlug}/contact` },
+        { label: "Livraison et Retours", href: `/boutique/${storeSlug}/pages/livraison-retours` },
+      ],
+      followLinks: [
+        { label: "Products", href: `/boutique/${storeSlug}/catalogue` },
+        { label: "FAQ", href: `/boutique/${storeSlug}/contact` },
+      ],
+      copyright: `© 2026 ${displayBrand.toLowerCase()}. All rights reserved.`,
+    },
     contact: {
       phone: "",
       whatsappNumber: "",
@@ -268,7 +344,6 @@ export function createEmptyStorefront(storeSlug: string, storeName: string): Sto
       socials: {},
       deliveryZones: [],
     },
-    reviews: [],
     versions: [],
   };
 }

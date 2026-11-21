@@ -5,17 +5,13 @@ import Link from "next/link";
 import {
   ShieldCheck,
   Truck,
-  MessageCircle,
+  RotateCcw,
   Award,
   Star,
   CheckCircle2,
   ArrowRight,
-  HelpCircle,
   Sparkles,
-  Phone,
-  Clock,
   Edit3,
-  Plus,
 } from "lucide-react";
 import { resolveStorefrontData, ResolvedStorefront } from "@/lib/storefront-resolver";
 import { StorePreparationScreen } from "@/components/storefront/store-preparation-screen";
@@ -23,11 +19,8 @@ import { StorefrontAdminBar } from "@/components/storefront/storefront-admin-bar
 import { SectionEditorDrawer } from "@/components/storefront/storefront-section-editor-drawer";
 import { PageSection } from "@/server/data/storefront-types";
 import { formatFcfa } from "@/lib/money";
-import { getLiveStoreOpenStatus, buildStoreWhatsAppLink } from "@/lib/storefront-security";
-import { getShopTheme, saveDraftTheme, publishTheme } from "@/lib/theme-engine/store";
-import { ShopTheme, ThemeSection, ThemeSectionType } from "@/lib/theme-engine/types";
-import { ThemeSectionRenderer } from "@/components/storefront/theme-sections/ThemeSectionRenderer";
-import { ThemeSectionEditorModal } from "@/components/storefront/theme-sections/ThemeSectionEditorModal";
+import { ProductImage } from "@/components/ui/ProductImage";
+import { getProductPublicUrl } from "@/lib/storefront-urls";
 import { cn } from "@/lib/utils";
 
 interface StorefrontHomeClientProps {
@@ -43,15 +36,10 @@ export function StorefrontHomeClient({
   const [isOwner, setIsOwner] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingSection, setEditingSection] = useState<PageSection | null>(null);
-  const [shopTheme, setShopTheme] = useState<ShopTheme | null>(null);
-  const [editingThemeSection, setEditingThemeSection] = useState<ThemeSection | null>(null);
 
-  // Charger le thème moderne (Prompt 12)
-  useEffect(() => {
-    getShopTheme(storeSlug, { draft: isEditMode }).then((theme) => {
-      setShopTheme(theme);
-    });
-  }, [storeSlug, isEditMode]);
+  // État local de la newsletter
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
 
   // Détection sécurisée du rôle propriétaire côté client
   useEffect(() => {
@@ -62,37 +50,23 @@ export function StorefrontHomeClient({
       setIsOwner(ownerStatus);
 
       // Rafraîchir les données depuis le localStorage SI présent
-      const localProducts = localStorage.getItem(`novika_store_products_${storeSlug}`);
-      if (localProducts) {
-        const resolved = resolveStorefrontData(storeSlug);
-        setData(resolved);
+      const savedStorefront = localStorage.getItem(`novika_storefront_settings_${storeSlug}`);
+      if (savedStorefront) {
+        try {
+          const parsed = JSON.parse(savedStorefront);
+          if (parsed && typeof parsed === "object") {
+            const resolved = resolveStorefrontData(storeSlug);
+            setData(resolved);
+          }
+        } catch {}
       } else if (initialResolved.products.length > 0) {
-        // Conserver les données initiales résolues par le serveur
         setData(initialResolved);
-      } else {
-        // Récupération distante via l'API Supabase si aucune donnée initiale
-        fetch(`/api/products?store=${encodeURIComponent(storeSlug)}`)
-          .then((res) => res.json())
-          .then((json) => {
-            if (json.products && Array.isArray(json.products) && json.products.length > 0) {
-              const active = json.products.filter(
-                (p: any) => (p.productStatus === "active" || p.status === "active") && !p.hiddenFromCatalog
-              );
-              setData((prev) => ({
-                ...prev,
-                products: json.products,
-                activeProducts: active,
-                isPreparationMode: active.length === 0,
-              }));
-            }
-          })
-          .catch(() => {});
       }
     }
   }, [storeSlug, initialResolved]);
 
-  const { store, storefront, activeProducts, deliveredOrdersCount, averageRating, totalReviewsCount } = data;
-  const themePrimary = storefront.activeTheme?.colors?.primary || "#C2410C";
+  const { store, storefront, activeProducts } = data;
+  const themePrimary = storefront.activeTheme?.colors?.primary || "#111111";
 
   // Bascule du mode édition
   const handleToggleEditMode = () => {
@@ -108,9 +82,6 @@ export function StorefrontHomeClient({
     if (typeof window !== "undefined") {
       localStorage.setItem(`novika_storefront_settings_${storeSlug}`, JSON.stringify(updatedStorefront));
     }
-    if (shopTheme) {
-      await publishTheme(storeSlug, "owner");
-    }
     setData((prev) => ({
       ...prev,
       storefront: updatedStorefront,
@@ -118,45 +89,7 @@ export function StorefrontHomeClient({
     }));
   };
 
-  // Enregistrement d'une section du thème moderne (Prompt 12)
-  const handleSaveThemeSection = (updatedSection: ThemeSection) => {
-    if (!shopTheme) return;
-    const currentSections = shopTheme.pages.home.sections;
-    const updatedSections = currentSections.map((s) =>
-      s.id === updatedSection.id ? updatedSection : s
-    );
-    const updatedTheme: ShopTheme = {
-      ...shopTheme,
-      pages: {
-        ...shopTheme.pages,
-        home: {
-          ...shopTheme.pages.home,
-          sections: updatedSections,
-        },
-      },
-    };
-    setShopTheme(updatedTheme);
-    saveDraftTheme(storeSlug, updatedTheme, "owner");
-  };
-
-  const handleDeleteThemeSection = (sectionId: string) => {
-    if (!shopTheme) return;
-    const updatedSections = shopTheme.pages.home.sections.filter((s) => s.id !== sectionId);
-    const updatedTheme: ShopTheme = {
-      ...shopTheme,
-      pages: {
-        ...shopTheme.pages,
-        home: {
-          ...shopTheme.pages.home,
-          sections: updatedSections,
-        },
-      },
-    };
-    setShopTheme(updatedTheme);
-    saveDraftTheme(storeSlug, updatedTheme, "owner");
-  };
-
-  // Enregistrement d'une section modifiée (legacy)
+  // Enregistrement d'une section modifiée
   const handleSaveSection = (updatedSection: PageSection) => {
     const updatedSections = (storefront.sections || []).map((s) =>
       s.id === updatedSection.id ? updatedSection : s
@@ -205,501 +138,488 @@ export function StorefrontHomeClient({
     );
   }
 
-  // Cas 3 : Boutique active ou Mode Édition Admin actif
+  // Sections du modèle Kaelis
   const heroSection = storefront.sections?.find((s) => s.id === "sec_hero");
   const benefitsSection = storefront.sections?.find((s) => s.id === "sec_benefits");
-  const brandStorySection = storefront.sections?.find((s) => s.id === "sec_brand_story");
   const reviewsSection = storefront.sections?.find((s) => s.id === "sec_customer_reviews");
-  const faqSection = storefront.sections?.find((s) => s.id === "sec_faq");
+  const newsletterSection = storefront.sections?.find((s) => s.id === "sec_newsletter");
+  const brandStorySection = storefront.sections?.find((s) => s.id === "sec_brand_story");
 
-  // Statut WhatsApp direct
-  const whatsappNum = storefront.contact?.whatsappNumber || store.whatsappNumber;
-  const openStatus = getLiveStoreOpenStatus(0, 8, 19);
-  const whatsAppDirectLink = whatsappNum
-    ? buildStoreWhatsAppLink(whatsappNum, `Bonjour ${store.name}, je souhaite des renseignements sur vos produits.`)
-    : "";
+  // Données par défaut de secours si section non encore initialisée
+  const heroHeadline = heroSection?.content?.headline ?? `Bienvenue chez ${store.name.toUpperCase()}.`;
+  const heroSubheadline =
+    heroSection?.content?.subheadline ??
+    "Ici, on n'achète pas un logo — on construit une allure. Chaque pièce est choisie pour notre climat, nos morphologies et nos journées qui commencent tôt et finissent après la nuit tombée.";
+  const heroCtaText = heroSection?.content?.ctaText ?? "Découvrir nos collections";
+  const heroCtaUrl = heroSection?.content?.ctaUrl ?? `/boutique/${storeSlug}/catalogue`;
+
+  const benefitsTitle = benefitsSection?.content?.title ?? `Pourquoi Choisir ${store.name} ?`;
+  const benefitsSubtitle =
+    benefitsSection?.content?.subtitle ??
+    "Nous mettons tout en œuvre pour vous offrir une expérience d'achat simple, sûre et satisfaisante.";
+  const benefitsItems = benefitsSection?.content?.items ?? [
+    {
+      id: "b1",
+      title: "Livraison Rapide",
+      description: "Vos commandes sont expédiées en 24 à 48 heures pour une réception ultra-rapide.",
+      icon: "truck",
+    },
+    {
+      id: "b2",
+      title: "Paiement Sécurisé",
+      description: "Toutes vos transactions sont protégées par un cryptage SSL de haute sécurité.",
+      icon: "shield",
+    },
+    {
+      id: "b3",
+      title: "Retours Faciles",
+      description: "Profitez de 30 jours pour retourner votre article sans aucune question posée.",
+      icon: "rotate-ccw",
+    },
+    {
+      id: "b4",
+      title: "Qualité Garantie",
+      description: "Chaque produit est sélectionné avec soin pour vous garantir un niveau de qualité irréprochable.",
+      icon: "award",
+    },
+  ];
+
+  const reviewsList = storefront.reviews || [];
+  const reviewsTitle = reviewsSection?.content?.title ?? "Ce Que Disent Nos Clients";
+
+  const newsletterTitle = newsletterSection?.content?.title ?? `Rejoignez la Communauté ${store.name}`;
+  const newsletterSubtitle =
+    newsletterSection?.content?.subtitle ??
+    "Inscrivez-vous à notre newsletter et soyez le premier à découvrir nos nouvelles collections et offres exclusives.";
+
+  const storyTitle = brandStorySection?.content?.title ?? "Notre Histoire";
+  const storyText =
+    brandStorySection?.content?.text ??
+    `${store.name.toUpperCase()} vient de kairos : le moment qui compte. On apprend aux hommes que l'apparence est secondaire. Puis on les juge dessus en huit secondes. Personne ne vous dira jamais que votre allure a joué — mais chaque homme, au fond, le sait. L'élégance masculine n'a pas été importée sur ce continent : elle y était déjà. Nos pères savaient qu'on ne se présente pas devant une famille ou une assemblée sans soigner ce qu'on donne à voir. Ce n'était pas de la vanité. C'était du respect. Il manquait simplement une maison à la hauteur de cet héritage. Nous l'avons construite. Pièces pensées pour notre climat et nos morphologies. Livraison à domicile et paiement à la réception. ${store.name.toUpperCase()} — Soyez prêt.`;
+  const storyImageUrl = brandStorySection?.content?.imageUrl || "/brand/kaelis-story.jpg";
+  const storyCtaText = brandStorySection?.content?.ctaText ?? "Voir nos collections";
+  const storyCtaUrl = brandStorySection?.content?.ctaUrl ?? `/boutique/${storeSlug}/catalogue`;
 
   return (
-    <div className="space-y-16 pb-28 relative">
+    <div className="space-y-16 sm:space-y-24 pb-20 relative font-sans">
       {/* ========================================================================= */}
-      {/* MOTEUR DE THÈME MODULAIRE NOVIKA CLASSIQUE (Prompt 12) */}
+      {/* 1. HÉRO CENTRÉ ÉPURÉ KAELIS */}
       {/* ========================================================================= */}
-      {shopTheme?.pages?.home?.sections && shopTheme.pages.home.sections.length > 0 ? (
-        <div className="space-y-6">
-          {shopTheme.pages.home.sections.map((sec) => (
-            <ThemeSectionRenderer
-              key={sec.id}
-              section={sec}
-              generalSettings={shopTheme.generalSettings}
-              products={activeProducts}
-              reviews={storefront.reviews || []}
-              storeName={store.name}
-              storeSlug={storeSlug}
-              isEditMode={isEditMode && isOwner}
-              onEditSection={(sectionToEdit) => setEditingThemeSection(sectionToEdit)}
-            />
-          ))}
-        </div>
-      ) : (
-        <>
-          {/* ========================================================================= */}
-          {/* 1. HERO BANNER (LEGACY FALLBACK) */}
-          {/* ========================================================================= */}
-      {heroSection && (heroSection.isVisible || isEditMode) ? (
-        <section className="relative group max-w-6xl mx-auto px-4 sm:px-6 pt-6">
-          {/* Crayon de modification admin */}
+      {heroSection && (heroSection.isVisible || isEditMode) && (heroHeadline || isEditMode) && (
+        <section className="relative group max-w-4xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-4 text-center space-y-6">
           {isOwner && isEditMode && (
             <button
               type="button"
               onClick={() => setEditingSection(heroSection)}
-              className="absolute top-8 right-8 z-30 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 text-black text-xs font-black shadow-lg hover:bg-amber-400 transition-all cursor-pointer"
+              className="absolute top-2 right-4 z-30 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 text-black text-xs font-black shadow-lg hover:bg-amber-400 transition-all cursor-pointer"
             >
               <Edit3 className="w-3.5 h-3.5" />
-              <span>Modifier la Bannière Hero</span>
+              <span>Modifier le Héro</span>
             </button>
           )}
 
-          {heroSection.isVisible && heroSection.content?.headline ? (
-            <div
-              className="rounded-[36px] p-8 sm:p-14 text-white relative overflow-hidden shadow-lg"
-              style={{ backgroundColor: themePrimary }}
-            >
-              <div className="max-w-2xl space-y-4">
-                {heroSection.content.badgeText && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-xs font-bold">
-                    {heroSection.content.badgeText}
-                  </span>
-                )}
-                <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
-                  {heroSection.content.headline}
-                </h1>
-                {heroSection.content.subheadline && (
-                  <p className="text-sm sm:text-base text-white/90 font-medium leading-relaxed">
-                    {heroSection.content.subheadline}
-                  </p>
-                )}
-                <div className="pt-2">
-                  <Link
-                    href={heroSection.content.ctaUrl || `/boutique/${storeSlug}/catalogue`}
-                    className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-white text-[#111111] text-xs sm:text-sm font-black hover:bg-[#FAF8F5] transition-all shadow-md"
-                  >
-                    <span>{heroSection.content.ctaText || "Commander maintenant"}</span>
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </div>
+          {heroHeadline ? (
+            <div className="space-y-5 animate-in fade-in duration-300">
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-[#111111] tracking-tight leading-[1.18]">
+                {heroHeadline}
+              </h1>
+              {heroSubheadline && (
+                <p className="text-xs sm:text-base text-[#666660] max-w-2xl mx-auto leading-relaxed font-normal">
+                  {heroSubheadline}
+                </p>
+              )}
+              <div className="pt-3">
+                <Link
+                  href={heroCtaUrl}
+                  className="inline-flex items-center justify-center px-8 py-3.5 rounded-full text-xs sm:text-sm font-bold text-white shadow-sm hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                  style={{ backgroundColor: themePrimary }}
+                >
+                  {heroCtaText}
+                </Link>
               </div>
             </div>
           ) : isOwner && isEditMode ? (
             <div
               onClick={() => setEditingSection(heroSection)}
-              className="border-2 border-dashed border-amber-400/80 bg-amber-50/40 rounded-[36px] p-10 text-center space-y-2 cursor-pointer hover:bg-amber-50 transition-colors"
+              className="border-2 border-dashed border-amber-400/80 bg-amber-50/40 rounded-3xl p-8 text-center space-y-2 cursor-pointer hover:bg-amber-50 transition-colors"
             >
               <Sparkles className="w-6 h-6 text-amber-600 mx-auto" />
-              <div className="text-xs font-black text-amber-950">+ Ajouter une Bannière d'Accueil (Hero)</div>
-              <p className="text-[11px] text-amber-800">
-                Section actuellement masquée ou vide pour le public. Cliquez pour configurer votre titre d'accroche.
-              </p>
+              <div className="text-xs font-black text-amber-950">+ Configurer le Héro d'accueil</div>
+              <p className="text-[11px] text-amber-800">Section actuellement masquée pour le public.</p>
             </div>
           ) : null}
         </section>
-      ) : null}
+      )}
 
       {/* ========================================================================= */}
-      {/* 2. REASSURANCE COD (BENEFITS) */}
+      {/* 2. LES 4 AVANTAGES (POURQUOI CHOISIR KAELIS) */}
       {/* ========================================================================= */}
-      {benefitsSection && (benefitsSection.isVisible || isEditMode) ? (
-        <section className="relative group max-w-6xl mx-auto px-4 sm:px-6">
+      {benefitsSection && (benefitsSection.isVisible || isEditMode) && (benefitsItems.length > 0 || isEditMode) && (
+        <section className="relative group max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-6 space-y-10 sm:space-y-12">
           {isOwner && isEditMode && (
             <button
               type="button"
               onClick={() => setEditingSection(benefitsSection)}
-              className="absolute top-2 right-6 z-30 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 text-black text-xs font-black shadow-lg hover:bg-amber-400 transition-all cursor-pointer"
+              className="absolute top-2 right-4 z-30 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 text-black text-xs font-black shadow-lg hover:bg-amber-400 transition-all cursor-pointer"
             >
               <Edit3 className="w-3.5 h-3.5" />
-              <span>Modifier la Réassurance</span>
+              <span>Modifier les Avantages</span>
             </button>
           )}
 
-          {benefitsSection.isVisible && (benefitsSection.content?.items || []).length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {benefitsSection.content.items.map((item: any, idx: number) => (
-                <div
-                  key={idx}
-                  className="p-5 rounded-3xl bg-white border border-black/[0.08] shadow-2xs space-y-2 text-center sm:text-left"
-                >
-                  <div className="h-10 w-10 rounded-2xl bg-amber-500/10 text-amber-700 flex items-center justify-center mx-auto sm:mx-0">
-                    <ShieldCheck className="h-5 w-5" />
+          <div className="text-center max-w-2xl mx-auto space-y-2.5">
+            <h2 className="text-2xl sm:text-4xl font-black text-[#111111] tracking-tight">
+              {benefitsTitle}
+            </h2>
+            {benefitsSubtitle && (
+              <p className="text-xs sm:text-sm text-[#666660] font-normal leading-relaxed">
+                {benefitsSubtitle}
+              </p>
+            )}
+          </div>
+
+          {benefitsItems.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+              {benefitsItems.map((item: any, idx: number) => {
+                const iconKey = String(item.icon || "").toLowerCase();
+                const IconComponent =
+                  iconKey === "truck"
+                    ? Truck
+                    : iconKey === "shield"
+                    ? ShieldCheck
+                    : iconKey === "rotate-ccw" || iconKey === "return"
+                    ? RotateCcw
+                    : Award;
+
+                return (
+                  <div
+                    key={idx}
+                    className="flex flex-col items-center text-center space-y-3 p-4 rounded-3xl bg-white border border-black/[0.04] shadow-2xs hover:shadow-xs transition-shadow"
+                  >
+                    <div className="h-16 w-16 rounded-full border border-black/10 flex items-center justify-center text-[#111111] bg-[#FAF8F5]">
+                      <IconComponent className="h-7 w-7 stroke-[1.5]" />
+                    </div>
+                    <h3 className="text-sm sm:text-base font-bold text-[#111111]">{item.title}</h3>
+                    <p className="text-xs text-[#666660] leading-relaxed max-w-xs">{item.description}</p>
                   </div>
-                  <h3 className="text-xs font-black text-[#111111]">{item.title}</h3>
-                  <p className="text-[11px] text-[#666660] leading-relaxed">{item.description}</p>
+                );
+              })}
+            </div>
+          ) : isOwner && isEditMode ? (
+            <div
+              onClick={() => setEditingSection(benefitsSection)}
+              className="border-2 border-dashed border-amber-400/80 bg-amber-50/40 rounded-3xl p-8 text-center space-y-2 cursor-pointer hover:bg-amber-50 transition-colors"
+            >
+              <div className="text-xs font-black text-amber-950">+ Configurer les 4 Avantages</div>
+              <p className="text-[11px] text-amber-800">Ajoutez vos arguments de réassurance client.</p>
+            </div>
+          ) : null}
+        </section>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 3. AVIS CLIENTS (RÈGLE STRICTE : MASQUÉ SI AUCUN AVIS DISPONIBLE) */}
+      {/* ========================================================================= */}
+      {reviewsSection && (reviewsSection.isVisible || isEditMode) && (reviewsList.length > 0 || isEditMode) && (
+        <section className="relative group max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-6 space-y-8 sm:space-y-10">
+          {isOwner && isEditMode && (
+            <button
+              type="button"
+              onClick={() => setEditingSection(reviewsSection)}
+              className="absolute top-2 right-4 z-30 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 text-black text-xs font-black shadow-lg hover:bg-amber-400 transition-all cursor-pointer"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>Gérer les Avis</span>
+            </button>
+          )}
+
+          <div className="text-center max-w-2xl mx-auto space-y-2">
+            <h2 className="text-2xl sm:text-4xl font-black text-[#111111] tracking-tight">
+              {reviewsTitle}
+            </h2>
+          </div>
+
+          {reviewsList.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
+              {reviewsList.map((rev) => (
+                <div
+                  key={rev.id}
+                  className="p-6 sm:p-7 rounded-3xl border border-black/10 bg-white shadow-2xs space-y-4 flex flex-col justify-between"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-1 text-amber-400">
+                      {Array.from({ length: rev.rating || 5 }).map((_, i) => (
+                        <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                      ))}
+                    </div>
+                    <p className="text-xs sm:text-sm italic text-[#333330] leading-relaxed">
+                      {rev.comment}
+                    </p>
+                  </div>
+                  <div className="pt-2 border-t border-black/[0.04]">
+                    <span className="text-xs sm:text-sm font-bold text-[#111111] block">
+                      {rev.authorName}
+                    </span>
+                    <span className="text-[11px] font-medium text-[#888880] block">
+                      Acheteur Vérifié {rev.authorCity ? `· ${rev.authorCity}` : ""}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
           ) : isOwner && isEditMode ? (
             <div
-              onClick={() => setEditingSection(benefitsSection)}
-              className="border-2 border-dashed border-amber-400/80 bg-amber-50/40 rounded-3xl p-6 text-center space-y-1 cursor-pointer hover:bg-amber-50 transition-colors"
+              onClick={() => setEditingSection(reviewsSection)}
+              className="border-2 border-dashed border-amber-400/80 bg-amber-50/40 rounded-3xl p-8 text-center space-y-2 cursor-pointer hover:bg-amber-50 transition-colors"
             >
-              <div className="text-xs font-black text-amber-950">+ Ajouter des Blocs de Réassurance (COD)</div>
+              <div className="text-xs font-black text-amber-950">+ Ajouter des Avis Clients</div>
               <p className="text-[11px] text-amber-800">
-                Paiement à la livraison, délais réels et garanties.
+                Aucun avis actuellement. Le bloc est masqué pour le public tant qu'il est vide.
               </p>
             </div>
           ) : null}
         </section>
-      ) : null}
+      )}
 
       {/* ========================================================================= */}
-      {/* 3. PRODUITS VEDETTES PUBLIÉS */}
+      {/* 4. NEWSLETTER KAELIS */}
+      {/* ========================================================================= */}
+      {newsletterSection &&
+        (newsletterSection.isVisible || isEditMode) &&
+        (newsletterTitle || newsletterSubtitle || isEditMode) && (
+          <section className="relative group max-w-4xl mx-auto px-4 sm:px-6 pt-6 pb-6 text-center space-y-6">
+            {isOwner && isEditMode && (
+              <button
+                type="button"
+                onClick={() => setEditingSection(newsletterSection)}
+                className="absolute top-2 right-4 z-30 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 text-black text-xs font-black shadow-lg hover:bg-amber-400 transition-all cursor-pointer"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Modifier la Newsletter</span>
+              </button>
+            )}
+
+            <div className="space-y-2.5">
+              <h2 className="text-2xl sm:text-4xl font-black text-[#111111] tracking-tight">
+                {newsletterTitle}
+              </h2>
+              {newsletterSubtitle && (
+                <p className="text-xs sm:text-sm text-[#666660] font-normal leading-relaxed max-w-xl mx-auto">
+                  {newsletterSubtitle}
+                </p>
+              )}
+            </div>
+
+            {newsletterSubscribed ? (
+              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold inline-flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                <span>Merci ! Vous êtes bien inscrit(e) à notre newsletter.</span>
+              </div>
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (newsletterEmail.trim()) {
+                    setNewsletterSubscribed(true);
+                  }
+                }}
+                className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto"
+              >
+                <input
+                  type="email"
+                  required
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
+                  placeholder={newsletterSection?.content?.placeholder || "Votre adresse e-mail"}
+                  className="w-full px-4 py-3 rounded-xl border border-black/15 bg-white text-xs sm:text-sm font-medium text-[#111111] focus:outline-hidden focus:border-black shadow-2xs"
+                />
+                <button
+                  type="submit"
+                  className="w-full sm:w-auto px-7 py-3 rounded-xl font-bold text-xs sm:text-sm text-white shadow-sm hover:opacity-90 transition-all cursor-pointer shrink-0"
+                  style={{ backgroundColor: themePrimary }}
+                >
+                  {newsletterSection?.content?.buttonText || "S'abonner"}
+                </button>
+              </form>
+            )}
+          </section>
+        )}
+
+      {/* ========================================================================= */}
+      {/* 5. NOTRE HISTOIRE (DISPOSITION 2 COLONNES KAELIS) */}
+      {/* ========================================================================= */}
+      {brandStorySection && (brandStorySection.isVisible || isEditMode) && (storyText || isEditMode) && (
+        <section id="notre-histoire" className="relative group max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-6">
+          {isOwner && isEditMode && (
+            <button
+              type="button"
+              onClick={() => setEditingSection(brandStorySection)}
+              className="absolute top-2 right-4 z-30 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 text-black text-xs font-black shadow-lg hover:bg-amber-400 transition-all cursor-pointer"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>Modifier Notre Histoire</span>
+            </button>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center">
+            {/* Photo d'illustration à gauche */}
+            <div className="lg:col-span-6">
+              <div className="relative aspect-4/3 w-full rounded-3xl overflow-hidden shadow-sm border border-black/[0.06] bg-stone-100">
+                <img
+                  src={storyImageUrl}
+                  alt={storyTitle}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+
+            {/* Texte à droite */}
+            <div className="lg:col-span-6 space-y-6">
+              <h2 className="text-2xl sm:text-4xl font-black text-[#111111] tracking-tight">
+                {storyTitle}
+              </h2>
+              <p className="text-xs sm:text-sm text-[#444440] font-normal leading-relaxed whitespace-pre-line">
+                {storyText}
+              </p>
+              <div>
+                <Link
+                  href={storyCtaUrl}
+                  className="inline-flex items-center justify-center px-6 py-3 rounded-lg border-2 border-[#111111] text-[#111111] text-xs sm:text-sm font-bold hover:bg-[#111111] hover:text-white transition-all cursor-pointer"
+                >
+                  {storyCtaText}
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 6. PRODUITS DISPONIBLES (GRILLE VENTE DIRECTE COD) */}
       {/* ========================================================================= */}
       {activeProducts.length > 0 && (
-        <section className="max-w-6xl mx-auto px-4 sm:px-6 space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-12 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 border-b border-black/[0.08] pb-4">
             <div>
-              <span
-                className="text-xs font-bold uppercase tracking-wider block"
-                style={{ color: themePrimary }}
-              >
-                Catalogue COD
-              </span>
               <h2 className="text-2xl sm:text-3xl font-black text-[#111111] tracking-tight">
                 Produits Disponibles
               </h2>
+              <p className="text-xs text-[#666660] mt-0.5">
+                Commandez directement en ligne avec règlement en espèces à la livraison.
+              </p>
             </div>
             <Link
               href={`/boutique/${storeSlug}/catalogue`}
               className="text-xs font-bold text-[#111111] hover:underline inline-flex items-center gap-1"
             >
-              <span>Voir tout ({activeProducts.length} articles)</span>
+              <span>Découvrir tout le catalogue ({activeProducts.length})</span>
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-            {activeProducts.slice(0, 4).map((prod) => (
-              <div
-                key={prod.id}
-                className="group rounded-3xl border border-black/[0.08] bg-white p-3.5 sm:p-4 space-y-3 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between"
-              >
-                <div className="space-y-2.5">
-                  <Link
-                    href={`/boutique/${storeSlug}/produits/${prod.slug || prod.id}`}
-                    className="relative block h-40 sm:h-48 rounded-2xl bg-[#FAF8F5] overflow-hidden border border-black/[0.04]"
-                  >
-                    {prod.images && prod.images[0] ? (
-                      <img
-                        src={prod.images[0]}
-                        alt={prod.title || prod.name || "Produit"}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-6">
+            {activeProducts.map((prod) => {
+              const isOutOfStock = prod.stock <= 0;
+              const threshold = prod.lowStockThreshold ?? 5;
+              const isLowStock = prod.stock > 0 && prod.stock <= threshold;
+              const prodUrl = getProductPublicUrl(prod, storeSlug);
+              const prodImageSrc = (prod.images && prod.images[0]) || (prod as any).image || "";
+
+              return (
+                <div
+                  key={prod.id}
+                  className="group rounded-3xl border border-black/[0.08] bg-white p-3 sm:p-4 space-y-3 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between"
+                >
+                  <div className="space-y-3">
+                    <Link
+                      href={prodUrl}
+                      className="relative block h-44 sm:h-52 rounded-2xl bg-[#FAF8F5] overflow-hidden border border-black/[0.04]"
+                    >
+                      <ProductImage
+                        src={prodImageSrc}
+                        alt={prod.name}
+                        fill
+                        fallbackLabel={prod.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center p-3 text-center">
-                        <span className="text-xs font-black text-[#111111]">{prod.title || prod.name || "Produit"}</span>
-                      </div>
-                    )}
-                    {prod.compareAtPrice && prod.compareAtPrice > (prod.price || (prod as any).sellingPrice || 0) && (
-                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-rose-600 text-white text-[9px] font-black shadow-xs">
-                        Promo
-                      </span>
-                    )}
-                  </Link>
 
-                  <div>
-                    <h3 className="text-xs sm:text-sm font-black text-[#111111] line-clamp-2">
-                      {prod.title || prod.name || "Produit"}
-                    </h3>
-                    <div className="flex items-baseline gap-1.5 mt-1">
-                      <span className="text-sm sm:text-base font-black text-[#111111]">
-                        {formatFcfa(prod.price || (prod as any).sellingPrice || 0)}
+                      {prod.compareAtPrice && !isOutOfStock && (
+                        <span className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-black shadow-xs z-10">
+                          Promo
+                        </span>
+                      )}
+
+                      {isLowStock && (
+                        <span className="absolute top-2.5 right-2.5 px-2.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-black shadow-xs z-10">
+                          Stock Bas ({prod.stock})
+                        </span>
+                      )}
+
+                      {isOutOfStock && (
+                        <div className="absolute inset-0 bg-black/40 backdrop-blur-2xs flex items-center justify-center z-10">
+                          <span className="px-3 py-1 rounded-full bg-[#111111] text-white text-xs font-black">
+                            Épuisé
+                          </span>
+                        </div>
+                      )}
+                    </Link>
+
+                    <div>
+                      <span className="text-[10px] font-bold uppercase text-[#888880] block">
+                        {prod.category}
+                      </span>
+                      <Link
+                        href={prodUrl}
+                        className="text-xs sm:text-sm font-black text-[#111111] hover:text-emerald-700 transition-colors line-clamp-2 mt-0.5"
+                      >
+                        {prod.name}
+                      </Link>
+                    </div>
+
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-base font-black text-[#111111]">
+                        {formatFcfa(prod.salePrice)}
                       </span>
                       {prod.compareAtPrice && (
-                        <span className="text-[11px] text-[#888880] line-through">
+                        <span className="text-xs text-[#888880] line-through font-semibold">
                           {formatFcfa(prod.compareAtPrice)}
                         </span>
                       )}
                     </div>
                   </div>
-                </div>
 
-                <Link
-                  href={`/boutique/${storeSlug}/produits/${prod.slug || prod.id}`}
-                  className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-colors"
-                >
-                  <span>Commander</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ========================================================================= */}
-      {/* 4. HISTOIRE DE LA MARQUE & CHIFFRES RÉELS */}
-      {/* ========================================================================= */}
-      {brandStorySection && (brandStorySection.isVisible || isEditMode) ? (
-        <section className="relative group max-w-6xl mx-auto px-4 sm:px-6">
-          {isOwner && isEditMode && (
-            <button
-              type="button"
-              onClick={() => setEditingSection(brandStorySection)}
-              className="absolute top-4 right-8 z-30 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 text-black text-xs font-black shadow-lg hover:bg-amber-400 transition-all cursor-pointer"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-              <span>Modifier la Mission / Histoire</span>
-            </button>
-          )}
-
-          {brandStorySection.isVisible && brandStorySection.content?.title ? (
-            <div className="rounded-[36px] bg-[#FAF8F5] border border-black/[0.08] p-8 sm:p-12 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-              <div className="space-y-4">
-                <span
-                  className="text-xs font-bold uppercase tracking-wider block"
-                  style={{ color: themePrimary }}
-                >
-                  {brandStorySection.content.tagline || "Notre Mission"}
-                </span>
-                <h2 className="text-2xl sm:text-3xl font-black text-[#111111] tracking-tight">
-                  {brandStorySection.content.title}
-                </h2>
-                <p className="text-xs sm:text-sm text-[#444440] leading-relaxed">
-                  {brandStorySection.content.text}
-                </p>
-
-                {brandStorySection.content.showDeliveredCount && deliveredOrdersCount > 0 && (
-                  <div className="pt-2">
-                    <span className="text-2xl sm:text-3xl font-black text-[#111111] block">
-                      +{deliveredOrdersCount}
-                    </span>
-                    <span className="text-[11px] text-[#666660]">
-                      Colis livrés avec succès (Données réelles)
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <div className="rounded-3xl bg-white border border-black/[0.06] p-6 shadow-sm space-y-3">
-                <div className="flex items-center gap-2 text-xs font-bold text-emerald-800">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                  <span>Engagement & Transparence</span>
-                </div>
-                <p className="text-xs text-[#666660] leading-relaxed">
-                  « Chaque commande est inspectée et validée par le client avant tout paiement en espèces. »
-                </p>
-                <span className="text-xs font-black text-[#111111] block">
-                  — L'équipe {store.name}
-                </span>
-              </div>
-            </div>
-          ) : isOwner && isEditMode ? (
-            <div
-              onClick={() => setEditingSection(brandStorySection)}
-              className="border-2 border-dashed border-amber-400/80 bg-amber-50/40 rounded-[36px] p-6 text-center space-y-1 cursor-pointer hover:bg-amber-50 transition-colors"
-            >
-              <div className="text-xs font-black text-amber-950">+ Ajouter la Section Histoire & Mission</div>
-              <p className="text-[11px] text-amber-800">Présentez votre entreprise de manière authentique.</p>
-            </div>
-          ) : null}
-        </section>
-      ) : null}
-
-      {/* ========================================================================= */}
-      {/* 5. AVIS CLIENTS RÉELS (ZÉRO CHIFFRE OU AVIS INVENTÉ) */}
-      {/* ========================================================================= */}
-      {reviewsSection && (reviewsSection.isVisible || isEditMode) ? (
-        <section className="relative group max-w-6xl mx-auto px-4 sm:px-6 space-y-6">
-          {isOwner && isEditMode && (
-            <button
-              type="button"
-              onClick={() => setEditingSection(reviewsSection)}
-              className="absolute top-2 right-6 z-30 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 text-black text-xs font-black shadow-lg hover:bg-amber-400 transition-all cursor-pointer"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-              <span>Gérer les Avis Clients</span>
-            </button>
-          )}
-
-          {reviewsSection.isVisible && (storefront.reviews || []).length > 0 ? (
-            <>
-              <div className="text-center max-w-xl mx-auto space-y-2">
-                <span
-                  className="text-xs font-bold uppercase tracking-wider block"
-                  style={{ color: themePrimary }}
-                >
-                  Témoignages Vérifiés
-                </span>
-                <h2 className="text-2xl sm:text-3xl font-black text-[#111111] tracking-tight">
-                  Avis de Nos Clients
-                </h2>
-
-                {/* Note moyenne uniquement calculée si >= 5 avis réels */}
-                {averageRating !== null && (
-                  <div className="flex items-center justify-center gap-1 text-amber-500">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <Star key={i} className="h-4 w-4 fill-amber-500 text-amber-500" />
-                    ))}
-                    <span className="text-xs font-black text-[#111111] ml-1.5">
-                      {averageRating} / 5 ({totalReviewsCount} avis)
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                {storefront.reviews.map((rev) => (
-                  <div
-                    key={rev.id}
-                    className="p-6 rounded-3xl bg-white border border-black/[0.08] shadow-2xs space-y-3 flex flex-col justify-between"
-                  >
-                    <div className="space-y-2.5">
-                      <div className="flex items-center gap-1 text-amber-500">
-                        {Array.from({ length: rev.rating }).map((_, i) => (
-                          <Star key={i} className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
-                        ))}
-                      </div>
-                      <p className="text-xs text-[#444440] leading-relaxed italic">« {rev.comment} »</p>
-                    </div>
-
-                    <div className="pt-3 border-t border-black/[0.06] flex items-center justify-between text-xs">
-                      <div>
-                        <p className="font-black text-[#111111]">{rev.authorName}</p>
-                        <p className="text-[10px] text-[#888880]">
-                          {rev.authorCity ? `${rev.authorCity}, ${rev.authorCountry}` : rev.authorCountry}
-                        </p>
-                      </div>
-                      {rev.verifiedPurchase && (
-                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1">
-                          <CheckCircle2 className="h-3 w-3" />
-                          <span>Achat vérifié</span>
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : isOwner && isEditMode ? (
-            <div
-              onClick={() => setEditingSection(reviewsSection)}
-              className="border-2 border-dashed border-amber-400/80 bg-amber-50/40 rounded-3xl p-6 text-center space-y-1 cursor-pointer hover:bg-amber-50 transition-colors"
-            >
-              <div className="text-xs font-black text-amber-950">+ Gérer la Section Avis</div>
-              <p className="text-[11px] text-amber-800">
-                Les avis s'affichent uniquement lorsque de vraies commandes sont livrées.
-              </p>
-            </div>
-          ) : null}
-        </section>
-      ) : null}
-
-      {/* ========================================================================= */}
-      {/* 6. FAQ (FOIRE AUX QUESTIONS) */}
-      {/* ========================================================================= */}
-      {faqSection && (faqSection.isVisible || isEditMode) ? (
-        <section className="relative group max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
-          {isOwner && isEditMode && (
-            <button
-              type="button"
-              onClick={() => setEditingSection(faqSection)}
-              className="absolute top-2 right-6 z-30 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 text-black text-xs font-black shadow-lg hover:bg-amber-400 transition-all cursor-pointer"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-              <span>Modifier la FAQ</span>
-            </button>
-          )}
-
-          {faqSection.isVisible && (faqSection.content?.questions || []).length > 0 ? (
-            <>
-              <div className="text-center space-y-2">
-                <span
-                  className="text-xs font-bold uppercase tracking-wider block"
-                  style={{ color: themePrimary }}
-                >
-                  Questions Fréquentes
-                </span>
-                <h2 className="text-2xl sm:text-3xl font-black text-[#111111] tracking-tight">
-                  Tout sur la livraison et le paiement
-                </h2>
-              </div>
-
-              <div className="space-y-3">
-                {faqSection.content.questions.map((item: any, idx: number) => (
-                  <div
-                    key={idx}
-                    className="p-5 rounded-2xl bg-white border border-black/[0.08] shadow-2xs space-y-1.5"
-                  >
-                    <h3 className="text-xs sm:text-sm font-black text-[#111111] flex items-center gap-2">
-                      <HelpCircle className="h-4 w-4 shrink-0" style={{ color: themePrimary }} />
-                      <span>{item.q}</span>
-                    </h3>
-                    <p className="text-xs text-[#666660] leading-relaxed pl-6">{item.a}</p>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : isOwner && isEditMode ? (
-            <div
-              onClick={() => setEditingSection(faqSection)}
-              className="border-2 border-dashed border-amber-400/80 bg-amber-50/40 rounded-2xl p-6 text-center space-y-1 cursor-pointer hover:bg-amber-50 transition-colors"
-            >
-              <div className="text-xs font-black text-amber-950">+ Ajouter une FAQ</div>
-              <p className="text-[11px] text-amber-800">Ajoutez des questions/réponses claires pour rassurer vos acheteurs.</p>
-            </div>
-          ) : null}
-        </section>
-      ) : null}
-
-      {/* ========================================================================= */}
-      {/* 7. BLOC CONTACT WHATSAPP (SI NUMÉRO CONFIGURÉ) */}
-      {/* ========================================================================= */}
-      {whatsappNum && (
-        <section className="max-w-4xl mx-auto px-4 sm:px-6">
-          <div className="rounded-[36px] bg-white border border-black/[0.08] p-6 sm:p-10 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6">
-            <div className="space-y-2 text-center sm:text-left">
-              <div className="flex items-center justify-center sm:justify-start gap-2">
-                <span
-                  className={cn(
-                    "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider",
-                    openStatus.isOpen ? "bg-emerald-100 text-emerald-800" : "bg-black/[0.06] text-[#666660]"
+                  {isOutOfStock ? (
+                    <button
+                      disabled
+                      className="w-full py-2.5 px-3 rounded-xl bg-black/5 text-[#888880] text-xs font-bold cursor-not-allowed text-center block"
+                    >
+                      Victime de son succès
+                    </button>
+                  ) : (
+                    <Link
+                      href={prodUrl}
+                      className="w-full py-2.5 px-3 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-all text-center block shadow-2xs cursor-pointer"
+                      style={{ backgroundColor: themePrimary }}
+                    >
+                      Commander en Paiement Cash
+                    </Link>
                   )}
-                >
-                  <span
-                    className={cn(
-                      "h-2 w-2 rounded-full",
-                      openStatus.isOpen ? "bg-emerald-600 animate-pulse" : "bg-gray-400"
-                    )}
-                  />
-                  <span>{openStatus.statusLabel}</span>
-                </span>
-                <span className="text-[11px] text-[#666660]">{openStatus.nextOpenLabel}</span>
-              </div>
-
-              <h3 className="text-xl sm:text-2xl font-black text-[#111111] tracking-tight">
-                Une question avant de commander ?
-              </h3>
-              <p className="text-xs text-[#666660] max-w-md">
-                Échangez en direct avec notre équipe sur WhatsApp.
-              </p>
-            </div>
-
-            <a
-              href={whatsAppDirectLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="shrink-0 inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-[#25D366] hover:bg-[#1EBE5D] text-white font-black text-xs sm:text-sm shadow-md transition-all hover:scale-105 active:scale-95 cursor-pointer"
-            >
-              <MessageCircle className="h-5 w-5" />
-              <span>Discuter sur WhatsApp</span>
-            </a>
+                </div>
+              );
+            })}
           </div>
         </section>
       )}
-        </>
-      )}
 
-      {/* ========================================================================= */}
-      {/* BARRE FLOTTANTE D'ADMINISTRATION POUR LE PROPRIÉTAIRE */}
-      {/* ========================================================================= */}
+      {/* TIROIR D'ÉDITION EN DIRECT (MODE ADMIN PROPRIÉTAIRE) */}
+      <SectionEditorDrawer
+        isOpen={Boolean(editingSection)}
+        section={editingSection}
+        onClose={() => setEditingSection(null)}
+        onSave={handleSaveSection}
+      />
+
+      {/* BARRE D'ADMINISTRATION FLOTTANTE */}
       {isOwner && (
         <StorefrontAdminBar
           storeSlug={storeSlug}
@@ -707,29 +627,6 @@ export function StorefrontHomeClient({
           isEditMode={isEditMode}
           onToggleEditMode={handleToggleEditMode}
           onTogglePublish={handleTogglePublish}
-        />
-      )}
-
-      {/* PANNEAU LATÉRAL DE MODIFICATION DE SECTION (LEGACY) */}
-      {editingSection && (
-        <SectionEditorDrawer
-          section={editingSection}
-          isOpen={Boolean(editingSection)}
-          onClose={() => setEditingSection(null)}
-          onSave={handleSaveSection}
-        />
-      )}
-
-      {/* MODALE D'ÉDITION DE SECTION DU THÈME MODERNE (Prompt 12) */}
-      {editingThemeSection && shopTheme && (
-        <ThemeSectionEditorModal
-          section={editingThemeSection}
-          isOpen={Boolean(editingThemeSection)}
-          palettes={shopTheme.generalSettings.palettes}
-          storeSlug={storeSlug}
-          onClose={() => setEditingThemeSection(null)}
-          onSave={handleSaveThemeSection}
-          onDelete={handleDeleteThemeSection}
         />
       )}
     </div>

@@ -47,7 +47,8 @@ import {
 } from "@/mock-data/storefront-data";
 import { MOCK_PRODUCTS } from "@/mock-data/products";
 import { getShopProducts } from "@/lib/products-store";
-import { StorefrontData, ThemeConfig, PageSection } from "@/server/data/storefront-types";
+import { StorefrontData, ThemeConfig, PageSection, CustomerReview, StorefrontFooterConfig } from "@/server/data/storefront-types";
+import { resolveStorefrontData, createEmptyStorefront, setMemoryStorefront } from "@/lib/storefront-resolver";
 import { useApp } from "@/components/layout/app-shell";
 import { formatFcfa } from "@/lib/money";
 import { CountryFlag } from "@/components/ui/country-flag";
@@ -135,9 +136,27 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
   }, [activeStore]);
 
   // État de la boutique (brouillon modifiable et snapshot publié)
-  const [storefront, setStorefront] = useState<StorefrontData>(MOCK_STOREFRONT_LOME);
-  const [draftTheme, setDraftTheme] = useState<ThemeConfig>(storefront.draftTheme);
-  const [sections, setSections] = useState<PageSection[]>(storefront.sections);
+  const initialResolved = useMemo(() => resolveStorefrontData(storeSlug), [storeSlug]);
+  const [storefront, setStorefront] = useState<StorefrontData>(() => initialResolved.storefront);
+  const [draftTheme, setDraftTheme] = useState<ThemeConfig>(() => initialResolved.storefront.draftTheme);
+  const [sections, setSections] = useState<PageSection[]>(() => initialResolved.storefront.sections);
+  const [reviews, setReviews] = useState<CustomerReview[]>(() => initialResolved.storefront.reviews || []);
+  const [footerConfig, setFooterConfig] = useState<StorefrontFooterConfig>(() => initialResolved.storefront.footer || {
+    tagline: `${activeStore.name || "Kaelis"} — La mode qui vous ressemble, chaque jour.`,
+    quickLinks: [
+      { label: "Notre Histoire", href: "#notre-histoire" },
+      { label: "Nous Contacter", href: `/boutique/${storeSlug}/contact` },
+    ],
+    customerServiceLinks: [
+      { label: "Questions Fréquentes", href: `/boutique/${storeSlug}/contact` },
+      { label: "Livraison et Retours", href: `/boutique/${storeSlug}/pages/livraison-retours` },
+    ],
+    followLinks: [
+      { label: "Products", href: `/boutique/${storeSlug}/catalogue` },
+      { label: "FAQ", href: `/boutique/${storeSlug}/contact` },
+    ],
+    copyright: `© 2026 ${(activeStore.name || "kaelis").toLowerCase()}. All rights reserved.`,
+  });
   const [previewDevice, setPreviewDevice] = useState<PreviewDeviceId>("iphone-15-pro-max");
   const [previewOrientation, setPreviewOrientation] = useState<PreviewOrientation>("portrait");
   const [previewPage, setPreviewPage] = useState<"home" | "catalog" | "contact">("home");
@@ -175,8 +194,28 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          setHideHeaderMenu(Boolean(parsed.hideHeaderMenu));
-          setHideEntireCatalog(Boolean(parsed.hideCatalog));
+          if (parsed && typeof parsed === "object") {
+            setHideHeaderMenu(Boolean(parsed.hideHeaderMenu));
+            setHideEntireCatalog(Boolean(parsed.hideCatalog));
+            if (parsed.sections && Array.isArray(parsed.sections)) {
+              setSections(parsed.sections);
+            }
+            if (parsed.reviews && Array.isArray(parsed.reviews)) {
+              setReviews(parsed.reviews);
+            }
+            if (parsed.footer) {
+              setFooterConfig(parsed.footer);
+            }
+            if (parsed.activeTheme) {
+              setDraftTheme(parsed.activeTheme);
+            }
+            if (parsed.header?.logoUrl) {
+              setInfoLogo(parsed.header.logoUrl);
+            }
+            if (parsed.announcementBar) {
+              setStorefront((prev) => ({ ...prev, announcementBar: parsed.announcementBar }));
+            }
+          }
         } catch {}
       }
     }
@@ -428,14 +467,26 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
       isPublished: true,
     };
 
-    setStorefront((prev) => ({
-      ...prev,
+    const fullStorefront: StorefrontData = {
+      ...storefront,
       isPublished: true,
       publishedAt: newVersion.createdAt,
       activeTheme: draftTheme,
+      draftTheme,
       sections,
-      versions: [newVersion, ...prev.versions],
-    }));
+      reviews,
+      footer: footerConfig,
+      header: {
+        ...storefront.header,
+        logoUrl: infoLogo,
+        hideHeaderMenu,
+      },
+      hideCatalog: hideEntireCatalog,
+      versions: [newVersion, ...storefront.versions],
+    };
+
+    setStorefront(fullStorefront);
+    setMemoryStorefront(storeSlug, fullStorefront);
 
     setActiveStore({
       ...activeStore,
@@ -446,10 +497,7 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
     if (typeof window !== "undefined") {
       localStorage.setItem(
         `novika_storefront_settings_${storeSlug}`,
-        JSON.stringify({
-          hideHeaderMenu,
-          hideCatalog: hideEntireCatalog,
-        })
+        JSON.stringify(fullStorefront)
       );
     }
 
@@ -1274,15 +1322,16 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
                       </div>
                     </div>
 
+                    {/* Éditeur Héro Kaelis */}
                     {editingSectionId === sec.id && sec.id === "sec_hero" && (
-                      <div className="mt-3 pt-3 border-t border-black/[0.06] space-y-2.5 text-xs">
+                      <div className="mt-3 pt-3 border-t border-black/[0.06] space-y-3 text-xs">
                         <div>
                           <span className="text-[10px] font-bold uppercase text-[#666660] block mb-1">
-                            Titre d&apos;accroche (Headline)
+                            Titre d&apos;accroche (H1)
                           </span>
                           <input
                             type="text"
-                            value={sec.content.headline || ""}
+                            value={sec.content?.headline || ""}
                             onChange={(e) => {
                               const val = e.target.value;
                               setSections((prev) =>
@@ -1293,6 +1342,487 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
                             }}
                             className="w-full px-3 py-2 rounded-xl border border-black/15 bg-white text-xs font-bold text-[#111111] focus:outline-none"
                           />
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-bold uppercase text-[#666660] block mb-1">
+                            Texte descriptif du héro
+                          </span>
+                          <textarea
+                            rows={3}
+                            value={sec.content?.subheadline || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSections((prev) =>
+                                prev.map((s) =>
+                                  s.id === "sec_hero" ? { ...s, content: { ...s.content, subheadline: val } } : s
+                                )
+                              );
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-black/15 bg-white text-xs text-[#111111] focus:outline-none leading-relaxed"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <span className="text-[10px] font-bold uppercase text-[#666660] block mb-1">
+                              Texte du bouton CTA
+                            </span>
+                            <input
+                              type="text"
+                              value={sec.content?.ctaText || ""}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setSections((prev) =>
+                                  prev.map((s) =>
+                                    s.id === "sec_hero" ? { ...s, content: { ...s.content, ctaText: val } } : s
+                                  )
+                                );
+                              }}
+                              className="w-full px-3 py-2 rounded-xl border border-black/15 bg-white text-xs font-bold text-[#111111] focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-bold uppercase text-[#666660] block mb-1">
+                              Lien du bouton CTA
+                            </span>
+                            <input
+                              type="text"
+                              value={sec.content?.ctaUrl || ""}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setSections((prev) =>
+                                  prev.map((s) =>
+                                    s.id === "sec_hero" ? { ...s, content: { ...s.content, ctaUrl: val } } : s
+                                  )
+                                );
+                              }}
+                              className="w-full px-3 py-2 rounded-xl border border-black/15 bg-white text-xs text-[#111111] focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Éditeur Les 4 Avantages Kaelis */}
+                    {editingSectionId === sec.id && sec.id === "sec_benefits" && (
+                      <div className="mt-3 pt-3 border-t border-black/[0.06] space-y-3 text-xs">
+                        <div>
+                          <span className="text-[10px] font-bold uppercase text-[#666660] block mb-1">
+                            Titre de la section
+                          </span>
+                          <input
+                            type="text"
+                            value={sec.content?.title || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSections((prev) =>
+                                prev.map((s) =>
+                                  s.id === "sec_benefits" ? { ...s, content: { ...s.content, title: val } } : s
+                                )
+                              );
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-black/15 bg-white text-xs font-bold text-[#111111] focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-bold uppercase text-[#666660] block mb-1">
+                            Sous-titre
+                          </span>
+                          <input
+                            type="text"
+                            value={sec.content?.subtitle || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSections((prev) =>
+                                prev.map((s) =>
+                                  s.id === "sec_benefits" ? { ...s, content: { ...s.content, subtitle: val } } : s
+                                )
+                              );
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-black/15 bg-white text-xs text-[#111111] focus:outline-none"
+                          />
+                        </div>
+                        <div className="space-y-2 pt-1">
+                          <span className="text-[10px] font-bold uppercase text-[#666660] block">
+                            Les 4 Blocs d&apos;Avantages
+                          </span>
+                          {(sec.content?.items || []).map((item: any, bIdx: number) => (
+                            <div key={bIdx} className="p-2.5 rounded-xl bg-black/[0.02] border border-black/[0.06] space-y-2">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-bold text-[11px] text-[#111111]">Avantage #{bIdx + 1}</span>
+                                <select
+                                  value={item.icon || "truck"}
+                                  onChange={(e) => {
+                                    const nextIcon = e.target.value;
+                                    setSections((prev) =>
+                                      prev.map((s) => {
+                                        if (s.id !== "sec_benefits") return s;
+                                        const newItems = [...(s.content?.items || [])];
+                                        newItems[bIdx] = { ...newItems[bIdx], icon: nextIcon };
+                                        return { ...s, content: { ...s.content, items: newItems } };
+                                      })
+                                    );
+                                  }}
+                                  className="text-[10px] px-2 py-1 rounded-lg border border-black/15 bg-white"
+                                >
+                                  <option value="truck">Icône Camion (Livraison)</option>
+                                  <option value="shield">Icône Bouclier (Paiement Sécurisé)</option>
+                                  <option value="rotate-ccw">Icône Retours (Retours Faciles)</option>
+                                  <option value="award">Icône Étoile / Médaille (Qualité Garantie)</option>
+                                </select>
+                              </div>
+                              <input
+                                type="text"
+                                value={item.title || ""}
+                                placeholder="Titre de l'avantage"
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setSections((prev) =>
+                                    prev.map((s) => {
+                                      if (s.id !== "sec_benefits") return s;
+                                      const newItems = [...(s.content?.items || [])];
+                                      newItems[bIdx] = { ...newItems[bIdx], title: val };
+                                      return { ...s, content: { ...s.content, items: newItems } };
+                                    })
+                                  );
+                                }}
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-black/15 bg-white text-xs font-semibold text-[#111111]"
+                              />
+                              <input
+                                type="text"
+                                value={item.description || ""}
+                                placeholder="Description de l'avantage"
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setSections((prev) =>
+                                    prev.map((s) => {
+                                      if (s.id !== "sec_benefits") return s;
+                                      const newItems = [...(s.content?.items || [])];
+                                      newItems[bIdx] = { ...newItems[bIdx], description: val };
+                                      return { ...s, content: { ...s.content, items: newItems } };
+                                    })
+                                  );
+                                }}
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-black/15 bg-white text-xs text-[#555550]"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Éditeur Avis Clients Kaelis */}
+                    {editingSectionId === sec.id && sec.id === "sec_customer_reviews" && (
+                      <div className="mt-3 pt-3 border-t border-black/[0.06] space-y-3 text-xs">
+                        <div>
+                          <span className="text-[10px] font-bold uppercase text-[#666660] block mb-1">
+                            Titre de la section
+                          </span>
+                          <input
+                            type="text"
+                            value={sec.content?.title || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSections((prev) =>
+                                prev.map((s) =>
+                                  s.id === "sec_customer_reviews" ? { ...s, content: { ...s.content, title: val } } : s
+                                )
+                              );
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-black/15 bg-white text-xs font-bold text-[#111111] focus:outline-none"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase text-[#666660]">
+                              Avis clients enregistrés ({reviews.length})
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              {reviews.length > 0 ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setReviews([]);
+                                    showToast("Tous les avis ont été supprimés. La section sera masquée.");
+                                  }}
+                                  className="text-[10px] text-rose-600 hover:underline font-bold"
+                                >
+                                  Vider tous les avis (Masque le bloc)
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const defaultKaelisReviews: CustomerReview[] = [
+                                      {
+                                        id: "rev_k1",
+                                        authorName: "Mathieu D.",
+                                        authorCity: "Lomé",
+                                        authorCountry: "Togo",
+                                        rating: 5,
+                                        comment: "“Qualité vraiment au rendez-vous, les boxers sont ultra-confortables et le tissu ne rétrécit pas au lavage. Je recommande vivement !”",
+                                        date: "2026-11-15",
+                                        verifiedPurchase: true,
+                                      },
+                                      {
+                                        id: "rev_k2",
+                                        authorName: "Karim B.",
+                                        authorCity: "Abidjan",
+                                        authorCountry: "Côte d'Ivoire",
+                                        rating: 5,
+                                        comment: "“Super service client et livraison rapide. Les produits correspondent exactement aux photos, je suis très satisfait de mon achat.”",
+                                        date: "2026-11-12",
+                                        verifiedPurchase: true,
+                                      },
+                                      {
+                                        id: "rev_k3",
+                                        authorName: "Lucas M.",
+                                        authorCity: "Cotonou",
+                                        authorCountry: "Bénin",
+                                        rating: 5,
+                                        comment: "“J'adore le design sportif, c'est exactement ce que je cherchais. Le rapport qualité-prix est excellent, je recommande Kaelis sans hésiter.”",
+                                        date: "2026-11-10",
+                                        verifiedPurchase: true,
+                                      },
+                                    ];
+                                    setReviews(defaultKaelisReviews);
+                                    showToast("Les 3 avis Kaelis ont été restaurés !");
+                                  }}
+                                  className="text-[10px] text-emerald-700 hover:underline font-bold"
+                                >
+                                  Restaurer les 3 avis modèles
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {reviews.length === 0 ? (
+                            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] leading-relaxed">
+                              ⚠️ Aucun avis client actuellement. Selon la consigne, la section est <strong>automatiquement masquée</strong> sur la vitrine publique.
+                            </div>
+                          ) : (
+                            <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                              {reviews.map((rev, rIdx) => (
+                                <div key={rev.id || rIdx} className="p-2.5 rounded-xl bg-black/[0.02] border border-black/[0.06] space-y-1.5">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5">
+                                      <input
+                                        type="text"
+                                        value={rev.authorName}
+                                        placeholder="Nom du client"
+                                        onChange={(e) => {
+                                          const next = [...reviews];
+                                          next[rIdx] = { ...next[rIdx], authorName: e.target.value };
+                                          setReviews(next);
+                                        }}
+                                        className="font-bold text-xs text-[#111111] px-1.5 py-0.5 rounded border border-black/10 bg-white"
+                                      />
+                                      <span className="text-[10px] text-[#888880]">★★★★★ ({rev.rating}/5)</span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setReviews(reviews.filter((_, i) => i !== rIdx));
+                                      }}
+                                      className="text-rose-600 hover:text-rose-800 p-1"
+                                      title="Supprimer cet avis"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </button>
+                                  </div>
+                                  <textarea
+                                    rows={2}
+                                    value={rev.comment}
+                                    onChange={(e) => {
+                                      const next = [...reviews];
+                                      next[rIdx] = { ...next[rIdx], comment: e.target.value };
+                                      setReviews(next);
+                                    }}
+                                    className="w-full px-2 py-1 text-xs rounded border border-black/10 bg-white text-[#444440]"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newRev: CustomerReview = {
+                                id: `rev_${Date.now()}`,
+                                authorName: "Nouveau Client",
+                                authorCity: activeStore.countryName || "Lomé",
+                                authorCountry: activeStore.country || "TG",
+                                rating: 5,
+                                comment: "“Commande livrée très rapidement et produit de haute qualité !”",
+                                date: new Date().toISOString().split("T")[0],
+                                verifiedPurchase: true,
+                              };
+                              setReviews([...reviews, newRev]);
+                            }}
+                            className="w-full py-1.5 rounded-xl border border-dashed border-black/20 text-[11px] font-bold text-[#111111] hover:bg-black/5 flex items-center justify-center gap-1.5"
+                          >
+                            <Plus className="h-3 w-3" />
+                            <span>Ajouter un nouvel avis client</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Éditeur Newsletter Kaelis */}
+                    {editingSectionId === sec.id && sec.id === "sec_newsletter" && (
+                      <div className="mt-3 pt-3 border-t border-black/[0.06] space-y-3 text-xs">
+                        <div>
+                          <span className="text-[10px] font-bold uppercase text-[#666660] block mb-1">
+                            Titre de la newsletter
+                          </span>
+                          <input
+                            type="text"
+                            value={sec.content?.title || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSections((prev) =>
+                                prev.map((s) =>
+                                  s.id === "sec_newsletter" ? { ...s, content: { ...s.content, title: val } } : s
+                                )
+                              );
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-black/15 bg-white text-xs font-bold text-[#111111] focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-bold uppercase text-[#666660] block mb-1">
+                            Sous-titre / Message d&apos;invitation
+                          </span>
+                          <textarea
+                            rows={2}
+                            value={sec.content?.subtitle || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSections((prev) =>
+                                prev.map((s) =>
+                                  s.id === "sec_newsletter" ? { ...s, content: { ...s.content, subtitle: val } } : s
+                                )
+                              );
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-black/15 bg-white text-xs text-[#111111] focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-bold uppercase text-[#666660] block mb-1">
+                            Texte du bouton d&apos;inscription
+                          </span>
+                          <input
+                            type="text"
+                            value={sec.content?.buttonText || "S'abonner"}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSections((prev) =>
+                                prev.map((s) =>
+                                  s.id === "sec_newsletter" ? { ...s, content: { ...s.content, buttonText: val } } : s
+                                )
+                              );
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-black/15 bg-white text-xs font-bold text-[#111111] focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Éditeur Notre Histoire Kaelis */}
+                    {editingSectionId === sec.id && sec.id === "sec_brand_story" && (
+                      <div className="mt-3 pt-3 border-t border-black/[0.06] space-y-3 text-xs">
+                        <div>
+                          <span className="text-[10px] font-bold uppercase text-[#666660] block mb-1">
+                            Titre de la section
+                          </span>
+                          <input
+                            type="text"
+                            value={sec.content?.title || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSections((prev) =>
+                                prev.map((s) =>
+                                  s.id === "sec_brand_story" ? { ...s, content: { ...s.content, title: val } } : s
+                                )
+                              );
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-black/15 bg-white text-xs font-bold text-[#111111] focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-bold uppercase text-[#666660] block mb-1">
+                            Texte de « Notre Histoire »
+                          </span>
+                          <textarea
+                            rows={6}
+                            value={sec.content?.text || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSections((prev) =>
+                                prev.map((s) =>
+                                  s.id === "sec_brand_story" ? { ...s, content: { ...s.content, text: val } } : s
+                                )
+                              );
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-black/15 bg-white text-xs text-[#111111] focus:outline-none leading-relaxed"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-bold uppercase text-[#666660] block mb-1">
+                            URL de la photo d&apos;illustration
+                          </span>
+                          <input
+                            type="text"
+                            value={sec.content?.imageUrl || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSections((prev) =>
+                                prev.map((s) =>
+                                  s.id === "sec_brand_story" ? { ...s, content: { ...s.content, imageUrl: val } } : s
+                                )
+                              );
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-black/15 bg-white text-xs text-[#111111] focus:outline-none"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <span className="text-[10px] font-bold uppercase text-[#666660] block mb-1">
+                              Texte du bouton
+                            </span>
+                            <input
+                              type="text"
+                              value={sec.content?.ctaText || "Voir nos collections"}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setSections((prev) =>
+                                  prev.map((s) =>
+                                    s.id === "sec_brand_story" ? { ...s, content: { ...s.content, ctaText: val } } : s
+                                  )
+                                );
+                              }}
+                              className="w-full px-3 py-2 rounded-xl border border-black/15 bg-white text-xs font-bold text-[#111111] focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-bold uppercase text-[#666660] block mb-1">
+                              Lien du bouton
+                            </span>
+                            <input
+                              type="text"
+                              value={sec.content?.ctaUrl || `/boutique/${storeSlug}/catalogue`}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setSections((prev) =>
+                                  prev.map((s) =>
+                                    s.id === "sec_brand_story" ? { ...s, content: { ...s.content, ctaUrl: val } } : s
+                                  )
+                                );
+                              }}
+                              className="w-full px-3 py-2 rounded-xl border border-black/15 bg-white text-xs text-[#111111] focus:outline-none"
+                            />
+                          </div>
                         </div>
                       </div>
                     )}

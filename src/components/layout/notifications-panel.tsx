@@ -238,7 +238,8 @@ export function NotificationsPanel({
               </div>
             </div>
           );
-        })}
+        })
+      )}
       </div>
 
       {/* Pied fixe */}

@@ -430,7 +430,8 @@ export function ActiviteClient({ storeSlug }: ActiviteClientProps) {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  ))
+                )}
                 </tbody>
               </table>
             </div>

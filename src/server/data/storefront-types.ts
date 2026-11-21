@@ -127,6 +127,14 @@ export interface StorefrontVersion {
   isPublished: boolean;
 }
 
+export interface StorefrontFooterConfig {
+  tagline?: string;
+  quickLinks?: Array<{ label: string; href: string }>;
+  customerServiceLinks?: Array<{ label: string; href: string }>;
+  followLinks?: Array<{ label: string; href: string }>;
+  copyright?: string;
+}
+
 export interface StorefrontData {
   storeId: string;
   storeSlug: string;
@@ -152,6 +160,7 @@ export interface StorefrontData {
     showCountryPicker: boolean;
     hideHeaderMenu?: boolean; // Masquer les liens de navigation de l'en-tête
   };
+  footer?: StorefrontFooterConfig;
   hideCatalog?: boolean; // Masquer la page catalogue complète (Mode tunnel direct)
   sections: PageSection[];
   contact: StoreContactInfo;

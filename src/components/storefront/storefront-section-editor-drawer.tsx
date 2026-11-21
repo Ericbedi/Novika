@@ -5,7 +5,7 @@ import { X, Save, Check, Trash2, Plus, Sparkles, Layers } from "lucide-react";
 import { PageSection } from "@/server/data/storefront-types";
 
 interface SectionEditorDrawerProps {
-  section: PageSection;
+  section: PageSection | null;
   isOpen: boolean;
   onClose: () => void;
   onSave: (updatedSection: PageSection) => void;
@@ -17,10 +17,29 @@ export function SectionEditorDrawer({
   onClose,
   onSave,
 }: SectionEditorDrawerProps) {
+  if (!isOpen || !section) return null;
+
+  return (
+    <SectionEditorDrawerContent
+      key={section.id}
+      section={section}
+      onClose={onClose}
+      onSave={onSave}
+    />
+  );
+}
+
+function SectionEditorDrawerContent({
+  section,
+  onClose,
+  onSave,
+}: {
+  section: PageSection;
+  onClose: () => void;
+  onSave: (updatedSection: PageSection) => void;
+}) {
   const [formData, setFormData] = useState<Record<string, any>>(section.content || {});
   const [isVisible, setIsVisible] = useState(section.isVisible);
-
-  if (!isOpen) return null;
 
   const handleFieldChange = (key: string, value: any) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
