@@ -58,7 +58,7 @@ export function StorefrontHomeClient({
             const resolved = resolveStorefrontData(storeSlug);
             setData(resolved);
           }
-        } catch {}
+        } catch { }
       } else if (initialResolved.products.length > 0) {
         setData(initialResolved);
       }
@@ -286,10 +286,10 @@ export function StorefrontHomeClient({
                   iconKey === "truck"
                     ? Truck
                     : iconKey === "shield"
-                    ? ShieldCheck
-                    : iconKey === "rotate-ccw" || iconKey === "return"
-                    ? RotateCcw
-                    : Award;
+                      ? ShieldCheck
+                      : iconKey === "rotate-ccw" || iconKey === "return"
+                        ? RotateCcw
+                        : Award;
 
                 return (
                   <div
