@@ -1,10 +1,5 @@
 import { Store, Product } from "@/server/data/types";
-import {
-  StorefrontData,
-  CustomerReview,
-  PageSection,
-  ThemeConfig,
-} from "@/server/data/storefront-types";
+import { StorefrontData, CustomerReview, PageSection, ThemeConfig } from "@/server/data/storefront-types";
 import { MOCK_STORES } from "@/mock-data/stores";
 import { THEME_PRESETS } from "@/mock-data/storefront-data";
 import { getShopProducts } from "@/lib/products-store";
@@ -12,10 +7,7 @@ import { getShopProducts } from "@/lib/products-store";
 const MEMORY_STOREFRONTS: Map<string, StorefrontData> = new Map();
 const MEMORY_STORES: Map<string, Store> = new Map();
 
-export function setMemoryStorefront(
-  storeSlug: string,
-  data: StorefrontData,
-): void {
+export function setMemoryStorefront(storeSlug: string, data: StorefrontData): void {
   MEMORY_STOREFRONTS.set(storeSlug, data);
 }
 
@@ -55,7 +47,8 @@ export function formatStoreSlugToName(slug: string): string {
  */
 export function resolveStorefrontData(storeSlug: string): ResolvedStorefront {
   // 1. Boutique (Store)
-  let store: Store = MEMORY_STORES.get(storeSlug) ||
+  let store: Store =
+    MEMORY_STORES.get(storeSlug) ||
     MOCK_STORES.find((s) => s.slug === storeSlug) || {
       id: `store_${storeSlug}`,
       name: formatStoreSlugToName(storeSlug),
@@ -71,9 +64,7 @@ export function resolveStorefrontData(storeSlug: string): ResolvedStorefront {
   // 2. Produits réels (uniquement depuis le stockage ou l'API de la boutique)
   let products: Product[] = getShopProducts(storeSlug);
   if (products.length === 0 && typeof window !== "undefined") {
-    const savedProducts = localStorage.getItem(
-      `novika_store_products_${storeSlug}`,
-    );
+    const savedProducts = localStorage.getItem(`novika_store_products_${storeSlug}`);
     if (savedProducts) {
       try {
         const parsed = JSON.parse(savedProducts);
@@ -81,29 +72,21 @@ export function resolveStorefrontData(storeSlug: string): ResolvedStorefront {
           products = parsed;
         }
       } catch (err) {
-        console.warn(
-          "[Storefront Resolver] Erreur lecture produits localStorage:",
-          err,
-        );
+        console.warn("[Storefront Resolver] Erreur lecture produits localStorage:", err);
       }
     }
   }
 
   const activeProducts = (products || []).filter(
-    (p) =>
-      (p.productStatus === "active" || p.status === "active") &&
-      !p.hiddenFromCatalog,
+    (p) => (p.productStatus === "active" || p.status === "active") && !p.hiddenFromCatalog
   );
 
   // 3. Réglages de la vitrine (Storefront Settings réels)
   let storefront: StorefrontData =
-    MEMORY_STOREFRONTS.get(storeSlug) ||
-    createEmptyStorefront(storeSlug, store.name);
+    MEMORY_STOREFRONTS.get(storeSlug) || createEmptyStorefront(storeSlug, store.name);
 
   if (typeof window !== "undefined") {
-    const savedStorefront = localStorage.getItem(
-      `novika_storefront_settings_${storeSlug}`,
-    );
+    const savedStorefront = localStorage.getItem(`novika_storefront_settings_${storeSlug}`);
     if (savedStorefront) {
       try {
         const parsed = JSON.parse(savedStorefront);
@@ -114,10 +97,7 @@ export function resolveStorefrontData(storeSlug: string): ResolvedStorefront {
           };
         }
       } catch (err) {
-        console.warn(
-          "[Storefront Resolver] Erreur lecture réglages vitrine localStorage:",
-          err,
-        );
+        console.warn("[Storefront Resolver] Erreur lecture réglages vitrine localStorage:", err);
       }
     }
   }
@@ -128,19 +108,13 @@ export function resolveStorefrontData(storeSlug: string): ResolvedStorefront {
   const totalReviewsCount = reviews.length;
   const averageRating =
     totalReviewsCount >= 5
-      ? Number(
-          (
-            reviews.reduce((acc, r) => acc + r.rating, 0) / totalReviewsCount
-          ).toFixed(1),
-        )
+      ? Number((reviews.reduce((acc, r) => acc + r.rating, 0) / totalReviewsCount).toFixed(1))
       : null;
 
   // Nombre réel de commandes livrées
   let deliveredOrdersCount = 0;
   if (typeof window !== "undefined") {
-    const savedOrders = localStorage.getItem(
-      `novika_store_orders_${storeSlug}`,
-    );
+    const savedOrders = localStorage.getItem(`novika_store_orders_${storeSlug}`);
     if (savedOrders) {
       try {
         const orders = JSON.parse(savedOrders);
@@ -150,10 +124,7 @@ export function resolveStorefrontData(storeSlug: string): ResolvedStorefront {
           ).length;
         }
       } catch (err) {
-        console.warn(
-          "[Storefront Resolver] Erreur lecture commandes localStorage:",
-          err,
-        );
+        console.warn("[Storefront Resolver] Erreur lecture commandes localStorage:", err);
       }
     }
   }
@@ -162,12 +133,11 @@ export function resolveStorefrontData(storeSlug: string): ResolvedStorefront {
   const hasMinInfo = Boolean(
     store.name &&
     (storefront.contact?.whatsappNumber || store.whatsappNumber) &&
-    activeProducts.length > 0,
+    activeProducts.length > 0
   );
 
   const canPublish = hasMinInfo;
-  const isPreparationMode =
-    !storefront.isPublished || activeProducts.length === 0;
+  const isPreparationMode = !storefront.isPublished || activeProducts.length === 0;
 
   return {
     store,
@@ -186,12 +156,8 @@ export function resolveStorefrontData(storeSlug: string): ResolvedStorefront {
  * Crée une vitrine neutre sans AUCUN contenu inventé (Prompt 08).
  * Zéro nom de démonstration, zéro avis inventé, zéro faux numéro.
  */
-export function createEmptyStorefront(
-  storeSlug: string,
-  storeName: string,
-): StorefrontData {
-  const displayBrand =
-    storeName && storeName !== "Ma Boutique" ? storeName : "Kaelis";
+export function createEmptyStorefront(storeSlug: string, storeName: string): StorefrontData {
+  const displayBrand = storeName && storeName !== "Ma Boutique" ? storeName : "Kaelis";
 
   return {
     storeId: `store_${storeSlug}`,
@@ -377,14 +343,8 @@ export function createEmptyStorefront(
         { label: "Nous Contacter", href: `/boutique/${storeSlug}/contact` },
       ],
       customerServiceLinks: [
-        {
-          label: "Questions Fréquentes",
-          href: `/boutique/${storeSlug}/contact`,
-        },
-        {
-          label: "Livraison et Retours",
-          href: `/boutique/${storeSlug}/pages/livraison-retours`,
-        },
+        { label: "Questions Fréquentes", href: `/boutique/${storeSlug}/contact` },
+        { label: "Livraison et Retours", href: `/boutique/${storeSlug}/pages/livraison-retours` },
       ],
       followLinks: [
         { label: "Products", href: `/boutique/${storeSlug}/catalogue` },
