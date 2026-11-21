@@ -13,7 +13,10 @@ import {
   Sparkles,
   Edit3,
 } from "lucide-react";
-import { resolveStorefrontData, ResolvedStorefront } from "@/lib/storefront-resolver";
+import {
+  resolveStorefrontData,
+  ResolvedStorefront,
+} from "@/lib/storefront-resolver";
 import { StorePreparationScreen } from "@/components/storefront/store-preparation-screen";
 import { StorefrontAdminBar } from "@/components/storefront/storefront-admin-bar";
 import { SectionEditorDrawer } from "@/components/storefront/storefront-section-editor-drawer";
@@ -35,7 +38,9 @@ export function StorefrontHomeClient({
   const [data, setData] = useState<ResolvedStorefront>(initialResolved);
   const [isOwner, setIsOwner] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [editingSection, setEditingSection] = useState<PageSection | null>(null);
+  const [editingSection, setEditingSection] = useState<PageSection | null>(
+    null,
+  );
 
   // État local de la newsletter
   const [newsletterEmail, setNewsletterEmail] = useState("");
@@ -50,7 +55,9 @@ export function StorefrontHomeClient({
       setIsOwner(ownerStatus);
 
       // Rafraîchir les données depuis le localStorage SI présent
-      const savedStorefront = localStorage.getItem(`novika_storefront_settings_${storeSlug}`);
+      const savedStorefront = localStorage.getItem(
+        `novika_storefront_settings_${storeSlug}`,
+      );
       if (savedStorefront) {
         try {
           const parsed = JSON.parse(savedStorefront);
@@ -58,7 +65,12 @@ export function StorefrontHomeClient({
             const resolved = resolveStorefrontData(storeSlug);
             setData(resolved);
           }
-        } catch { }
+        } catch (err) {
+          console.warn(
+            "[Storefront Home] Erreur rafraîchissement réglages localStorage:",
+            err,
+          );
+        }
       } else if (initialResolved.products.length > 0) {
         setData(initialResolved);
       }
@@ -80,26 +92,33 @@ export function StorefrontHomeClient({
       isPublished: !storefront.isPublished,
     };
     if (typeof window !== "undefined") {
-      localStorage.setItem(`novika_storefront_settings_${storeSlug}`, JSON.stringify(updatedStorefront));
+      localStorage.setItem(
+        `novika_storefront_settings_${storeSlug}`,
+        JSON.stringify(updatedStorefront),
+      );
     }
     setData((prev) => ({
       ...prev,
       storefront: updatedStorefront,
-      isPreparationMode: !updatedStorefront.isPublished || activeProducts.length === 0,
+      isPreparationMode:
+        !updatedStorefront.isPublished || activeProducts.length === 0,
     }));
   };
 
   // Enregistrement d'une section modifiée
   const handleSaveSection = (updatedSection: PageSection) => {
     const updatedSections = (storefront.sections || []).map((s) =>
-      s.id === updatedSection.id ? updatedSection : s
+      s.id === updatedSection.id ? updatedSection : s,
     );
     const updatedStorefront = {
       ...storefront,
       sections: updatedSections,
     };
     if (typeof window !== "undefined") {
-      localStorage.setItem(`novika_storefront_settings_${storeSlug}`, JSON.stringify(updatedStorefront));
+      localStorage.setItem(
+        `novika_storefront_settings_${storeSlug}`,
+        JSON.stringify(updatedStorefront),
+      );
     }
     setData((prev) => ({
       ...prev,
@@ -140,20 +159,33 @@ export function StorefrontHomeClient({
 
   // Sections du modèle Kaelis
   const heroSection = storefront.sections?.find((s) => s.id === "sec_hero");
-  const benefitsSection = storefront.sections?.find((s) => s.id === "sec_benefits");
-  const reviewsSection = storefront.sections?.find((s) => s.id === "sec_customer_reviews");
-  const newsletterSection = storefront.sections?.find((s) => s.id === "sec_newsletter");
-  const brandStorySection = storefront.sections?.find((s) => s.id === "sec_brand_story");
+  const benefitsSection = storefront.sections?.find(
+    (s) => s.id === "sec_benefits",
+  );
+  const reviewsSection = storefront.sections?.find(
+    (s) => s.id === "sec_customer_reviews",
+  );
+  const newsletterSection = storefront.sections?.find(
+    (s) => s.id === "sec_newsletter",
+  );
+  const brandStorySection = storefront.sections?.find(
+    (s) => s.id === "sec_brand_story",
+  );
 
   // Données par défaut de secours si section non encore initialisée
-  const heroHeadline = heroSection?.content?.headline ?? `Bienvenue chez ${store.name.toUpperCase()}.`;
+  const heroHeadline =
+    heroSection?.content?.headline ??
+    `Bienvenue chez ${store.name.toUpperCase()}.`;
   const heroSubheadline =
     heroSection?.content?.subheadline ??
     "Ici, on n'achète pas un logo — on construit une allure. Chaque pièce est choisie pour notre climat, nos morphologies et nos journées qui commencent tôt et finissent après la nuit tombée.";
-  const heroCtaText = heroSection?.content?.ctaText ?? "Découvrir nos collections";
-  const heroCtaUrl = heroSection?.content?.ctaUrl ?? `/boutique/${storeSlug}/catalogue`;
+  const heroCtaText =
+    heroSection?.content?.ctaText ?? "Découvrir nos collections";
+  const heroCtaUrl =
+    heroSection?.content?.ctaUrl ?? `/boutique/${storeSlug}/catalogue`;
 
-  const benefitsTitle = benefitsSection?.content?.title ?? `Pourquoi Choisir ${store.name} ?`;
+  const benefitsTitle =
+    benefitsSection?.content?.title ?? `Pourquoi Choisir ${store.name} ?`;
   const benefitsSubtitle =
     benefitsSection?.content?.subtitle ??
     "Nous mettons tout en œuvre pour vous offrir une expérience d'achat simple, sûre et satisfaisante.";
@@ -161,33 +193,40 @@ export function StorefrontHomeClient({
     {
       id: "b1",
       title: "Livraison Rapide",
-      description: "Vos commandes sont expédiées en 24 à 48 heures pour une réception ultra-rapide.",
+      description:
+        "Vos commandes sont expédiées en 24 à 48 heures pour une réception ultra-rapide.",
       icon: "truck",
     },
     {
       id: "b2",
       title: "Paiement Sécurisé",
-      description: "Toutes vos transactions sont protégées par un cryptage SSL de haute sécurité.",
+      description:
+        "Toutes vos transactions sont protégées par un cryptage SSL de haute sécurité.",
       icon: "shield",
     },
     {
       id: "b3",
       title: "Retours Faciles",
-      description: "Profitez de 30 jours pour retourner votre article sans aucune question posée.",
+      description:
+        "Profitez de 30 jours pour retourner votre article sans aucune question posée.",
       icon: "rotate-ccw",
     },
     {
       id: "b4",
       title: "Qualité Garantie",
-      description: "Chaque produit est sélectionné avec soin pour vous garantir un niveau de qualité irréprochable.",
+      description:
+        "Chaque produit est sélectionné avec soin pour vous garantir un niveau de qualité irréprochable.",
       icon: "award",
     },
   ];
 
   const reviewsList = storefront.reviews || [];
-  const reviewsTitle = reviewsSection?.content?.title ?? "Ce Que Disent Nos Clients";
+  const reviewsTitle =
+    reviewsSection?.content?.title ?? "Ce Que Disent Nos Clients";
 
-  const newsletterTitle = newsletterSection?.content?.title ?? `Rejoignez la Communauté ${store.name}`;
+  const newsletterTitle =
+    newsletterSection?.content?.title ??
+    `Rejoignez la Communauté ${store.name}`;
   const newsletterSubtitle =
     newsletterSection?.content?.subtitle ??
     "Inscrivez-vous à notre newsletter et soyez le premier à découvrir nos nouvelles collections et offres exclusives.";
@@ -196,190 +235,218 @@ export function StorefrontHomeClient({
   const storyText =
     brandStorySection?.content?.text ??
     `${store.name.toUpperCase()} vient de kairos : le moment qui compte. On apprend aux hommes que l'apparence est secondaire. Puis on les juge dessus en huit secondes. Personne ne vous dira jamais que votre allure a joué — mais chaque homme, au fond, le sait. L'élégance masculine n'a pas été importée sur ce continent : elle y était déjà. Nos pères savaient qu'on ne se présente pas devant une famille ou une assemblée sans soigner ce qu'on donne à voir. Ce n'était pas de la vanité. C'était du respect. Il manquait simplement une maison à la hauteur de cet héritage. Nous l'avons construite. Pièces pensées pour notre climat et nos morphologies. Livraison à domicile et paiement à la réception. ${store.name.toUpperCase()} — Soyez prêt.`;
-  const storyImageUrl = brandStorySection?.content?.imageUrl || "/brand/kaelis-story.jpg";
-  const storyCtaText = brandStorySection?.content?.ctaText ?? "Voir nos collections";
-  const storyCtaUrl = brandStorySection?.content?.ctaUrl ?? `/boutique/${storeSlug}/catalogue`;
+  const storyImageUrl =
+    brandStorySection?.content?.imageUrl || "/brand/kaelis-story.jpg";
+  const storyCtaText =
+    brandStorySection?.content?.ctaText ?? "Voir nos collections";
+  const storyCtaUrl =
+    brandStorySection?.content?.ctaUrl ?? `/boutique/${storeSlug}/catalogue`;
 
   return (
     <div className="space-y-16 sm:space-y-24 pb-20 relative font-sans">
       {/* ========================================================================= */}
       {/* 1. HÉRO CENTRÉ ÉPURÉ KAELIS */}
       {/* ========================================================================= */}
-      {heroSection && (heroSection.isVisible || isEditMode) && (heroHeadline || isEditMode) && (
-        <section className="relative group max-w-4xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-4 text-center space-y-6">
-          {isOwner && isEditMode && (
-            <button
-              type="button"
-              onClick={() => setEditingSection(heroSection)}
-              className="absolute top-2 right-4 z-30 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 text-black text-xs font-black shadow-lg hover:bg-amber-400 transition-all cursor-pointer"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-              <span>Modifier le Héro</span>
-            </button>
-          )}
+      {heroSection &&
+        (heroSection.isVisible || isEditMode) &&
+        (heroHeadline || isEditMode) && (
+          <section className="relative group max-w-4xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-4 text-center space-y-6">
+            {isOwner && isEditMode && (
+              <button
+                type="button"
+                onClick={() => setEditingSection(heroSection)}
+                className="absolute top-2 right-4 z-30 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 text-black text-xs font-black shadow-lg hover:bg-amber-400 transition-all cursor-pointer"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Modifier le Héro</span>
+              </button>
+            )}
 
-          {heroHeadline ? (
-            <div className="space-y-5 animate-in fade-in duration-300">
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-[#111111] tracking-tight leading-[1.18]">
-                {heroHeadline}
-              </h1>
-              {heroSubheadline && (
-                <p className="text-xs sm:text-base text-[#666660] max-w-2xl mx-auto leading-relaxed font-normal">
-                  {heroSubheadline}
-                </p>
-              )}
-              <div className="pt-3">
-                <Link
-                  href={heroCtaUrl}
-                  className="inline-flex items-center justify-center px-8 py-3.5 rounded-full text-xs sm:text-sm font-bold text-white shadow-sm hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
-                  style={{ backgroundColor: themePrimary }}
-                >
-                  {heroCtaText}
-                </Link>
+            {heroHeadline ? (
+              <div className="space-y-5 animate-in fade-in duration-300">
+                <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-[#111111] tracking-tight leading-[1.18]">
+                  {heroHeadline}
+                </h1>
+                {heroSubheadline && (
+                  <p className="text-xs sm:text-base text-[#666660] max-w-2xl mx-auto leading-relaxed font-normal">
+                    {heroSubheadline}
+                  </p>
+                )}
+                <div className="pt-3">
+                  <Link
+                    href={heroCtaUrl}
+                    className="inline-flex items-center justify-center px-8 py-3.5 rounded-full text-xs sm:text-sm font-bold text-white shadow-sm hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                    style={{ backgroundColor: themePrimary }}
+                  >
+                    {heroCtaText}
+                  </Link>
+                </div>
               </div>
-            </div>
-          ) : isOwner && isEditMode ? (
-            <div
-              onClick={() => setEditingSection(heroSection)}
-              className="border-2 border-dashed border-amber-400/80 bg-amber-50/40 rounded-3xl p-8 text-center space-y-2 cursor-pointer hover:bg-amber-50 transition-colors"
-            >
-              <Sparkles className="w-6 h-6 text-amber-600 mx-auto" />
-              <div className="text-xs font-black text-amber-950">+ Configurer le Héro d'accueil</div>
-              <p className="text-[11px] text-amber-800">Section actuellement masquée pour le public.</p>
-            </div>
-          ) : null}
-        </section>
-      )}
+            ) : isOwner && isEditMode ? (
+              <div
+                onClick={() => setEditingSection(heroSection)}
+                className="border-2 border-dashed border-amber-400/80 bg-amber-50/40 rounded-3xl p-8 text-center space-y-2 cursor-pointer hover:bg-amber-50 transition-colors"
+              >
+                <Sparkles className="w-6 h-6 text-amber-600 mx-auto" />
+                <div className="text-xs font-black text-amber-950">
+                  + Configurer le Héro d'accueil
+                </div>
+                <p className="text-[11px] text-amber-800">
+                  Section actuellement masquée pour le public.
+                </p>
+              </div>
+            ) : null}
+          </section>
+        )}
 
       {/* ========================================================================= */}
       {/* 2. LES 4 AVANTAGES (POURQUOI CHOISIR KAELIS) */}
       {/* ========================================================================= */}
-      {benefitsSection && (benefitsSection.isVisible || isEditMode) && (benefitsItems.length > 0 || isEditMode) && (
-        <section className="relative group max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-6 space-y-10 sm:space-y-12">
-          {isOwner && isEditMode && (
-            <button
-              type="button"
-              onClick={() => setEditingSection(benefitsSection)}
-              className="absolute top-2 right-4 z-30 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 text-black text-xs font-black shadow-lg hover:bg-amber-400 transition-all cursor-pointer"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-              <span>Modifier les Avantages</span>
-            </button>
-          )}
-
-          <div className="text-center max-w-2xl mx-auto space-y-2.5">
-            <h2 className="text-2xl sm:text-4xl font-black text-[#111111] tracking-tight">
-              {benefitsTitle}
-            </h2>
-            {benefitsSubtitle && (
-              <p className="text-xs sm:text-sm text-[#666660] font-normal leading-relaxed">
-                {benefitsSubtitle}
-              </p>
+      {benefitsSection &&
+        (benefitsSection.isVisible || isEditMode) &&
+        (benefitsItems.length > 0 || isEditMode) && (
+          <section className="relative group max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-6 space-y-10 sm:space-y-12">
+            {isOwner && isEditMode && (
+              <button
+                type="button"
+                onClick={() => setEditingSection(benefitsSection)}
+                className="absolute top-2 right-4 z-30 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 text-black text-xs font-black shadow-lg hover:bg-amber-400 transition-all cursor-pointer"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Modifier les Avantages</span>
+              </button>
             )}
-          </div>
 
-          {benefitsItems.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-              {benefitsItems.map((item: any, idx: number) => {
-                const iconKey = String(item.icon || "").toLowerCase();
-                const IconComponent =
-                  iconKey === "truck"
-                    ? Truck
-                    : iconKey === "shield"
-                      ? ShieldCheck
-                      : iconKey === "rotate-ccw" || iconKey === "return"
-                        ? RotateCcw
-                        : Award;
+            <div className="text-center max-w-2xl mx-auto space-y-2.5">
+              <h2 className="text-2xl sm:text-4xl font-black text-[#111111] tracking-tight">
+                {benefitsTitle}
+              </h2>
+              {benefitsSubtitle && (
+                <p className="text-xs sm:text-sm text-[#666660] font-normal leading-relaxed">
+                  {benefitsSubtitle}
+                </p>
+              )}
+            </div>
 
-                return (
-                  <div
-                    key={idx}
-                    className="flex flex-col items-center text-center space-y-3 p-4 rounded-3xl bg-white border border-black/[0.04] shadow-2xs hover:shadow-xs transition-shadow"
-                  >
-                    <div className="h-16 w-16 rounded-full border border-black/10 flex items-center justify-center text-[#111111] bg-[#FAF8F5]">
-                      <IconComponent className="h-7 w-7 stroke-[1.5]" />
+            {benefitsItems.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+                {benefitsItems.map((item: any, idx: number) => {
+                  const iconKey = String(item.icon || "").toLowerCase();
+                  const IconComponent =
+                    iconKey === "truck"
+                      ? Truck
+                      : iconKey === "shield"
+                        ? ShieldCheck
+                        : iconKey === "rotate-ccw" || iconKey === "return"
+                          ? RotateCcw
+                          : Award;
+
+                  return (
+                    <div
+                      key={idx}
+                      className="flex flex-col items-center text-center space-y-3 p-4 rounded-3xl bg-white border border-black/[0.04] shadow-2xs hover:shadow-xs transition-shadow"
+                    >
+                      <div className="h-16 w-16 rounded-full border border-black/10 flex items-center justify-center text-[#111111] bg-[#FAF8F5]">
+                        <IconComponent className="h-7 w-7 stroke-[1.5]" />
+                      </div>
+                      <h3 className="text-sm sm:text-base font-bold text-[#111111]">
+                        {item.title}
+                      </h3>
+                      <p className="text-xs text-[#666660] leading-relaxed max-w-xs">
+                        {item.description}
+                      </p>
                     </div>
-                    <h3 className="text-sm sm:text-base font-bold text-[#111111]">{item.title}</h3>
-                    <p className="text-xs text-[#666660] leading-relaxed max-w-xs">{item.description}</p>
-                  </div>
-                );
-              })}
-            </div>
-          ) : isOwner && isEditMode ? (
-            <div
-              onClick={() => setEditingSection(benefitsSection)}
-              className="border-2 border-dashed border-amber-400/80 bg-amber-50/40 rounded-3xl p-8 text-center space-y-2 cursor-pointer hover:bg-amber-50 transition-colors"
-            >
-              <div className="text-xs font-black text-amber-950">+ Configurer les 4 Avantages</div>
-              <p className="text-[11px] text-amber-800">Ajoutez vos arguments de réassurance client.</p>
-            </div>
-          ) : null}
-        </section>
-      )}
+                  );
+                })}
+              </div>
+            ) : isOwner && isEditMode ? (
+              <div
+                onClick={() => setEditingSection(benefitsSection)}
+                className="border-2 border-dashed border-amber-400/80 bg-amber-50/40 rounded-3xl p-8 text-center space-y-2 cursor-pointer hover:bg-amber-50 transition-colors"
+              >
+                <div className="text-xs font-black text-amber-950">
+                  + Configurer les 4 Avantages
+                </div>
+                <p className="text-[11px] text-amber-800">
+                  Ajoutez vos arguments de réassurance client.
+                </p>
+              </div>
+            ) : null}
+          </section>
+        )}
 
       {/* ========================================================================= */}
       {/* 3. AVIS CLIENTS (RÈGLE STRICTE : MASQUÉ SI AUCUN AVIS DISPONIBLE) */}
       {/* ========================================================================= */}
-      {reviewsSection && (reviewsSection.isVisible || isEditMode) && (reviewsList.length > 0 || isEditMode) && (
-        <section className="relative group max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-6 space-y-8 sm:space-y-10">
-          {isOwner && isEditMode && (
-            <button
-              type="button"
-              onClick={() => setEditingSection(reviewsSection)}
-              className="absolute top-2 right-4 z-30 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 text-black text-xs font-black shadow-lg hover:bg-amber-400 transition-all cursor-pointer"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-              <span>Gérer les Avis</span>
-            </button>
-          )}
+      {reviewsSection &&
+        (reviewsSection.isVisible || isEditMode) &&
+        (reviewsList.length > 0 || isEditMode) && (
+          <section className="relative group max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-6 space-y-8 sm:space-y-10">
+            {isOwner && isEditMode && (
+              <button
+                type="button"
+                onClick={() => setEditingSection(reviewsSection)}
+                className="absolute top-2 right-4 z-30 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 text-black text-xs font-black shadow-lg hover:bg-amber-400 transition-all cursor-pointer"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Gérer les Avis</span>
+              </button>
+            )}
 
-          <div className="text-center max-w-2xl mx-auto space-y-2">
-            <h2 className="text-2xl sm:text-4xl font-black text-[#111111] tracking-tight">
-              {reviewsTitle}
-            </h2>
-          </div>
+            <div className="text-center max-w-2xl mx-auto space-y-2">
+              <h2 className="text-2xl sm:text-4xl font-black text-[#111111] tracking-tight">
+                {reviewsTitle}
+              </h2>
+            </div>
 
-          {reviewsList.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
-              {reviewsList.map((rev) => (
-                <div
-                  key={rev.id}
-                  className="p-6 sm:p-7 rounded-3xl border border-black/10 bg-white shadow-2xs space-y-4 flex flex-col justify-between"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-1 text-amber-400">
-                      {Array.from({ length: rev.rating || 5 }).map((_, i) => (
-                        <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                      ))}
+            {reviewsList.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
+                {reviewsList.map((rev) => (
+                  <div
+                    key={rev.id}
+                    className="p-6 sm:p-7 rounded-3xl border border-black/10 bg-white shadow-2xs space-y-4 flex flex-col justify-between"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-1 text-amber-400">
+                        {Array.from({ length: rev.rating || 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            className="h-4 w-4 fill-amber-400 text-amber-400"
+                          />
+                        ))}
+                      </div>
+                      <p className="text-xs sm:text-sm italic text-[#333330] leading-relaxed">
+                        {rev.comment}
+                      </p>
                     </div>
-                    <p className="text-xs sm:text-sm italic text-[#333330] leading-relaxed">
-                      {rev.comment}
-                    </p>
+                    <div className="pt-2 border-t border-black/[0.04]">
+                      <span className="text-xs sm:text-sm font-bold text-[#111111] block">
+                        {rev.authorName}
+                      </span>
+                      <span className="text-[11px] font-medium text-[#888880] block">
+                        Acheteur Vérifié{" "}
+                        {rev.authorCity ? `· ${rev.authorCity}` : ""}
+                      </span>
+                    </div>
                   </div>
-                  <div className="pt-2 border-t border-black/[0.04]">
-                    <span className="text-xs sm:text-sm font-bold text-[#111111] block">
-                      {rev.authorName}
-                    </span>
-                    <span className="text-[11px] font-medium text-[#888880] block">
-                      Acheteur Vérifié {rev.authorCity ? `· ${rev.authorCity}` : ""}
-                    </span>
-                  </div>
+                ))}
+              </div>
+            ) : isOwner && isEditMode ? (
+              <div
+                onClick={() => setEditingSection(reviewsSection)}
+                className="border-2 border-dashed border-amber-400/80 bg-amber-50/40 rounded-3xl p-8 text-center space-y-2 cursor-pointer hover:bg-amber-50 transition-colors"
+              >
+                <div className="text-xs font-black text-amber-950">
+                  + Ajouter des Avis Clients
                 </div>
-              ))}
-            </div>
-          ) : isOwner && isEditMode ? (
-            <div
-              onClick={() => setEditingSection(reviewsSection)}
-              className="border-2 border-dashed border-amber-400/80 bg-amber-50/40 rounded-3xl p-8 text-center space-y-2 cursor-pointer hover:bg-amber-50 transition-colors"
-            >
-              <div className="text-xs font-black text-amber-950">+ Ajouter des Avis Clients</div>
-              <p className="text-[11px] text-amber-800">
-                Aucun avis actuellement. Le bloc est masqué pour le public tant qu'il est vide.
-              </p>
-            </div>
-          ) : null}
-        </section>
-      )}
+                <p className="text-[11px] text-amber-800">
+                  Aucun avis actuellement. Le bloc est masqué pour le public
+                  tant qu'il est vide.
+                </p>
+              </div>
+            ) : null}
+          </section>
+        )}
 
       {/* ========================================================================= */}
       {/* 4. NEWSLETTER KAELIS */}
@@ -413,7 +480,9 @@ export function StorefrontHomeClient({
             {newsletterSubscribed ? (
               <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold inline-flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                <span>Merci ! Vous êtes bien inscrit(e) à notre newsletter.</span>
+                <span>
+                  Merci ! Vous êtes bien inscrit(e) à notre newsletter.
+                </span>
               </div>
             ) : (
               <form
@@ -430,7 +499,10 @@ export function StorefrontHomeClient({
                   required
                   value={newsletterEmail}
                   onChange={(e) => setNewsletterEmail(e.target.value)}
-                  placeholder={newsletterSection?.content?.placeholder || "Votre adresse e-mail"}
+                  placeholder={
+                    newsletterSection?.content?.placeholder ||
+                    "Votre adresse e-mail"
+                  }
                   className="w-full px-4 py-3 rounded-xl border border-black/15 bg-white text-xs sm:text-sm font-medium text-[#111111] focus:outline-hidden focus:border-black shadow-2xs"
                 />
                 <button
@@ -448,51 +520,56 @@ export function StorefrontHomeClient({
       {/* ========================================================================= */}
       {/* 5. NOTRE HISTOIRE (DISPOSITION 2 COLONNES KAELIS) */}
       {/* ========================================================================= */}
-      {brandStorySection && (brandStorySection.isVisible || isEditMode) && (storyText || isEditMode) && (
-        <section id="notre-histoire" className="relative group max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-6">
-          {isOwner && isEditMode && (
-            <button
-              type="button"
-              onClick={() => setEditingSection(brandStorySection)}
-              className="absolute top-2 right-4 z-30 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 text-black text-xs font-black shadow-lg hover:bg-amber-400 transition-all cursor-pointer"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-              <span>Modifier Notre Histoire</span>
-            </button>
-          )}
+      {brandStorySection &&
+        (brandStorySection.isVisible || isEditMode) &&
+        (storyText || isEditMode) && (
+          <section
+            id="notre-histoire"
+            className="relative group max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-6"
+          >
+            {isOwner && isEditMode && (
+              <button
+                type="button"
+                onClick={() => setEditingSection(brandStorySection)}
+                className="absolute top-2 right-4 z-30 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 text-black text-xs font-black shadow-lg hover:bg-amber-400 transition-all cursor-pointer"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Modifier Notre Histoire</span>
+              </button>
+            )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center">
-            {/* Photo d'illustration à gauche */}
-            <div className="lg:col-span-6">
-              <div className="relative aspect-4/3 w-full rounded-3xl overflow-hidden shadow-sm border border-black/[0.06] bg-stone-100">
-                <img
-                  src={storyImageUrl}
-                  alt={storyTitle}
-                  className="w-full h-full object-cover"
-                />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center">
+              {/* Photo d'illustration à gauche */}
+              <div className="lg:col-span-6">
+                <div className="relative aspect-4/3 w-full rounded-3xl overflow-hidden shadow-sm border border-black/[0.06] bg-stone-100">
+                  <img
+                    src={storyImageUrl}
+                    alt={storyTitle}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+
+              {/* Texte à droite */}
+              <div className="lg:col-span-6 space-y-6">
+                <h2 className="text-2xl sm:text-4xl font-black text-[#111111] tracking-tight">
+                  {storyTitle}
+                </h2>
+                <p className="text-xs sm:text-sm text-[#444440] font-normal leading-relaxed whitespace-pre-line">
+                  {storyText}
+                </p>
+                <div>
+                  <Link
+                    href={storyCtaUrl}
+                    className="inline-flex items-center justify-center px-6 py-3 rounded-lg border-2 border-[#111111] text-[#111111] text-xs sm:text-sm font-bold hover:bg-[#111111] hover:text-white transition-all cursor-pointer"
+                  >
+                    {storyCtaText}
+                  </Link>
+                </div>
               </div>
             </div>
-
-            {/* Texte à droite */}
-            <div className="lg:col-span-6 space-y-6">
-              <h2 className="text-2xl sm:text-4xl font-black text-[#111111] tracking-tight">
-                {storyTitle}
-              </h2>
-              <p className="text-xs sm:text-sm text-[#444440] font-normal leading-relaxed whitespace-pre-line">
-                {storyText}
-              </p>
-              <div>
-                <Link
-                  href={storyCtaUrl}
-                  className="inline-flex items-center justify-center px-6 py-3 rounded-lg border-2 border-[#111111] text-[#111111] text-xs sm:text-sm font-bold hover:bg-[#111111] hover:text-white transition-all cursor-pointer"
-                >
-                  {storyCtaText}
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
+          </section>
+        )}
 
       {/* ========================================================================= */}
       {/* 6. PRODUITS DISPONIBLES (GRILLE VENTE DIRECTE COD) */}
@@ -505,7 +582,8 @@ export function StorefrontHomeClient({
                 Produits Disponibles
               </h2>
               <p className="text-xs text-[#666660] mt-0.5">
-                Commandez directement en ligne avec règlement en espèces à la livraison.
+                Commandez directement en ligne avec règlement en espèces à la
+                livraison.
               </p>
             </div>
             <Link
@@ -523,7 +601,8 @@ export function StorefrontHomeClient({
               const threshold = prod.lowStockThreshold ?? 5;
               const isLowStock = prod.stock > 0 && prod.stock <= threshold;
               const prodUrl = getProductPublicUrl(prod, storeSlug);
-              const prodImageSrc = (prod.images && prod.images[0]) || (prod as any).image || "";
+              const prodImageSrc =
+                (prod.images && prod.images[0]) || (prod as any).image || "";
 
               return (
                 <div
