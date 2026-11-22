@@ -146,7 +146,7 @@ export function DashboardClient({ storeSlug }: { storeSlug: string }) {
 
       {/* 2. Barre de Statut Statique des Corridors COD (TG, CI, SN, BJ) */}
       <ScrollReveal delay={50}>
-        <CorridorsStatusBar />
+        <CorridorsStatusBar storeSlug={storeSlug} />
       </ScrollReveal>
 
       {/* 3. Hero Command Center : Carte « En direct » avec Globe 3D interactif + Sélecteur de date universel + Les 5 Cartes KPI */}
