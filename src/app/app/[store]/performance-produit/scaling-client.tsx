@@ -52,6 +52,28 @@ interface ScalingClientProps {
   storeSlug: string;
 }
 
+// Semaine vide : évite tout plantage tant qu'aucune donnée réelle n'existe.
+const EMPTY_WEEK_SNAPSHOT: WeeklyScalingSnapshot = {
+  weekKey: "",
+  weekNumber: 0,
+  label: "Aucune donnée",
+  shortLabel: "-",
+  startDate: "",
+  endDate: "",
+  isCurrent: true,
+  adSpendDollars: 0,
+  ordersCount: 0,
+  deliveredUnits: 0,
+  pendingUnits: 0,
+  closingRate: 0,
+  realCpaDollars: 0,
+  cpaTargetDollars: 0,
+  cpaBreakevenDollars: 0,
+  netProfitFcfa: 0,
+  dollarRate: 700,
+  productsSummary: [],
+};
+
 export function ScalingClient({ storeSlug }: ScalingClientProps) {
   const { activeRole, activeStore } = useApp();
 
@@ -130,7 +152,7 @@ export function ScalingClient({ storeSlug }: ScalingClientProps) {
 
   // Semaine actuellement sélectionnée
   const currentWeekSnapshot = useMemo(() => {
-    return weeksHistory.find((w) => w.weekKey === selectedWeekKey) || weeksHistory[0];
+    return weeksHistory.find((w) => w.weekKey === selectedWeekKey) || weeksHistory[0] || EMPTY_WEEK_SNAPSHOT;
   }, [weeksHistory, selectedWeekKey]);
 
   // Index de la semaine sélectionnée (0 = la plus récente S46)
@@ -264,6 +286,20 @@ export function ScalingClient({ storeSlug }: ScalingClientProps) {
       phase: "testing",
     });
   }, [simA, simP, simL, simB, dollarRate, simClosing, simSpend]);
+
+  if (canView && weeksHistory.length === 0) {
+    return (
+      <div className="max-w-3xl mx-auto py-16">
+        <div className="rounded-3xl border border-dashed border-black/[0.15] bg-white p-10 text-center space-y-2">
+          <h1 className="text-lg font-black text-[#111111]">Performance & Scaling</h1>
+          <p className="text-sm font-bold text-[#111111]">Aucune donnée pour le moment</p>
+          <p className="text-xs text-[#666660] max-w-md mx-auto leading-relaxed">
+            Les indicateurs apparaîtront ici dès que vos premières commandes et dépenses publicitaires réelles seront enregistrées.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // Restriction RLS : Closeuse, Livreur, Agence n'ont pas accès
   if (!canView) {
