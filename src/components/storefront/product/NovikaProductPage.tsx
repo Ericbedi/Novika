@@ -34,6 +34,10 @@ import { formatFcfa } from "@/lib/money";
 import { ProductPageTemplateType } from "@/lib/theme-engine/types";
 import { cn } from "@/lib/utils";
 
+// Masqué par réglage : quantité, « Ajouter au panier » et « Je commande ».
+// La commande se fait via le formulaire intégré. Repasser à true pour réafficher.
+const SHOW_QUICK_BUY_ACTIONS = false;
+
 function BenefitIcon({ icon, className }: { icon?: string; className?: string }) {
   switch (icon) {
     case "sparkles":
@@ -399,7 +403,7 @@ export function NovikaProductPage({
             </div>
           ) : (
             /* Sélecteur de quantité simple (− 1 +) si aucune formule (Prompt 17-L) */
-            <div className="space-y-1.5">
+            <div className={cn("space-y-1.5", !SHOW_QUICK_BUY_ACTIONS && "hidden")}>
               <label className="text-xs font-black text-[#111111] block">
                 Quantité :
               </label>
@@ -430,7 +434,7 @@ export function NovikaProductPage({
           )}
 
           {/* Action rapide : Ajouter au panier & Acheter maintenant (Prompt 17-L : un seul bouton si rupture) */}
-          <div className="pt-2">
+          <div className={cn("pt-2", !SHOW_QUICK_BUY_ACTIONS && !isOutOfStock && "hidden")}>
             {isOutOfStock ? (
               <button
                 type="button"
