@@ -65,17 +65,12 @@ export interface LiveGlobeCardProps {
   };
 }
 
-const DEFAULT_COUNTRIES: CountryVisitor[] = [
-  { code: "TG", name: "Togo", flag: "🇹🇬", visitors: 5, percent: 42, lat: 6.1375, lng: 1.2123 },
-  { code: "CI", name: "Côte d'Ivoire", flag: "🇨🇮", visitors: 4, percent: 33, lat: 5.36, lng: -4.0083 },
-  { code: "SN", name: "Sénégal", flag: "🇸🇳", visitors: 2, percent: 17, lat: 14.6928, lng: -17.4467 },
-  { code: "BJ", name: "Bénin", flag: "🇧🇯", visitors: 1, percent: 8, lat: 6.3654, lng: 2.4183 },
-];
+const DEFAULT_COUNTRIES: CountryVisitor[] = [];
 
 export function LiveGlobeCard({
   className,
   storeSlug,
-  storeName = "Lomé Glow",
+  storeName = "",
   currency = "FCFA",
   period,
   onPeriodChange,
@@ -83,9 +78,9 @@ export function LiveGlobeCard({
 }: LiveGlobeCardProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [countries, setCountries] = useState<CountryVisitor[]>(DEFAULT_COUNTRIES);
-  const [activeVisitors, setActiveVisitors] = useState(12);
-  const [todayOrders, setTodayOrders] = useState(18);
-  const [todaySales, setTodaySales] = useState(435000);
+  const [activeVisitors, setActiveVisitors] = useState(0);
+  const [todayOrders, setTodayOrders] = useState(0);
+  const [todaySales, setTodaySales] = useState(0);
   const [recentPulses, setRecentPulses] = useState<OrderPulse[]>([]);
   const [activeCountryTooltip, setActiveCountryTooltip] = useState<CountryVisitor | null>(null);
 
@@ -103,10 +98,10 @@ export function LiveGlobeCard({
         const res = await fetch(`/api/live/metrics?shopSlug=${storeSlug}`);
         if (res.ok && isSubscribed) {
           const data = await res.json();
-          if (data.activeVisitors) setActiveVisitors(data.activeVisitors);
+          if (typeof data.activeVisitors === "number") setActiveVisitors(data.activeVisitors);
           if (data.countries) setCountries(data.countries);
-          if (data.todayOrdersCount) setTodayOrders(data.todayOrdersCount);
-          if (data.todaySalesAmount) setTodaySales(data.todaySalesAmount);
+          if (typeof data.todayOrdersCount === "number") setTodayOrders(data.todayOrdersCount);
+          if (typeof data.todaySalesAmount === "number") setTodaySales(data.todaySalesAmount);
           if (data.recentOrderPulses) setRecentPulses(data.recentOrderPulses);
         }
       } catch (err) {
@@ -411,78 +406,43 @@ export function LiveGlobeCard({
           <StatCard
             id="stat-card-visitors"
             label="Visiteurs"
-            numericValue={1450}
-            formattedValue="1 450"
-            compactValue="1,45 k"
+            numericValue={0}
             hint="vs période précédente"
-            delta={{
-              value: 14.2,
-              upIsGood: true,
-            }}
             icon={Users}
-            sparkline={[820, 940, 1120, 1050, 1280, 1340, 1450]}
           />
 
           <StatCard
             id="stat-card-total-sales"
             label="Ventes totales"
-            numericValue={3850000}
-            formattedValue="3 850 000"
-            compactValue="3,85 M"
+            numericValue={0}
             currency="FCFA"
             hint="Commandes passées"
-            delta={{
-              value: 18.5,
-              upIsGood: true,
-            }}
             icon={ShoppingBag}
-            sparkline={[340, 420, 480, 520, 610, 535, 680]}
           />
 
           <StatCard
             id="stat-card-delivered-sales"
             label="Ventes livrées"
-            numericValue={2480000}
-            formattedValue="2 480 000"
-            compactValue="2,48 M"
+            numericValue={0}
             currency="FCFA"
             hint="CA réel encaissé en espèces"
-            delta={{
-              value: 12.4,
-              upIsGood: true,
-            }}
             icon={Wallet}
-            sparkline={[220, 280, 310, 350, 395, 330, 440]}
           />
 
           <StatCard
             id="stat-card-orders-count"
             label="Commandes reçues"
-            numericValue={1234}
-            formattedValue="1 234"
-            compactValue="1,2 k"
+            numericValue={0}
             hint="Tous canaux confondus"
-            delta={{
-              value: 8.7,
-              upIsGood: true,
-            }}
             icon={Truck}
-            sparkline={[22, 27, 31, 35, 39, 34, 44]}
           />
 
           <StatCard
             id="stat-card-conversion-rate"
             label="Taux de conversion"
-            numericValue={2.93}
-            formattedValue="2,93 %"
-            compactValue="2,93 %"
+            numericValue={0}
             hint="Visites → Commandes"
-            delta={{
-              value: -3.1,
-              upIsGood: false,
-            }}
             icon={Percent}
-            sparkline={[3.2, 3.1, 3.0, 2.9, 3.0, 2.8, 2.93]}
           />
         </StatCardsGrid>
       </div>

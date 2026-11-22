@@ -38,88 +38,62 @@ export function WaterfallClient({ storeSlug }: WaterfallClientProps) {
   const [levelFilter, setLevelFilter] = useState<"all_org" | "country" | "store" | "product">("all_org");
   const [selectedCountry, setSelectedCountry] = useState<string>("all");
 
-  // Données de cascade financière (exprimées en entiers subunits XOF)
+  // Données réelles : à 0 tant qu'aucune commande n'est enregistrée (plus de chiffres de démonstration)
+  const pctOf = (part: number, total: number) => (total > 0 ? Number(((part / total) * 100).toFixed(1)) : 0);
   const financialData = useMemo(() => {
-    // Période courante
-    const grossRevenue = 15420000; // 15 420 000 XOF
-    const productCost = 4120000; // 4 120 000 XOF (COGS)
-    const grossMargin = grossRevenue - productCost; // 11 300 000 XOF (73.3%)
-
-    const shippingFees = 1450000; // 1 450 000 XOF (Frais payés aux livreurs)
-    const packagingFees = 380000; // 380 000 XOF (Cartons, rubans)
-    const adSpend = 2450000; // 2 450 000 XOF (Meta, TikTok, Google)
-    const variableMargin = grossMargin - (shippingFees + packagingFees + adSpend); // 7 020 000 XOF (45.5%)
-
-    const fixedOperatingCosts = 850000; // 850 000 XOF (Loyer, abonnements, téléphone)
-    const vatLine = 720000; // 720 000 XOF (TVA locale)
-    const netProfit = variableMargin - fixedOperatingCosts - vatLine; // 5 450 000 XOF (35.3%)
-
-    // Période précédente de même durée (pour comparaison A/B)
-    const prevGrossRevenue = 12400000;
-    const prevNetProfit = 3980000;
-
-    const revGrowth = Number((((grossRevenue - prevGrossRevenue) / prevGrossRevenue) * 100).toFixed(1));
-    const profitGrowth = Number((((netProfit - prevNetProfit) / prevNetProfit) * 100).toFixed(1));
+    const grossRevenue = 0;
+    const productCost = 0;
+    const grossMargin = grossRevenue - productCost;
+    const shippingFees = 0;
+    const packagingFees = 0;
+    const adSpend = 0;
+    const variableMargin = grossMargin - (shippingFees + packagingFees + adSpend);
+    const fixedOperatingCosts = 0;
+    const vatLine = 0;
+    const netProfit = variableMargin - fixedOperatingCosts - vatLine;
+    const prevGrossRevenue = 0;
+    const prevNetProfit = 0;
 
     return {
       grossRevenue,
       productCost,
       grossMargin,
-      grossMarginPct: Number(((grossMargin / grossRevenue) * 100).toFixed(1)),
+      grossMarginPct: pctOf(grossMargin, grossRevenue),
       shippingFees,
       packagingFees,
       adSpend,
       variableMargin,
-      variableMarginPct: Number(((variableMargin / grossRevenue) * 100).toFixed(1)),
+      variableMarginPct: pctOf(variableMargin, grossRevenue),
       fixedOperatingCosts,
       vatLine,
       netProfit,
-      netProfitPct: Number(((netProfit / grossRevenue) * 100).toFixed(1)),
+      netProfitPct: pctOf(netProfit, grossRevenue),
       prevGrossRevenue,
       prevNetProfit,
-      revGrowth,
-      profitGrowth,
+      revGrowth: 0,
+      profitGrowth: 0,
     };
   }, []);
 
-  // Entonnoir des Commandes
-  const funnel = [
-    { step: "Commandes reçues", count: 986, pct: "100%", drop: null },
-    { step: "Confirmées par closeuses", count: 864, pct: "87.6%", drop: "-12.4% annulations" },
-    { step: "Programmées & Expédiées", count: 812, pct: "82.3%", drop: "-5.3% reports" },
-    { step: "Livrées en mains propres", count: 684, pct: "69.4%", drop: "-12.9% échecs/refus" },
-    { step: "Encaissées 100% en espèces", count: 684, pct: "69.4%", drop: "0% litiges" },
-  ];
+  // Entonnoir des commandes (vide tant qu'il n'y a pas de commandes réelles)
+  const funnel: { step: string; count: number; pct: string; drop: string | null }[] = [];
 
-  // 12 Mois Glissants (Historique)
-  const rolling12Months = [
-    { month: "Déc 25", revenue: 9800000, profit: 3100000, margin: 31.6 },
-    { month: "Jan 26", revenue: 10400000, profit: 3450000, margin: 33.1 },
-    { month: "Fév 26", revenue: 11200000, profit: 3800000, margin: 33.9 },
-    { month: "Mar 26", revenue: 12100000, profit: 4100000, margin: 33.8 },
-    { month: "Avr 26", revenue: 11800000, profit: 3950000, margin: 33.4 },
-    { month: "Mai 26", revenue: 13200000, profit: 4600000, margin: 34.8 },
-    { month: "Juin 26", revenue: 14100000, profit: 4900000, margin: 34.7 },
-    { month: "Juil 26", revenue: 13900000, profit: 4750000, margin: 34.1 },
-    { month: "Août 26", revenue: 12800000, profit: 4300000, margin: 33.5 },
-    { month: "Sept 26", revenue: 14600000, profit: 5100000, margin: 34.9 },
-    { month: "Oct 26", revenue: 15100000, profit: 5350000, margin: 35.4 },
-    { month: "Nov 26", revenue: 15420000, profit: 5450000, margin: 35.3 },
-  ];
+  // 12 mois glissants (vide tant qu'il n'y a pas d'historique réel)
+  const rolling12Months: { month: string; revenue: number; profit: number; margin: number }[] = [];
 
   // Export CSV
   const handleExportFinancials = () => {
     const csvContent =
       "Ligne,Montant_XOF,Pourcentage_CA\n" +
       `"1. Chiffre d'Affaires Brut Encaissé",${financialData.grossRevenue},100%\n` +
-      `"2. Coût des Marchandises Vendues (COGS)",-${financialData.productCost},${((financialData.productCost / financialData.grossRevenue) * 100).toFixed(1)}%\n` +
+      `"2. Coût des Marchandises Vendues (COGS)",-${financialData.productCost},${pctOf(financialData.productCost, financialData.grossRevenue)}%\n` +
       `"= Marge Brute",${financialData.grossMargin},${financialData.grossMarginPct}%\n` +
-      `"3. Frais de Livraison Payés",-${financialData.shippingFees},${((financialData.shippingFees / financialData.grossRevenue) * 100).toFixed(1)}%\n` +
-      `"4. Emballage & Consommables",-${financialData.packagingFees},${((financialData.packagingFees / financialData.grossRevenue) * 100).toFixed(1)}%\n` +
-      `"5. Dépenses Publicitaires (Ads)",-${financialData.adSpend},${((financialData.adSpend / financialData.grossRevenue) * 100).toFixed(1)}%\n` +
+      `"3. Frais de Livraison Payés",-${financialData.shippingFees},${pctOf(financialData.shippingFees, financialData.grossRevenue)}%\n` +
+      `"4. Emballage & Consommables",-${financialData.packagingFees},${pctOf(financialData.packagingFees, financialData.grossRevenue)}%\n` +
+      `"5. Dépenses Publicitaires (Ads)",-${financialData.adSpend},${pctOf(financialData.adSpend, financialData.grossRevenue)}%\n` +
       `"= Marge Nette Variable",${financialData.variableMargin},${financialData.variableMarginPct}%\n` +
-      `"6. Charges Fixes d'Exploitation",-${financialData.fixedOperatingCosts},${((financialData.fixedOperatingCosts / financialData.grossRevenue) * 100).toFixed(1)}%\n` +
-      `"7. Provision TVA",-${financialData.vatLine},${((financialData.vatLine / financialData.grossRevenue) * 100).toFixed(1)}%\n` +
+      `"6. Charges Fixes d'Exploitation",-${financialData.fixedOperatingCosts},${pctOf(financialData.fixedOperatingCosts, financialData.grossRevenue)}%\n` +
+      `"7. Provision TVA",-${financialData.vatLine},${pctOf(financialData.vatLine, financialData.grossRevenue)}%\n` +
       `"= BÉNÉFICE NET EN POCHE",${financialData.netProfit},${financialData.netProfitPct}%\n`;
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -226,8 +200,6 @@ export function WaterfallClient({ storeSlug }: WaterfallClientProps) {
             id="stat-card-waterfall-gross"
             label="CA Brut Encaissé"
             numericValue={financialData.grossRevenue}
-            formattedValue="15 420 000"
-            compactValue="15,4 M"
             currency="FCFA"
             hint="Commandes passées & livrées"
             delta={{
@@ -235,63 +207,39 @@ export function WaterfallClient({ storeSlug }: WaterfallClientProps) {
               upIsGood: true,
             }}
             icon={Wallet}
-            sparkline={[980, 1040, 1120, 1210, 1320, 1460, 1542]}
           />
 
           <StatCard
             id="stat-card-waterfall-cogs"
             label="Coût Marchandises"
             numericValue={financialData.productCost}
-            formattedValue="4 120 000"
-            compactValue="4,12 M"
             currency="FCFA"
             hint="COGS & approche"
-            delta={{
-              value: -3.2,
-              upIsGood: false,
-            }}
             icon={Package}
-            sparkline={[290, 310, 330, 350, 370, 395, 412]}
           />
 
           <StatCard
             id="stat-card-waterfall-gross-margin"
             label="Marge Commerciale"
             numericValue={financialData.grossMargin}
-            formattedValue="11 300 000"
-            compactValue="11,3 M"
             currency="FCFA"
             hint={`${financialData.grossMarginPct} % du CA brut`}
-            delta={{
-              value: 16.8,
-              upIsGood: true,
-            }}
             icon={TrendingUp}
-            sparkline={[690, 730, 790, 860, 950, 1065, 1130]}
           />
 
           <StatCard
             id="stat-card-waterfall-operating-costs"
             label="Frais Opérationnels"
             numericValue={financialData.shippingFees + financialData.packagingFees + financialData.adSpend}
-            formattedValue="4 280 000"
-            compactValue="4,28 M"
             currency="FCFA"
             hint="Pub, livraison & logistique"
-            delta={{
-              value: -5.1,
-              upIsGood: false,
-            }}
             icon={Truck}
-            sparkline={[320, 340, 360, 380, 400, 415, 428]}
           />
 
           <StatCard
             id="stat-card-waterfall-net-profit"
             label="Bénéfice Net en Poche"
             numericValue={financialData.netProfit}
-            formattedValue="5 450 000"
-            compactValue="5,45 M"
             currency="FCFA"
             hint={`${financialData.netProfitPct} % de marge nette`}
             delta={{
@@ -299,7 +247,6 @@ export function WaterfallClient({ storeSlug }: WaterfallClientProps) {
               upIsGood: true,
             }}
             icon={DollarSign}
-            sparkline={[310, 345, 380, 410, 460, 510, 545]}
           />
         </StatCardsGrid>
       </ScrollReveal>

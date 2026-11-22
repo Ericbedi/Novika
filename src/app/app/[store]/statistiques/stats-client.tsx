@@ -111,80 +111,45 @@ export function StatsClient({ storeSlug }: StatsClientProps) {
               id="stat-card-gross-sales"
               label="Ventes Brutes"
               numericValue={MOCK_SALES_OVERVIEW.grossSales}
-              formattedValue="4 250 000"
-              compactValue="4,25 M"
               currency="FCFA"
               hint="Avant déductions"
-              delta={{
-                value: 15.2,
-                upIsGood: true,
-              }}
               icon={ShoppingBag}
-              sparkline={[310, 340, 390, 380, 410, 400, 425]}
             />
 
             <StatCard
               id="stat-card-discounts"
               label="Remises Offertes"
               numericValue={MOCK_SALES_OVERVIEW.discounts}
-              formattedValue="180 000"
-              compactValue="180 k"
               currency="FCFA"
               hint="Packs quantité & coupons"
-              delta={{
-                value: -3.1,
-                upIsGood: false,
-              }}
               icon={Percent}
-              sparkline={[22, 20, 19, 18, 19, 17, 18]}
             />
 
             <StatCard
               id="stat-card-returns"
               label="Retours / Rejets"
               numericValue={MOCK_SALES_OVERVIEW.returns}
-              formattedValue="220 000"
-              compactValue="220 k"
               currency="FCFA"
               hint="Colis refusés à l'arrivée"
-              delta={{
-                value: -1.8,
-                upIsGood: false,
-              }}
               icon={RotateCcw}
-              sparkline={[28, 25, 26, 24, 25, 23, 22]}
             />
 
             <StatCard
               id="stat-card-net-sales"
               label="Ventes Nettes"
               numericValue={MOCK_SALES_OVERVIEW.netSales}
-              formattedValue="3 850 000"
-              compactValue="3,85 M"
               currency="FCFA"
               hint="CA réel encaissé en espèces"
-              delta={{
-                value: 18.5,
-                upIsGood: true,
-              }}
               icon={Wallet}
-              sparkline={[260, 290, 340, 330, 365, 355, 385]}
             />
 
             <StatCard
               id="stat-card-aov"
               label="Panier Moyen (AOV)"
               numericValue={MOCK_SALES_OVERVIEW.averageOrderValue}
-              formattedValue="31 050"
-              compactValue="31,1 k"
               currency="FCFA"
               hint="Visites → Commandes"
-              delta={{
-                value: 12.0,
-                upIsGood: true,
-              }}
               icon={ShoppingCart}
-              sparkline={[26, 27, 28, 29, 30, 30, 31]}
             />
           </StatCardsGrid>
 

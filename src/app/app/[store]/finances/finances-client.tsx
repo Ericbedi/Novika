@@ -222,80 +222,45 @@ export function FinancesClient({ storeSlug }: FinancesClientProps) {
           id="stat-card-finance-revenue"
           label="Revenus Encaissés"
           numericValue={summary.collectedRevenue}
-          formattedValue="3 850 000"
-          compactValue="3,85 M"
           currency="FCFA"
           hint="CA réel encaissé en espèces"
-          delta={{
-            value: 18.5,
-            upIsGood: true,
-          }}
           icon={Wallet}
-          sparkline={[260, 290, 340, 330, 365, 355, 385]}
         />
 
         <StatCard
           id="stat-card-finance-deliveries"
           label="Livraisons Faites"
           numericValue={summary.deliveredCount}
-          formattedValue="124"
-          compactValue="124"
           unit="colis"
           hint="Payées à la livraison"
-          delta={{
-            value: 14.2,
-            upIsGood: true,
-          }}
           icon={Truck}
-          sparkline={[85, 92, 101, 108, 114, 118, 124]}
         />
 
         <StatCard
           id="stat-card-finance-cogs"
           label="Coût des Produits"
           numericValue={summary.productCost}
-          formattedValue="1 120 000"
-          compactValue="1,12 M"
           currency="FCFA"
           hint="Revient × livrées"
-          delta={{
-            value: -2.4,
-            upIsGood: false,
-          }}
           icon={Package}
-          sparkline={[80, 85, 95, 98, 105, 108, 112]}
         />
 
         <StatCard
           id="stat-card-finance-marketing-shipping"
           label="Frais Pub & Livraison"
           numericValue={summary.adSpend + summary.shippingCost}
-          formattedValue="890 000"
-          compactValue="890 k"
           currency="FCFA"
           hint="Ads Meta & courses livreurs"
-          delta={{
-            value: -4.5,
-            upIsGood: false,
-          }}
           icon={DollarSign}
-          sparkline={[65, 70, 78, 82, 85, 87, 89]}
         />
 
         <StatCard
           id="stat-card-finance-net-profit"
           label="Bénéfice Net Réel"
           numericValue={summary.netProfit}
-          formattedValue="1 840 000"
-          compactValue="1,84 M"
           currency="FCFA"
           hint="Résultat réel en poche"
-          delta={{
-            value: 22.8,
-            upIsGood: true,
-          }}
           icon={TrendingUp}
-          sparkline={[115, 135, 167, 150, 175, 160, 184]}
         />
       </StatCardsGrid>
 
