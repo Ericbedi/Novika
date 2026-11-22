@@ -30,6 +30,8 @@ function isPlatformHost(host: string): boolean {
   );
 }
 
+import { SESSION_COOKIE, isSessionSigningEnabled, verifySessionToken } from "@/lib/session-token";
+
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const rawHost = request.headers.get("host") || "";
@@ -117,7 +119,12 @@ export async function middleware(request: NextRequest) {
     novikaSessionCookie || afribuilderSessionCookie || sbAccessToken || hasAuthToken
   );
 
-  if (novikaSessionCookie) {
+  // Session SIGNÉE (non falsifiable) : exigée dès que AUTH_COOKIE_SECRET est configuré
+  if (isSessionSigningEnabled()) {
+    const verified = await verifySessionToken(request.cookies.get(SESSION_COOKIE)?.value);
+    hasValidSession = Boolean(verified);
+    if (verified) sessionUserRole = verified.role;
+  } else if (novikaSessionCookie) {
     try {
       const parsed = JSON.parse(novikaSessionCookie);
       if (parsed && parsed.role) {

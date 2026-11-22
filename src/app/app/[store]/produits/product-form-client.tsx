@@ -955,7 +955,7 @@ export function ProductFormClient({
   // ========================================================
   // ENREGISTREMENT ET VALIDATION ZOD / CLIENT
   // ========================================================
-  const handleSave = () => {
+  const handleSave = async () => {
     const cleanName = name.trim();
     if (!cleanName) {
       setTitleError("Le titre du produit est obligatoire.");
@@ -1084,7 +1084,33 @@ export function ProductFormClient({
     }
 
     setIsDirty(false);
-    showToast("Produit enregistré avec succès !");
+
+    // Publication automatique sur la vitrine (base de données) pour les produits actifs
+    if (finalProduct.productStatus === "active" && finalProduct.published_to_storefront !== false) {
+      let publishError = "";
+      try {
+        const res = await fetch("/api/products/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ storeSlug, products: [finalProduct] }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+          publishError = data.error || "La publication sur la vitrine a échoué.";
+        } else if (data.report?.error_count > 0) {
+          publishError = "Le produit est enregistré mais n'a pas pu être publié (voir « Synchroniser »).";
+        }
+      } catch {
+        publishError = "Connexion impossible : produit enregistré ici, publication à refaire.";
+      }
+      if (publishError) {
+        showToast(`${publishError} Votre produit est bien enregistré dans l'admin.`);
+        return;
+      }
+      showToast("Produit enregistré et publié sur la vitrine !");
+    } else {
+      showToast("Produit enregistré avec succès !");
+    }
     router.push(`/app/${storeSlug}/produits`);
   };
 

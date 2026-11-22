@@ -7,6 +7,8 @@ import { send2FAEmail } from "@/server/email/email-service";
 import { createServerSession } from "@/server/auth/session-manager";
 import { logAuthAudit } from "@/lib/audit-auth";
 import { createClient } from "@/lib/supabase/server";
+import { verifyPasswordWithSupabase } from "@/server/auth/password-verify";
+import { SESSION_COOKIE, signSessionToken } from "@/lib/session-token";
 
 export async function POST(req: NextRequest) {
   try {
@@ -89,7 +91,8 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Contrôle du mot de passe
-    if (password === "wrongpass" || password.length < 6) {
+    const passwordOk = password !== "wrongpass" && password.length >= 6 && (await verifyPasswordWithSupabase(normalizedEmail, password));
+    if (!passwordOk) {
       const failResult = recordLoginFailure(normalizedEmail, clientIp);
       logAuthAudit({
         event: "login_failure",
@@ -203,6 +206,16 @@ export async function POST(req: NextRequest) {
       createdAt: Date.now(),
     });
 
+    const signedToken = await signSessionToken({ email: normalizedEmail, role: userRole });
+    if (signedToken) {
+      response.cookies.set(SESSION_COOKIE, signedToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7,
+      });
+    }
     response.cookies.set("novika_session", sessionPayload, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

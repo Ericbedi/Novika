@@ -6,6 +6,12 @@ import { getShopProducts, saveShopProductsList } from "@/lib/products-store";
 import { POST as loginPostHandler } from "@/app/api/auth/login/route";
 import { NextRequest } from "next/server";
 
+// Le test ne doit pas appeler Supabase : on simule la vérification du mot de passe
+vi.mock("@/server/auth/password-verify", () => ({
+  verifyPasswordWithSupabase: async (_email: string, password: string) => password !== "wrongpass" && password.length >= 6,
+}));
+
+
 describe("Prompt 18 & 2FA Email : Double Authentification & Résolution Vitrine", () => {
   const originalEnv = { ...process.env };
 

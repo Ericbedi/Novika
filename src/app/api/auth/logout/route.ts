@@ -74,6 +74,7 @@ export async function POST(req: NextRequest) {
     const cookieStore = await cookies();
     const cookiesToRemove = [
       "novika_session",
+      "novika_auth",
       "novika_active_role",
       "novika_user_email",
       "afribuilder_session",

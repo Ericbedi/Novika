@@ -1,3 +1,4 @@
+import { SESSION_COOKIE, signSessionToken } from "@/lib/session-token";
 import { NextRequest, NextResponse } from "next/server";
 import { verify2FACode } from "@/server/auth/password-security";
 import { createServerSession } from "@/server/auth/session-manager";
@@ -94,6 +95,16 @@ export async function POST(req: NextRequest) {
       createdAt: Date.now(),
     });
 
+    const signedToken = await signSessionToken({ email: normalizedEmail, role: userRole });
+    if (signedToken) {
+      response.cookies.set(SESSION_COOKIE, signedToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7,
+      });
+    }
     response.cookies.set("novika_session", sessionPayload, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
