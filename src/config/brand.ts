@@ -8,7 +8,7 @@ export const brandConfig = {
   altText: "Logo Novika",
   slogan: "La plateforme du paiement à la livraison, pensée pour les vendeurs africains.",
   tagline: "Vendez en paiement à la livraison. Suivez chaque commande jusqu'à l'argent encaissé.",
-  description: "Boutique, commandes, closeuses, livreurs, stock et finances dans un seul outil pour vendre en paiement à la livraison en Afrique. Bêta privée.",
+  description: "Boutique, commandes, closeuses, livreurs, stock et finances dans un seul outil pour vendre en paiement à la livraison en Afrique.",
   domain: process.env.NEXT_PUBLIC_APP_DOMAIN || "novika.app",
   storefrontDomain: process.env.NEXT_PUBLIC_STORE_DOMAIN || "novika.store",
   contact: {

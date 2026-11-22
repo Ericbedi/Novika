@@ -39,6 +39,9 @@ import { CountryFlagSvg } from "@/components/app/bits";
 import { SidebarNav } from "./sidebar-nav";
 import { BetaFeedbackModal } from "@/components/app/beta-feedback-modal";
 import { BetaInfoModal } from "./beta-info-modal";
+
+// L'application n'est plus en bêta privée : entrée du menu masquée (repasser à true pour réafficher)
+const SHOW_BETA_MENU = false;
 import {
   performLogout,
   NOVIKA_AUTH_BROADCAST,
@@ -697,7 +700,8 @@ function AppShellInner({
                       <span>Mon profil</span>
                     </Link>
 
-                    {/* Bêta privée v0.9.4 accessible à tous les rôles */}
+                    {/* Entrée « Bêta privée » masquée par réglage (SHOW_BETA_MENU) : l'application n'est plus en bêta privée */}
+                    {SHOW_BETA_MENU && (
                     <button
                       type="button"
                       id="btn-user-menu-beta-info"
@@ -713,6 +717,7 @@ function AppShellInner({
                       </div>
                       <span className="h-2 w-2 rounded-full bg-[#C2410C]" title="Nouvelle version v0.9.4 disponible" />
                     </button>
+                    )}
 
                     <button
                       type="button"
