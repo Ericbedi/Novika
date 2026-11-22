@@ -36,6 +36,9 @@ import { StorefrontAntiSpyShield } from "@/components/storefront/storefront-anti
 import { HeaderCartButton } from "@/components/storefront/cart/HeaderCartButton";
 import { CartDrawer } from "@/components/storefront/cart/CartDrawer";
 
+// Raccourcis du haut de vitrine (pays, panier, WhatsApp) : masqués par défaut
+const SHOW_HEADER_QUICK_ACTIONS = false;
+
 function StorefrontPreviewBanner({ previewTokenValue }: { previewTokenValue?: string }) {
   const searchParams = useSearchParams();
   const previewToken = searchParams.get("preview_token");
@@ -224,7 +227,8 @@ export default function StorefrontLayout({
           </Link>
 
           {/* Raccourcis Droite : Pays, Panier & WhatsApp */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          {/* Masqué par réglage (SHOW_HEADER_QUICK_ACTIONS) : repasser à true pour réafficher */}
+          <div className={`${SHOW_HEADER_QUICK_ACTIONS ? "flex" : "hidden"} items-center gap-1.5 sm:gap-2.5 shrink-0`}>
             <StorefrontCountrySelector
               storeSlug={storeSlug}
               storeCurrency={store.currency || "XOF"}
