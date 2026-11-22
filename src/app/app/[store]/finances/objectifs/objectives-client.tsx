@@ -163,7 +163,15 @@ export function ObjectivesClient({ storeSlug }: ObjectivesClientProps) {
             />
           )}
 
+          {!currentGoal && (
+            <div className="rounded-2xl border border-dashed border-black/[0.15] bg-white p-8 text-center">
+              <p className="text-sm font-bold text-[#111111]">Aucun objectif défini pour le moment</p>
+              <p className="text-xs text-[#666660] mt-1">Cliquez sur « Nouvel objectif » pour fixer votre première cible de chiffre d'affaires.</p>
+            </div>
+          )}
+
           {/* Grille des paliers & primes associées */}
+          {currentGoal && (
           <div className="rounded-2xl border border-black/[0.08] bg-white p-5 shadow-xs space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-[#888880]">
               Paliers & Primes de l'objectif
@@ -202,6 +210,7 @@ export function ObjectivesClient({ storeSlug }: ObjectivesClientProps) {
               })}
             </div>
           </div>
+          )}
         </div>
       )}
 
