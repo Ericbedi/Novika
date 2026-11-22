@@ -48,12 +48,12 @@ export function FunnelClient({ storeSlug }: FunnelClientProps) {
     if (deviceFilter === "mobile") multiplier *= 0.85;
     if (deviceFilter === "desktop") multiplier *= 0.15;
 
-    const visitors = Math.round(2450 * multiplier);
-    const productView = Math.round(1860 * multiplier);
-    const clickOrder = Math.round(920 * multiplier);
-    const formStarted = Math.round(710 * multiplier);
-    const orderSent = Math.round(315 * multiplier);
-    const orderConfirmed = Math.round(142 * multiplier); // Taux final de closing COD ~45 %
+    const visitors = Math.round(0 * multiplier);
+    const productView = Math.round(0 * multiplier);
+    const clickOrder = Math.round(0 * multiplier);
+    const formStarted = Math.round(0 * multiplier);
+    const orderSent = Math.round(0 * multiplier);
+    const orderConfirmed = Math.round(0 * multiplier); // Taux final de closing COD ~45 %
 
     return [
       {
@@ -119,28 +119,28 @@ export function FunnelClient({ storeSlug }: FunnelClientProps) {
       {
         fieldName: "Téléphone (WhatsApp / Appel)",
         fieldKey: "phone",
-        dropOffPercent: 62,
+        dropOffPercent: 0,
         errorTypes: ["Numéro incomplet (< 8 chiffres)", "Indicatif absent", "Client hésitant"],
         color: "bg-rose-500",
       },
       {
         fieldName: "Ville & Quartier de livraison",
         fieldKey: "city",
-        dropOffPercent: 21,
+        dropOffPercent: 0,
         errorTypes: ["Champ laissé vide", "Ville non reconnue dans la zone"],
         color: "bg-amber-500",
       },
       {
         fieldName: "Prénom & Nom",
         fieldKey: "name",
-        dropOffPercent: 11,
+        dropOffPercent: 0,
         errorTypes: ["Un seul mot saisi", "Caractères invalides"],
         color: "bg-blue-500",
       },
       {
         fieldName: "Choix de variante / Pack",
         fieldKey: "variant",
-        dropOffPercent: 6,
+        dropOffPercent: 0,
         errorTypes: ["Taille XXL sélectionnée en rupture"],
         color: "bg-slate-400",
       },
@@ -153,38 +153,38 @@ export function FunnelClient({ storeSlug }: FunnelClientProps) {
       {
         source: "Meta Ads (Facebook / Instagram)",
         badge: "Meta Ads",
-        visitors: 1480,
-        orders: 98,
-        conversionRate: "6.6 %",
-        estimatedCpa: "5.10 $",
-        closingRate: "46 %",
+        visitors: 0,
+        orders: 0,
+        conversionRate: "0 %",
+        estimatedCpa: "0.00 $",
+        closingRate: "0 %",
       },
       {
         source: "TikTok Ads",
         badge: "TikTok",
-        visitors: 620,
-        orders: 31,
-        conversionRate: "5.0 %",
-        estimatedCpa: "4.80 $",
-        closingRate: "39 %",
+        visitors: 0,
+        orders: 0,
+        conversionRate: "0 %",
+        estimatedCpa: "0.00 $",
+        closingRate: "0 %",
       },
       {
         source: "WhatsApp & Recommandations",
         badge: "WhatsApp",
-        visitors: 240,
-        orders: 29,
-        conversionRate: "12.1 %",
+        visitors: 0,
+        orders: 0,
+        conversionRate: "0 %",
         estimatedCpa: "0.00 $",
-        closingRate: "68 %",
+        closingRate: "0 %",
       },
       {
         source: "Trafic Direct & Organique",
         badge: "Direct",
-        visitors: 110,
-        orders: 9,
-        conversionRate: "8.2 %",
+        visitors: 0,
+        orders: 0,
+        conversionRate: "0 %",
         estimatedCpa: "0.00 $",
-        closingRate: "55 %",
+        closingRate: "0 %",
       },
     ];
   }, []);
@@ -306,7 +306,7 @@ export function FunnelClient({ storeSlug }: FunnelClientProps) {
             Progression des Visiteurs dans l'Entonnoir
           </h2>
           <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-full">
-            Taux de conversion global : {((funnelData[5].count / funnelData[0].count) * 100).toFixed(1)} %
+            Taux de conversion global : {funnelData[0].count > 0 ? ((funnelData[5].count / funnelData[0].count) * 100).toFixed(1) : "0.0"} %
           </span>
         </div>
 
@@ -367,7 +367,7 @@ export function FunnelClient({ storeSlug }: FunnelClientProps) {
               Constat factuel d'optimisation :
             </p>
             <p className="text-[#666660] leading-relaxed">
-              <strong>62 % des visiteurs mobiles quittent au champ téléphone.</strong> Les erreurs récurrentes concernent les numéros incomplets (moins de 8 chiffres). Le sélecteur compact avec indicatif pays par défaut (+228 / +225) permet de réduire significativement cet abandon sans ralentir la saisie.
+              {funnelData[0].count > 0 ? "Des constats d'optimisation apparaîtront ici à partir de vos données réelles de parcours." : "Aucune donnée pour le moment : l'entonnoir se remplira dès que des visiteurs réels passeront par votre vitrine."}
             </p>
           </div>
         </div>
