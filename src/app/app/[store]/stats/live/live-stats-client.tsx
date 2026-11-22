@@ -59,70 +59,23 @@ export function LiveStatsClient({ storeSlug }: { storeSlug: string }) {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Données de télémétrie en direct
-  const [activeVisitors, setActiveVisitors] = useState(14);
-  const [todayOrders, setTodayOrders] = useState(18);
-  const [todaySales, setTodaySales] = useState(435000);
-  const [recentPulses, setRecentPulses] = useState<OrderPulse[]>([
-    {
-      id: "ord_1",
-      country: "Togo",
-      flag: "🇹🇬",
-      amount: 24500,
-      currency: "FCFA",
-      time: "Il y a 35s",
-      lat: 6.1375,
-      lng: 1.2123,
-    },
-    {
-      id: "ord_2",
-      country: "Côte d'Ivoire",
-      flag: "🇨🇮",
-      amount: 38000,
-      currency: "FCFA",
-      time: "Il y a 2 min",
-      lat: 5.36,
-      lng: -4.0083,
-    },
-    {
-      id: "ord_3",
-      country: "Sénégal",
-      flag: "🇸🇳",
-      amount: 19500,
-      currency: "FCFA",
-      time: "Il y a 5 min",
-      lat: 14.6928,
-      lng: -17.4467,
-    },
-    {
-      id: "ord_4",
-      country: "Bénin",
-      flag: "🇧🇯",
-      amount: 14000,
-      currency: "FCFA",
-      time: "Il y a 9 min",
-      lat: 6.3654,
-      lng: 2.4183,
-    },
-  ]);
+  const [activeVisitors, setActiveVisitors] = useState(0);
+  const [todayOrders, setTodayOrders] = useState(0);
+  const [todaySales, setTodaySales] = useState(0);
+  const [recentPulses, setRecentPulses] = useState<OrderPulse[]>([]);
 
-  const [countries, setCountries] = useState<CountryVisitor[]>([
-    { code: "TG", name: "Togo", flag: "🇹🇬", visitors: 6, percent: 43, lat: 6.1375, lng: 1.2123, ordersCount: 8 },
-    { code: "CI", name: "Côte d'Ivoire", flag: "🇨🇮", visitors: 4, percent: 29, lat: 5.36, lng: -4.0083, ordersCount: 6 },
-    { code: "SN", name: "Sénégal", flag: "🇸🇳", visitors: 2, percent: 14, lat: 14.6928, lng: -17.4467, ordersCount: 2 },
-    { code: "BJ", name: "Bénin", flag: "🇧🇯", visitors: 1, percent: 7, lat: 6.3654, lng: 2.4183, ordersCount: 1 },
-    { code: "CM", name: "Cameroun", flag: "🇨🇲", visitors: 1, percent: 7, lat: 4.0511, lng: 9.7679, ordersCount: 1 },
-  ]);
+  const [countries, setCountries] = useState<CountryVisitor[]>([]);
 
   const [pageViews, setPageViews] = useState({
-    home: 42,
-    catalog: 28,
-    product: 20,
-    checkout: 10,
+    home: 0,
+    catalog: 0,
+    product: 0,
+    checkout: 0,
   });
 
   const [newVsReturning, setNewVsReturning] = useState({
-    newVisitorsPercent: 72,
-    returningPercent: 28,
+    newVisitorsPercent: 0,
+    returningPercent: 0,
   });
 
   // Gestion du Globe WebGL cobe

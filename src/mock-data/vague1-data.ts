@@ -225,19 +225,19 @@ export const MOCK_BILLING_PLANS: PlanBillingTier[] = [
 
 // Métriques d'usage réelles pour la boutique active (lome-glow)
 export const MOCK_STORE_USAGE: StoreUsageMetrics = {
-  storeId: "store_lome_01",
+  storeId: "",
   billingPeriodStart: "2026-11-01T00:00:00Z",
   billingPeriodEnd: "2026-11-30T23:59:59Z",
   planId: "usage",
-  deliveredOrdersCount: 18,
-  receivedOrdersCount: 35, // 35 reçues, mais SEULES 18 livrées sont comptabilisées !
-  deliveredOrdersBillable: 0, // 18 <= 20 offertes -> 0 FCFA facturé pour le moment !
-  freeOrdersRemaining: 2, // 20 - 18 = 2
-  aiCreditsUsed: 24,
+  deliveredOrdersCount: 0,
+  receivedOrdersCount: 0,
+  deliveredOrdersBillable: 0,
+  freeOrdersRemaining: 20,
+  aiCreditsUsed: 0,
   aiCreditsLimit: 50,
   storesCount: 1,
   storesLimit: 1,
-  membersCount: 3,
+  membersCount: 1,
   membersLimit: 3,
   currentCycleInvoiceAmount: 0,
   isOverQuota: false,
