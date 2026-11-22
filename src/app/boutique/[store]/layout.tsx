@@ -139,8 +139,8 @@ export default function StorefrontLayout({
     <div
       className="min-h-screen flex flex-col font-sans text-[#111111] antialiased selection:bg-emerald-100 overflow-x-clip"
       style={{
-        backgroundColor: storefront.activeTheme.colors.background,
-        fontFamily: storefront.activeTheme.typography.fontFamily,
+        backgroundColor: storefront.activeTheme?.colors?.background || "#FFFFFF",
+        fontFamily: storefront.activeTheme?.typography?.fontFamily || "Poppins",
       }}
     >
       {/* Réglage d'indexation « Visible sur Google » (Prompt 21-b) : noindex par défaut */}
@@ -166,8 +166,8 @@ export default function StorefrontLayout({
         items={bannerItems}
         storeSlug={storeSlug}
         isDismissible={true}
-        themePrimary={storefront.activeTheme.colors.primary}
-        themeContrastText={storefront.activeTheme.colors.buttonText || "#FAF8F5"}
+        themePrimary={storefront.activeTheme?.colors?.primary || "#111111"}
+        themeContrastText={storefront.activeTheme?.colors?.buttonText || "#FAF8F5"}
       />
 
       {/* EN-TÊTE DE LA VITRINE (MODÈLE KAELIS) */}

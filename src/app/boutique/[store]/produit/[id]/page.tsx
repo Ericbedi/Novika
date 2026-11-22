@@ -1,27 +1,25 @@
-"use client";
-
-import { use, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import ProductCanonicalDetailPage from "../../produits/[id]/page";
+import { permanentRedirect } from "next/navigation";
 
 /**
  * Route historique singulière (/boutique/[store]/produit/[id]).
- * Redirige en 301 / replace vers la route canonique plurielle (/boutique/[store]/produits/[id])
- * tout en assurant un rendu transparent sans interruption.
+ * Redirige définitivement (301/308) vers la route canonique plurielle
+ * (/boutique/[store]/produits/[id]) en conservant les paramètres (utm_*, fbclid…).
+ * Composant serveur : aucun import de module serveur dans un composant client.
  */
-export default function LegacySingularProductPage({
+export default async function LegacySingularProductPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ store: string; id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { store, id } = use(params);
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  useEffect(() => {
-    const qs = searchParams?.toString() ? `?${searchParams.toString()}` : "";
-    router.replace(`/boutique/${store}/produits/${id}${qs}`);
-  }, [store, id, router, searchParams]);
-
-  return <ProductCanonicalDetailPage params={params} />;
+  const { store, id } = await params;
+  const sp = await searchParams;
+  const qs = new URLSearchParams();
+  for (const [key, value] of Object.entries(sp || {})) {
+    if (Array.isArray(value)) value.forEach((v) => qs.append(key, v));
+    else if (value !== undefined) qs.set(key, value);
+  }
+  const query = qs.toString() ? `?${qs.toString()}` : "";
+  permanentRedirect(`/boutique/${encodeURIComponent(store)}/produits/${encodeURIComponent(id)}${query}`);
 }

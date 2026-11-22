@@ -1,6 +1,10 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AppShell } from "@/components/layout/app-shell";
+
+// Page dépendante de la session (cookies) : jamais pré-rendue au build.
+export const dynamic = "force-dynamic";
 
 export default async function AppIndexPage() {
   try {
@@ -19,5 +23,9 @@ export default async function AppIndexPage() {
   }
 
   // Si aucune boutique n'existe en base : AppShell affiche proprement l'état zéro
-  return <AppShell initialStoreSlug="">{null}</AppShell>;
+  return (
+    <Suspense fallback={null}>
+      <AppShell initialStoreSlug="">{null}</AppShell>
+    </Suspense>
+  );
 }

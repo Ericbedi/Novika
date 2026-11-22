@@ -91,9 +91,20 @@ export function resolveStorefrontData(storeSlug: string): ResolvedStorefront {
       try {
         const parsed = JSON.parse(savedStorefront);
         if (parsed && typeof parsed === "object") {
+          const base = createEmptyStorefront(storeSlug, store.name);
+          const parsedTheme =
+            parsed.activeTheme && typeof parsed.activeTheme === "object" ? parsed.activeTheme : {};
           storefront = {
-            ...createEmptyStorefront(storeSlug, store.name),
+            ...base,
             ...parsed,
+            // Thème toujours complet : un thème enregistré partiel ou ancien ne doit jamais faire planter la vitrine
+            activeTheme: {
+              ...base.activeTheme,
+              ...parsedTheme,
+              colors: { ...base.activeTheme.colors, ...(parsedTheme.colors || {}) },
+              typography: { ...base.activeTheme.typography, ...(parsedTheme.typography || {}) },
+              styles: { ...base.activeTheme.styles, ...(parsedTheme.styles || {}) },
+            },
           };
         }
       } catch (err) {
