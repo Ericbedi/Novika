@@ -31,6 +31,7 @@ import {
 import { ProductImage } from "@/components/ui/ProductImage";
 import { formatFcfa } from "@/lib/money";
 import { verifyPreviewToken } from "@/lib/storefront-urls";
+import { getShopProductsRaw, saveShopProductsList } from "@/lib/products-store";
 
 export interface ProductDetailClientProps {
   storeSlug: string;
@@ -52,6 +53,8 @@ export function ProductCanonicalDetailPageClient({
 }: ProductDetailClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [publishState, setPublishState] = useState<"idle" | "loading" | "error">("idle");
+  const [publishMessage, setPublishMessage] = useState("");
 
   const urlTemplate = searchParams?.get("template") as any;
   const token = searchParams?.get("token");
@@ -481,6 +484,7 @@ export function ProductCanonicalDetailPageClient({
     <>
       {/* Bandeau d'aperçu administrateur si produit non publié ou mode preview */}
       {isPreview && (
+        <>
         <div
           data-testid="admin-preview-banner"
           className="sticky top-0 z-50 bg-amber-500 text-black px-4 py-2.5 text-xs font-bold shadow-md flex items-center justify-between"
@@ -491,13 +495,59 @@ export function ProductCanonicalDetailPageClient({
               Aperçu : ce produit n'est pas encore publié sur la vitrine officielle.
             </span>
           </div>
-          <Link
-            href={`/app/${storeSlug}/produits/${product.id}/modifier`}
-            className="px-2.5 py-1 rounded-lg bg-black text-white hover:bg-neutral-800 text-[11px] font-bold transition-colors"
-          >
-            Modifier le produit &rarr;
-          </Link>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              data-testid="btn-publish-now"
+              disabled={publishState === "loading"}
+              onClick={async () => {
+                setPublishState("loading");
+                setPublishMessage("");
+                try {
+                  const live = {
+                    ...product,
+                    status: "active",
+                    productStatus: "active",
+                    hiddenFromCatalog: false,
+                    published_to_storefront: true,
+                  } as unknown as Product;
+                  const res = await fetch("/api/products/sync", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ storeSlug, products: [live] }),
+                  });
+                  const data = await res.json().catch(() => ({}));
+                  if (!res.ok || !data.success || data.report?.error_count > 0) {
+                    setPublishState("error");
+                    setPublishMessage(data.error || "Publication impossible. Reconnectez-vous puis réessayez.");
+                    return;
+                  }
+                  const list = getShopProductsRaw(storeSlug).map((p) =>
+                    p.id === product.id ? ({ ...p, ...live } as Product) : p
+                  );
+                  saveShopProductsList(storeSlug, list);
+                  window.location.href = `/boutique/${storeSlug}/produits/${product.slug || product.id}`;
+                } catch {
+                  setPublishState("error");
+                  setPublishMessage("Connexion impossible, réessayez.");
+                }
+              }}
+              className="px-2.5 py-1 rounded-lg bg-emerald-700 text-white hover:bg-emerald-800 disabled:opacity-60 text-[11px] font-bold transition-colors cursor-pointer"
+            >
+              {publishState === "loading" ? "Publication…" : "Publier maintenant"}
+            </button>
+            <Link
+              href={`/app/${storeSlug}/produits/${product.id}/modifier`}
+              className="px-2.5 py-1 rounded-lg bg-black text-white hover:bg-neutral-800 text-[11px] font-bold transition-colors"
+            >
+              Modifier le produit &rarr;
+            </Link>
+          </div>
         </div>
+        {publishState === "error" && (
+          <div className="bg-red-600 text-white px-4 py-1.5 text-xs font-bold">{publishMessage}</div>
+        )}
+        </>
       )}
 
       {/* Balise SEO noindex si en mode preview */}
