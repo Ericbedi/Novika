@@ -175,6 +175,8 @@ export function ScalingClient({ storeSlug }: ScalingClientProps) {
 
   // Liste des produits évalués pour la semaine active
   const evaluatedProducts = useMemo(() => {
+    // Aucune donnée réelle : ne rien calculer (le taux de closing 0 est invalide)
+    if (weeksHistory.length === 0) return [];
     if (currentWeekSnapshot.productsSummary && currentWeekSnapshot.productsSummary.length > 0) {
       return currentWeekSnapshot.productsSummary.map((ps) => {
         const baseInput: ScalingProductInput = {
@@ -231,7 +233,7 @@ export function ScalingClient({ storeSlug }: ScalingClientProps) {
         metrics,
       };
     });
-  }, [currentWeekSnapshot, dollarRate]);
+  }, [currentWeekSnapshot, dollarRate, weeksHistory.length]);
 
   // Alerte sonore si un produit est au statut "Couper"
   useEffect(() => {
