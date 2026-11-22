@@ -307,6 +307,45 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
     }
   };
 
+  // Publie tous les brouillons sur la vitrine (après confirmation explicite)
+  const handlePublishAllDrafts = async () => {
+    const all = getShopProductsRaw(storeSlug);
+    const drafts = all.filter((p) => p && !p.deletedAt && p.productStatus === "draft");
+    if (drafts.length === 0) {
+      showToast("Aucun brouillon à publier.");
+      return;
+    }
+    const titles = drafts.slice(0, 8).map((p) => `• ${p.title || p.name || p.id}`).join("\n");
+    if (!confirm(`Publier ${drafts.length} brouillon(s) sur la vitrine ?\n\n${titles}${drafts.length > 8 ? "\n…" : ""}`)) return;
+    try {
+      setIsSyncing(true);
+      const draftIds = new Set(drafts.map((p) => p.id));
+      const updated = all.map((p) =>
+        draftIds.has(p.id)
+          ? ({ ...p, status: "active", productStatus: "active", hiddenFromCatalog: false, published_to_storefront: true } as Product)
+          : p
+      );
+      const toSend = updated.filter((p) => draftIds.has(p.id));
+      const res = await fetch("/api/products/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ storeSlug, products: toSend, role: activeRole }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        showToast(data.error || "Publication impossible. Reconnectez-vous puis réessayez.");
+        return;
+      }
+      saveShopProductsList(storeSlug, updated);
+      setProducts(getShopProductsRaw(storeSlug));
+      showToast(`${data.report?.synced_count ?? toSend.length} produit(s) publié(s) sur la vitrine !`);
+    } catch {
+      showToast("Échec de connexion lors de la publication.");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   // Calcul dynamique des 3 indicateurs
   const indicators: ProductDashboardIndicators = useMemo(() => {
     return calculateProductIndicators(products, orders, indicatorPeriod);
@@ -924,6 +963,19 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
               >
                 <RefreshCw className={cn("w-3.5 h-3.5 text-emerald-700", isSyncing && "animate-spin")} />
                 <span>{isSyncing ? "Synchronisation..." : "Synchroniser vers la base"}</span>
+              </button>
+            )}
+
+            {/* Bouton : Publier tous les brouillons sur la vitrine */}
+            {canImport && (
+              <button
+                type="button"
+                data-testid="btn-publish-all-drafts"
+                onClick={handlePublishAllDrafts}
+                disabled={isSyncing}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#C2410C] bg-[#FFF7ED] text-xs font-semibold text-[#9A3412] hover:bg-[#FFEDD5] transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
+              >
+                <span>Tout publier</span>
               </button>
             )}
 

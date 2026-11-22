@@ -68,7 +68,7 @@ export const ALLOWED_TAGS = [
  */
 export const ALLOWED_ATTRIBUTES: Record<string, string[]> = {
   a: ["href", "title", "target", "rel"],
-  img: ["src", "alt", "title", "width", "height", "loading"],
+  img: ["src", "alt", "title", "width", "height", "loading", "data-ratio", "data-pos", "data-size"],
   td: ["colspan", "rowspan"],
   th: ["colspan", "rowspan"],
   div: ["data-align"],
@@ -332,6 +332,10 @@ export function sanitizeProductDescription(
         };
         if (attribs.width) imgAttribs.width = attribs.width;
         if (attribs.height) imgAttribs.height = attribs.height;
+        // Rognage non destructif : cadrage, position et taille (valeurs strictement validées)
+        if (attribs["data-ratio"] && /^(1-1|4-3|3-4|16-9)$/.test(attribs["data-ratio"])) imgAttribs["data-ratio"] = attribs["data-ratio"];
+        if (attribs["data-pos"] && /^(top|bottom)$/.test(attribs["data-pos"])) imgAttribs["data-pos"] = attribs["data-pos"];
+        if (attribs["data-size"] && /^(small|medium)$/.test(attribs["data-size"])) imgAttribs["data-size"] = attribs["data-size"];
 
         return {
           tagName: "img",

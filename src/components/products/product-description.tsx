@@ -62,6 +62,11 @@ export function ProductDescription({
         "[&_[data-align=center]]:text-center [&_[data-align=center]]:mx-auto",
         // Images centrées, largeur max 100 %, coins arrondis
         "[&_img]:max-w-full [&_img]:h-auto [&_img]:mx-auto [&_img]:block [&_img]:rounded-2xl [&_img]:my-5 [&_img]:shadow-xs",
+        // Rognage non destructif des images (data-ratio / data-pos / data-size) — identique sur mobile et ordinateur
+        "[&_img[data-ratio]]:w-full [&_img[data-ratio]]:object-cover",
+        "[&_img[data-ratio='1-1']]:aspect-square [&_img[data-ratio='4-3']]:aspect-[4/3] [&_img[data-ratio='3-4']]:aspect-[3/4] [&_img[data-ratio='16-9']]:aspect-video",
+        "[&_img[data-pos='top']]:object-top [&_img[data-pos='bottom']]:object-bottom",
+        "[&_img[data-size='small']]:max-w-[260px] [&_img[data-size='medium']]:max-w-[420px]",
         // Liens sécurisés
         "[&_a]:text-blue-600 hover:[&_a]:text-blue-700 [&_a]:underline [&_a]:underline-offset-2 [&_a]:font-medium [&_a]:transition-colors",
         // Tableaux responsives avec défilement horizontal automatique sur mobile

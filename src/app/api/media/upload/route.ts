@@ -6,9 +6,16 @@ import {
   MAX_GIF_FILE_SIZE_BYTES,
   StoredMediaItem,
 } from "@/lib/media-storage";
+import { createClient } from "@supabase/supabase-js";
+import { getSupabaseEnv } from "@/lib/supabase/env";
+import { isSessionSigningEnabled } from "@/lib/session-token";
+import { getAuthFromRequest } from "@/server/auth/request-auth";
 
 export async function POST(req: NextRequest) {
   try {
+    if (isSessionSigningEnabled() && !(await getAuthFromRequest(req))) {
+      return NextResponse.json({ error: "Connexion requise." }, { status: 401 });
+    }
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const storeSlug = (formData.get("storeSlug") as string) || "lome-glow";
@@ -54,7 +61,19 @@ export async function POST(req: NextRequest) {
     const mediaId = `med_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     const extension = isGif ? "gif" : magicCheck.mimeType === "image/png" ? "png" : magicCheck.mimeType === "image/jpeg" ? "jpg" : "webp";
     const fileName = `${mediaId}.${extension}`;
-    const storageUrl = `/storage/shops/${storeSlug}/media/${fileName}`;
+    const safeSlug = storeSlug.replace(/[^a-z0-9-]/gi, "").slice(0, 60) || "boutique";
+
+    // Stockage réel (Supabase Storage, bucket public) : l'URL doit fonctionner sur tous les appareils
+    const { url: sbUrl, anonKey } = getSupabaseEnv();
+    const sb = createClient(sbUrl, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
+    const objectPath = `${safeSlug}/${fileName}`;
+    const { error: uploadError } = await sb.storage
+      .from("product-media")
+      .upload(objectPath, buffer, { contentType: magicCheck.mimeType, upsert: false, cacheControl: "31536000" });
+    if (uploadError) {
+      return NextResponse.json({ error: "Échec de l'enregistrement de l'image. Réessayez." }, { status: 502 });
+    }
+    const storageUrl = sb.storage.from("product-media").getPublicUrl(objectPath).data.publicUrl;
 
     const mediaItem: StoredMediaItem = {
       id: mediaId,

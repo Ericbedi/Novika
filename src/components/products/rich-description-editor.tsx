@@ -59,6 +59,8 @@ export function RichDescriptionEditor({
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
+  const [selectedImg, setSelectedImg] = useState<HTMLImageElement | null>(null);
+  const [, setImgTick] = useState(0);
   const isInternalUpdateRef = useRef(false);
 
   // Synchronisation du contenu dans l'éditeur visuel UNIQUEMENT lors des changements externes (Prompt 17-J)
@@ -75,9 +77,58 @@ export function RichDescriptionEditor({
     }
   }, [value, mode]);
 
+
+  // Rognage non destructif d'une image (cadrage, position, taille) — enregistré en attributs sûrs
+  const RATIO_STYLE: Record<string, string> = { "1-1": "1 / 1", "4-3": "4 / 3", "3-4": "3 / 4", "16-9": "16 / 9" };
+  const applyImgProps = (changes: { ratio?: string | null; pos?: string | null; size?: string | null }) => {
+    const img = selectedImg;
+    if (!img) return;
+    const setOrClear = (attr: string, v: string | null | undefined) => {
+      if (v === undefined) return;
+      if (v === null) img.removeAttribute(attr);
+      else img.setAttribute(attr, v);
+    };
+    setOrClear("data-ratio", changes.ratio);
+    setOrClear("data-pos", changes.pos);
+    setOrClear("data-size", changes.size);
+    // Aperçu dans l'éditeur (le style est retiré à l'affichage public, les attributs restent)
+    const ratio = img.getAttribute("data-ratio");
+    const pos = img.getAttribute("data-pos");
+    const size = img.getAttribute("data-size");
+    img.style.aspectRatio = ratio ? RATIO_STYLE[ratio] : "";
+    img.style.width = ratio ? "100%" : "";
+    img.style.objectFit = ratio ? "cover" : "";
+    img.style.objectPosition = pos === "top" ? "top" : pos === "bottom" ? "bottom" : "center";
+    img.style.maxWidth = size === "small" ? "260px" : size === "medium" ? "420px" : "100%";
+    img.style.height = "auto";
+    handleInput();
+    setImgTick((n) => n + 1);
+  };
+
+  const removeSelectedImage = () => {
+    if (!selectedImg) return;
+    const figure = selectedImg.closest("figure");
+    (figure || selectedImg).remove();
+    setSelectedImg(null);
+    handleInput();
+  };
+
+  const handleEditorClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (selectedImg) selectedImg.style.outline = "";
+    if (target.tagName === "IMG") {
+      const img = target as HTMLImageElement;
+      img.style.outline = "3px solid #C2410C";
+      img.style.outlineOffset = "2px";
+      setSelectedImg(img);
+    } else {
+      setSelectedImg(null);
+    }
+  };
+
   const handleInput = () => {
     if (editorRef.current) {
-      const html = editorRef.current.innerHTML;
+      const html = editorRef.current.innerHTML.replace(/outline:\s*[^;"]*;?\s*outline-offset:\s*[^;"]*;?/g, "");
       isInternalUpdateRef.current = true;
       // Nettoyage HTML : UNIQUEMENT à l'enregistrement et à l'affichage, JAMAIS à chaque frappe ! (Prompt 17-J)
       onChange(html);
@@ -660,12 +711,101 @@ export function RichDescriptionEditor({
         </div>
       </div>
 
+      {mode === "visual" && selectedImg && (
+        <div
+          data-testid="image-crop-panel"
+          className="flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2 border-b border-[#E6E0D4] bg-[#FFF7ED] text-[11px] font-bold text-[#111111]"
+        >
+          <span className="text-[#C2410C]">Image sélectionnée</span>
+          <div className="flex items-center gap-1">
+            <span className="text-stone-500 font-semibold">Rogner :</span>
+            {[
+              ["Original", null],
+              ["Carré", "1-1"],
+              ["4:3", "4-3"],
+              ["3:4", "3-4"],
+              ["16:9", "16-9"],
+            ].map(([label, val]) => (
+              <button
+                key={label as string}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => applyImgProps({ ratio: val as string | null })}
+                className={cn(
+                  "px-2 py-1 rounded-lg border cursor-pointer",
+                  (selectedImg.getAttribute("data-ratio") || null) === val
+                    ? "bg-black text-white border-black"
+                    : "bg-white border-[#E6E0D4] hover:bg-stone-50"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-stone-500 font-semibold">Cadrage :</span>
+            {[
+              ["Haut", "top"],
+              ["Centre", null],
+              ["Bas", "bottom"],
+            ].map(([label, val]) => (
+              <button
+                key={label as string}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => applyImgProps({ pos: val as string | null })}
+                className={cn(
+                  "px-2 py-1 rounded-lg border cursor-pointer",
+                  (selectedImg.getAttribute("data-pos") || null) === val
+                    ? "bg-black text-white border-black"
+                    : "bg-white border-[#E6E0D4] hover:bg-stone-50"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-stone-500 font-semibold">Taille :</span>
+            {[
+              ["Petite", "small"],
+              ["Moyenne", "medium"],
+              ["Pleine", null],
+            ].map(([label, val]) => (
+              <button
+                key={label as string}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => applyImgProps({ size: val as string | null })}
+                className={cn(
+                  "px-2 py-1 rounded-lg border cursor-pointer",
+                  (selectedImg.getAttribute("data-size") || null) === val
+                    ? "bg-black text-white border-black"
+                    : "bg-white border-[#E6E0D4] hover:bg-stone-50"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={removeSelectedImage}
+            className="ml-auto px-2 py-1 rounded-lg border border-red-200 text-red-700 bg-white hover:bg-red-50 cursor-pointer"
+          >
+            Supprimer l&apos;image
+          </button>
+        </div>
+      )}
+
       {/* Zone de contenu selon le mode */}
       {mode === "visual" && (
         <div
           ref={editorRef}
           contentEditable
           onInput={handleInput}
+          onClick={handleEditorClick}
           onBlur={handleInput}
           onKeyDown={handleKeyDown}
           onPaste={handleEditorPaste}
