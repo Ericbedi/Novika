@@ -398,12 +398,12 @@ export const getNavigationConfig = (basePath: string, role: UserRole = "owner"):
   };
 };
 
-// Cache simulation des compteurs légers
+// Compteurs du menu : 0 tant qu'aucune donnée réelle n'est branchée (la pastille est alors masquée)
 export const MOCK_NAV_COUNTS: Record<BadgeKey, number> = {
-  orders: 42,
-  followups: 14,
-  deliveries: 18,
-  abandoned: 7,
-  remittances: 2,
-  receipts: 2,
+  orders: 0,
+  followups: 0,
+  deliveries: 0,
+  abandoned: 0,
+  remittances: 0,
+  receipts: 0,
 };

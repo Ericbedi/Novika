@@ -480,8 +480,6 @@ function AppShellInner({
           className="fixed top-3 left-3 z-40 md:hidden h-11 w-11 rounded-full bg-white/95 hover:bg-white text-[#111111] border border-black/[0.1] shadow-md flex items-center justify-center backdrop-blur-md cursor-pointer transition-transform active:scale-95"
         >
           <Menu className="h-5 w-5" />
-          {/* Point #C2410C indicateur de notification / action en attente */}
-          <span className="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-[#C2410C] ring-2 ring-white" />
         </button>
 
         {/* ======================================================== */}
@@ -539,7 +537,7 @@ function AppShellInner({
                 setIsNotificationsOpen((prev) => !prev);
               }}
               isNotificationsOpen={isNotificationsOpen}
-              unreadNotificationsCount={3}
+              unreadNotificationsCount={0}
             />
           </div>
 
@@ -894,7 +892,7 @@ function AppShellInner({
                     setIsNotificationsOpen((prev) => !prev);
                   }}
                   isNotificationsOpen={isNotificationsOpen}
-                  unreadNotificationsCount={3}
+                  unreadNotificationsCount={0}
                 />
               </div>
 

@@ -45,7 +45,7 @@ export function SidebarNav({
   onOpenSearch,
   onToggleNotifications,
   isNotificationsOpen = false,
-  unreadNotificationsCount = 3,
+  unreadNotificationsCount = 0,
 }: SidebarNavProps) {
   const pathname = usePathname();
   const config = getNavigationConfig(basePath, activeRole);
