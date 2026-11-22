@@ -1,5 +1,6 @@
 import React, { Suspense } from "react";
 import { AppShell } from "@/components/layout/app-shell";
+import { ProductsRemoteSync } from "@/components/products/products-remote-sync";
 import { MOCK_STORES } from "@/mock-data/stores";
 
 export function generateStaticParams() {
@@ -17,7 +18,10 @@ export default async function StoreLayout({
 
   return (
     <Suspense fallback={<div className="p-8 text-center text-sm text-slate-500">Chargement de la boutique...</div>}>
-      <AppShell initialStoreSlug={store}>{children}</AppShell>
+      <AppShell initialStoreSlug={store}>
+        <ProductsRemoteSync storeSlug={store} />
+        {children}
+      </AppShell>
     </Suspense>
   );
 }

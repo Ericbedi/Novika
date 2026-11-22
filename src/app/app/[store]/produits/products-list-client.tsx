@@ -273,6 +273,13 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
+  // Rafraîchit la liste quand le catalogue partagé (autre appareil) a été fusionné
+  useEffect(() => {
+    const refresh = () => setProducts(getShopProductsRaw(storeSlug));
+    window.addEventListener("novika:products-synced", refresh);
+    return () => window.removeEventListener("novika:products-synced", refresh);
+  }, [storeSlug]);
+
   const handleSyncToSupabase = async () => {
     try {
       setIsSyncing(true);

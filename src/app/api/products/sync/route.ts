@@ -84,6 +84,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: data.error || "Publication refusée.", code: "DB_REFUSED" }, { status: 403 });
     }
 
+    // Répercute aussi les modifications (prix, titre, description, statut, images) sur les produits déjà publiés
+    try {
+      await (supabase as any).rpc("sync_products_update_server", {
+        p_secret: secret,
+        p_shop_slug: storeSlug,
+        p_products: products,
+      });
+    } catch {
+      /* mise à jour best-effort */
+    }
+
     return NextResponse.json({
       success: true,
       report: { ...(data || {}), skipped_local_images: skippedLocalImages },

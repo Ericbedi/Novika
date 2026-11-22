@@ -254,13 +254,43 @@ export function getShopProductsRaw(shopSlug: string): Product[] {
 /**
  * Sauvegarde la liste complète des produits d'une boutique.
  */
-export function saveShopProductsList(shopSlug: string, products: Product[]): void {
-  memoryStoreProducts.set(shopSlug, products);
+export function saveShopProductsList(
+  shopSlug: string,
+  products: Product[],
+  opts?: { fromRemote?: boolean }
+): void {
+  let toStore = products;
+  let previous: Product[] = [];
+  if (typeof window !== "undefined" && !opts?.fromRemote) {
+    try {
+      const raw = localStorage.getItem(getShopStorageKey(shopSlug));
+      previous = raw ? (JSON.parse(raw) as Product[]) : [];
+    } catch {
+      previous = [];
+    }
+    if (!Array.isArray(previous)) previous = [];
+    // Horodatage des produits modifiés (le plus récent gagne entre appareils)
+    const prevJson = new Map(previous.map((p) => [p.id, JSON.stringify(p)]));
+    const now = new Date().toISOString();
+    toStore = products.map((p) => (prevJson.get(p.id) === JSON.stringify(p) ? p : { ...p, updatedAt: now }));
+  }
+  memoryStoreProducts.set(shopSlug, toStore);
   if (typeof window !== "undefined") {
     try {
-      localStorage.setItem(getShopStorageKey(shopSlug), JSON.stringify(products));
+      localStorage.setItem(getShopStorageKey(shopSlug), JSON.stringify(toStore));
     } catch (e) {
       console.error("Erreur de sauvegarde de la liste de produits:", e);
+    }
+    if (!opts?.fromRemote) {
+      const prevMap = new Map(previous.map((p) => [p.id, JSON.stringify(p)]));
+      const changed = toStore.filter((p) => prevMap.get(p.id) !== JSON.stringify(p));
+      const newIds = new Set(toStore.map((p) => p.id));
+      const removed = previous
+        .filter((p) => !newIds.has(p.id))
+        .map((p) => ({ id: p.id, __deleted: true, updatedAt: new Date().toISOString() }));
+      if (changed.length || removed.length) {
+        void import("@/lib/products-remote-sync").then((m) => m.queueRemoteProducts(shopSlug, [...changed, ...removed]));
+      }
     }
   }
 }
