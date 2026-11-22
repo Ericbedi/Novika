@@ -90,7 +90,7 @@ export function CsvImportModal({
 
   // Options du mode manuel (rétrocompatibilité)
   const [importMode, setImportMode] = useState<ImportMode>("create_and_update");
-  const [newProductsStatus, setNewProductsStatus] = useState<"draft" | "active">("draft");
+  const [newProductsStatus, setNewProductsStatus] = useState<"draft" | "active">("active");
   const [stockMode, setStockMode] = useState<ImportStockMode>("set");
   const [columnMappings, setColumnMappings] = useState<Record<string, string>>({});
   const [rawHeaders, setRawHeaders] = useState<string[]>([]);

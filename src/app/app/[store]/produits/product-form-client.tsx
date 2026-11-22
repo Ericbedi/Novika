@@ -628,7 +628,8 @@ export function ProductFormClient({
   // ========================================================
   const [productStatus, setProductStatus] = useState<ProductStatus | "scheduled">(
     (initialProduct?.productStatus as any) ||
-    (initialProduct?.stock && initialProduct.stock > 0 ? "active" : "draft")
+    // Un nouveau produit est publié automatiquement sur la vitrine (brouillon uniquement sur choix explicite)
+    "active"
   );
   const [scheduledDate, setScheduledDate] = useState("");
 
@@ -1028,6 +1029,7 @@ export function ProductFormClient({
       status: (productStatus as ProductStatus) || "active",
       productStatus: (productStatus as ProductStatus) || "active",
       hiddenFromCatalog: !publishToStorefront,
+      published_to_storefront: productStatus === "active" && publishToStorefront,
       outOfStockVisibilityOverride,
       supplierId,
       productOptions: hasVariants ? productOptions : undefined,
