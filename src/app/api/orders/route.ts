@@ -1,84 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { reserveStockForOrder } from "@/lib/stock-settings-store";
+import { getAuthFromRequest } from "@/server/auth/request-auth";
 
-// Cache mémoire serveur pour visibilité instantanée multi-onglets des commandes créées
-const MEMORY_ORDERS = new Map<string, any[]>();
+export const dynamic = "force-dynamic";
 
+/**
+ * GET : liste des commandes de la boutique (réservée aux membres connectés).
+ * POST : création d'une commande depuis la vitrine publique.
+ *   Les prix sont recalculés côté base à partir du produit publié (le client ne fixe pas le montant).
+ */
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const storeSlug = searchParams.get("store") || "lome-glow";
+    const auth = await getAuthFromRequest(req);
+    if (!auth) {
+      return NextResponse.json({ success: false, error: "Session absente ou expirée." }, { status: 401 });
+    }
+    const storeSlug = req.nextUrl.searchParams.get("store") || "";
+    const secret = process.env.PRODUCT_SYNC_SECRET;
+    if (!storeSlug || !secret) return NextResponse.json({ success: true, orders: [] });
 
     const supabase = await createClient();
-
-    // Query store id from slug
-    const { data: storeData } = await supabase
-      .from("shops")
-      .select("id")
-      .eq("slug", storeSlug)
-      .maybeSingle();
-
-    const storeId = storeData?.id;
-
-    let query = supabase
-      .from("orders")
-      .select(`
-        id,
-        order_number,
-        customer_name,
-        customer_phone,
-        city,
-        country,
-        currency,
-        delivery_address,
-        status,
-        status_reason,
-        subtotal,
-        shipping_fee,
-        total_amount,
-        created_at,
-        updated_at,
-        order_items (
-          id,
-          product_name,
-          quantity,
-          unit_price,
-          total_price,
-          image
-        )
-      `)
-      .order("created_at", { ascending: false });
-
-    if (storeId) {
-      query = query.eq("store_id", storeId);
+    if (auth.role === "owner") {
+      const { data: shop } = await supabase.from("shops").select("owner_email").eq("slug", storeSlug).maybeSingle();
+      if (shop?.owner_email && shop.owner_email.toLowerCase() !== auth.email) {
+        return NextResponse.json({ success: false, error: "Cette boutique ne vous appartient pas." }, { status: 403 });
+      }
     }
-
-    const { data: orders, error } = await query;
-
-    const memOrders = MEMORY_ORDERS.get(storeSlug) || [];
-
-    if (error) {
-      console.warn("[Orders API] Supabase query warning:", error.message);
-      return NextResponse.json({
-        success: true,
-        orders: memOrders,
-      });
+    const { data, error } = await (supabase as any).rpc("orders_list_server", { p_secret: secret, p_shop_slug: storeSlug });
+    if (error || !data?.success) {
+      return NextResponse.json({ success: false, error: "Lecture des commandes impossible." }, { status: 500 });
     }
-
-    const dbOrders = orders || [];
-    const combinedOrders = [
-      ...memOrders.filter((m) => !dbOrders.some((d: any) => d.order_number === m.order_number)),
-      ...dbOrders,
-    ];
-
-    return NextResponse.json({
-      success: true,
-      orders: combinedOrders,
-    });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Erreur interne";
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    return NextResponse.json({ success: true, orders: data.orders || [] });
+  } catch {
+    return NextResponse.json({ success: false, error: "Erreur interne" }, { status: 500 });
   }
 }
 
@@ -90,191 +45,77 @@ export async function POST(req: NextRequest) {
       customerName,
       customerPhone,
       city,
-      country,
-      currency,
       deliveryAddress,
       subtotal,
-      shippingFee = 0,
-      totalAmount,
       productId,
-      productTitle,
-      productImage,
       quantity = 1,
-      storeSlug = "lome-glow",
-      trackingToken,
+      storeSlug,
       items,
     } = body;
 
-    if (!orderNumber || !customerName || !customerPhone || !city) {
+    if (!orderNumber || !customerName || !customerPhone || !city || !storeSlug) {
       return NextResponse.json(
-        { error: "Champs obligatoires manquants (numéro, nom, téléphone, ville)." },
+        { success: false, error: "Champs obligatoires manquants (nom, téléphone, ville)." },
         { status: 400 }
       );
     }
 
-    // Vérification et réservation de stock selon la politique de la boutique (Prompt 16-b)
-    const targetProductId = productId || (Array.isArray(items) && items[0]?.productId) || null;
-    if (targetProductId) {
-      const orderQty = Number(quantity) || (Array.isArray(items) && items[0]?.quantity) || 1;
-      const stockRes = reserveStockForOrder({
-        storeSlug,
-        productId: targetProductId,
-        quantity: orderQty,
-        orderNumber,
-        isCloserConfirmation: false,
-      });
+    const targetProductId = productId || (Array.isArray(items) && items[0]?.id) || null;
+    if (!targetProductId) {
+      return NextResponse.json({ success: false, error: "Produit manquant." }, { status: 400 });
+    }
+    const orderQty = Math.min(Math.max(Number(quantity) || 1, 1), 50);
 
-      if (!stockRes.success && stockRes.orderStatus === "rejected_out_of_stock") {
-        return NextResponse.json(
-          {
-            error: stockRes.error || "Ce produit est actuellement épuisé.",
-            code: "OUT_OF_STOCK",
-          },
-          { status: 409 }
-        );
-      }
+    // Politique de stock de la boutique (si configurée)
+    const stockRes = reserveStockForOrder({
+      storeSlug,
+      productId: targetProductId,
+      quantity: orderQty,
+      orderNumber,
+      isCloserConfirmation: false,
+    });
+    if (!stockRes.success && stockRes.orderStatus === "rejected_out_of_stock") {
+      return NextResponse.json(
+        { success: false, error: stockRes.error || "Ce produit est actuellement épuisé.", code: "OUT_OF_STOCK" },
+        { status: 409 }
+      );
+    }
+
+    const secret = process.env.PRODUCT_SYNC_SECRET;
+    if (!secret) {
+      return NextResponse.json({ success: false, error: "Commande non configurée sur le serveur." }, { status: 500 });
     }
 
     const supabase = await createClient();
-
-    // Find store if possible (avec timeout rapide de 1.5s)
-    const storePromise = supabase
-      .from("shops")
-      .select("id")
-      .eq("slug", storeSlug)
-      .maybeSingle();
-
-    const storeTimeout = new Promise<{ data: null }>((resolve) =>
-      setTimeout(() => resolve({ data: null }), 1500)
-    );
-
-    const { data: store } = await Promise.race([storePromise, storeTimeout]);
-    const storeId = store?.id || null;
-
-    // Insert into orders (avec timeout rapide de 2s)
-    const insertPromise = supabase
-      .from("orders")
-      .insert({
-        order_number: orderNumber,
-        customer_name: customerName,
-        customer_phone: customerPhone,
-        city: city,
-        country: country || "TG",
-        currency: currency || "XOF",
-        delivery_address: deliveryAddress || null,
-        subtotal: Math.round(Number(subtotal) || 0),
-        shipping_fee: Math.round(Number(shippingFee) || 0),
-        total_amount: Math.round(Number(totalAmount) || 0),
-        status: "NOUVELLE",
-        store_id: storeId,
-      })
-      .select()
-      .single();
-
-    const insertTimeout = new Promise<{ data: null; error: { message: string } }>((resolve) =>
-      setTimeout(() => resolve({ data: null, error: { message: "DB timeout" } }), 2000)
-    );
-
-    const { data: insertedOrder, error: orderErr } = await Promise.race([insertPromise, insertTimeout]);
-
-    const orderRecord = {
-      id: insertedOrder?.id || `mock_order_${Date.now()}`,
-      order_number: orderNumber,
-      customer_name: customerName,
-      customer_phone: customerPhone,
-      city: city,
-      country: country || "TG",
-      currency: currency || "XOF",
-      delivery_address: deliveryAddress || null,
-      subtotal: Math.round(Number(subtotal) || 0),
-      shipping_fee: Math.round(Number(shippingFee) || 0),
-      total_amount: Math.round(Number(totalAmount) || 0),
-      status: "NOUVELLE",
-      store_id: storeId,
-      created_at: new Date().toISOString(),
-      order_items: Array.isArray(items)
-        ? items.map((it: any) => ({
-            id: it.id || `item_${Math.random()}`,
-            product_name: it.productTitle || it.name || "Article COD",
-            quantity: Number(it.quantity) || 1,
-            unit_price: Math.round(Number(it.unitPrice || it.price) || 0),
-            total_price: Math.round(Number(it.totalPrice || (it.price && it.price * it.quantity)) || 0),
-            image: it.image || null,
-          }))
-        : [],
-    };
-
-    const prev = MEMORY_ORDERS.get(storeSlug) || [];
-    MEMORY_ORDERS.set(storeSlug, [orderRecord, ...prev.filter((p) => p.order_number !== orderNumber)]);
-
-    if (orderErr) {
-      console.warn("[Orders API] Supabase order insert error (fallback mock activé):", orderErr.message);
-      return NextResponse.json({
-        success: true,
-        order: orderRecord,
-      });
-    }
-
-    // Insert order item(s)
-    if (insertedOrder) {
-      if (Array.isArray(items) && items.length > 0) {
-        const orderItemsToInsert = items.map((it: {
-          name?: string;
-          productTitle?: string;
-          variantName?: string;
-          quantity?: number;
-          unitPrice?: number;
-          image?: string;
-          productId?: string;
-        }) => ({
-          order_id: insertedOrder.id,
-          product_name: it.variantName
-            ? `${it.name || it.productTitle || "Article"} (${it.variantName})`
-            : (it.name || it.productTitle || "Article COD"),
-          quantity: Number(it.quantity) || 1,
-          unit_price: Math.round(Number(it.unitPrice) || 0),
-          total_price: Math.round((Number(it.unitPrice) || 0) * (Number(it.quantity) || 1)),
-          image: it.image || null,
-          product_id: it.productId || null,
-        }));
-        await supabase.from("order_items").insert(orderItemsToInsert);
-      } else {
-        await supabase.from("order_items").insert({
-          order_id: insertedOrder.id,
-          product_name: productTitle || "Article COD",
-          quantity: Number(quantity) || 1,
-          unit_price: Math.round(Number(subtotal) / (Number(quantity) || 1)),
-          total_price: Math.round(Number(subtotal)),
-          image: productImage || null,
-          product_id: productId || null,
-        });
-      }
-
-      // Insert tracking token if provided
-      if (trackingToken && storeId) {
-        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-        await supabase.from("tracking_tokens").insert({
-          order_id: insertedOrder.id,
-          store_id: storeId,
-          token_hash: trackingToken,
-          expires_at: expiresAt,
-        });
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
-      order: insertedOrder || orderRecord,
-    });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Erreur interne";
-    console.warn("[Orders API] Catch error (fallback mock):", message);
-    return NextResponse.json({
-      success: true,
-      order: {
-        id: `catch_mock_${Date.now()}`,
-        status: "NOUVELLE",
+    const { data, error } = await (supabase as any).rpc("create_order_server", {
+      p_secret: secret,
+      p_shop_slug: storeSlug,
+      p_order: {
+        orderNumber,
+        customerName,
+        customerPhone,
+        city,
+        deliveryAddress,
+        subtotal,
+        productId: targetProductId,
+        quantity: orderQty,
       },
     });
+
+    if (error || !data?.success) {
+      console.error("[Orders API] création refusée:", error?.message || data?.error);
+      return NextResponse.json(
+        { success: false, error: data?.error || "Votre commande n'a pas pu être enregistrée. Réessayez." },
+        { status: error ? 500 : 422 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      order: { order_number: data.order_number, total_amount: data.total_amount, status: "pending" },
+    });
+  } catch (err: unknown) {
+    console.error("[Orders API] erreur:", err instanceof Error ? err.message : err);
+    return NextResponse.json({ success: false, error: "Erreur serveur, réessayez." }, { status: 500 });
   }
 }

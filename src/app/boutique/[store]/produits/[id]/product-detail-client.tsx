@@ -480,6 +480,12 @@ export function ProductCanonicalDetailPageClient({
       }))
       : [];
 
+  const isProductLive =
+    (product.productStatus || product.status || "active") === "active" &&
+    product.published_to_storefront !== false &&
+    !product.hiddenFromCatalog &&
+    !productData.isUnpublished;
+
   return (
     <>
       {/* Bandeau d'aperçu administrateur si produit non publié ou mode preview */}
@@ -492,10 +498,13 @@ export function ProductCanonicalDetailPageClient({
           <div className="flex items-center gap-2">
             <Eye className="w-4 h-4 shrink-0" />
             <span>
-              Aperçu : ce produit n'est pas encore publié sur la vitrine officielle.
+              {isProductLive
+                ? "Aperçu administrateur : ce produit est publié, vos clients peuvent le commander."
+                : "Aperçu : ce produit n'est pas encore publié sur la vitrine officielle."}
             </span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            {!isProductLive && (
             <button
               type="button"
               data-testid="btn-publish-now"
@@ -536,6 +545,7 @@ export function ProductCanonicalDetailPageClient({
             >
               {publishState === "loading" ? "Publication…" : "Publier maintenant"}
             </button>
+            )}
             <Link
               href={`/app/${storeSlug}/produits/${product.id}/modifier`}
               className="px-2.5 py-1 rounded-lg bg-black text-white hover:bg-neutral-800 text-[11px] font-bold transition-colors"

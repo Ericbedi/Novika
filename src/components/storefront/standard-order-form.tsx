@@ -313,6 +313,37 @@ export function StandardOrderForm({
         return;
       }
 
+      // Enregistrement RÉEL de la commande dans la base : la confirmation n'est affichée que si elle est bien reçue
+      try {
+        const saveRes = await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderNumber: result.recalculatedOrder.orderNumber,
+            customerName: result.recalculatedOrder.customerName,
+            customerPhone: result.recalculatedOrder.customerPhone,
+            city: result.recalculatedOrder.city,
+            deliveryAddress: result.recalculatedOrder.address,
+            subtotal: result.recalculatedOrder.subtotal,
+            storeSlug,
+            productId: product.id,
+            quantity: activeOffer.quantity || 1,
+          }),
+        });
+        const saveData = await saveRes.json().catch(() => ({}));
+        if (!saveRes.ok || !saveData.success) {
+          setErrorMessage(
+            saveData.error || "Votre commande n'a pas pu être enregistrée. Vérifiez votre connexion et réessayez."
+          );
+          setIsSubmitting(false);
+          return;
+        }
+      } catch {
+        setErrorMessage("Votre commande n'a pas pu être enregistrée. Vérifiez votre connexion et réessayez.");
+        setIsSubmitting(false);
+        return;
+      }
+
       // Enregistrement de la commande pour affichage immédiat dans le tableau de bord
       if (typeof window !== "undefined") {
         try {
@@ -349,29 +380,7 @@ export function StandardOrderForm({
           };
           localStorage.setItem(storageKey, JSON.stringify([newOrder, ...existingOrders]));
 
-          // Envoi asynchrone non-bloquant vers /api/orders
-          fetch("/api/orders", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              orderNumber: result.recalculatedOrder.orderNumber,
-              customerName: result.recalculatedOrder.customerName,
-              customerPhone: result.recalculatedOrder.customerPhone,
-              city: result.recalculatedOrder.city,
-              country: countryCode || "TG",
-              currency: "XOF",
-              deliveryAddress: result.recalculatedOrder.address,
-              subtotal: result.recalculatedOrder.subtotal,
-              shippingFee: 0,
-              totalAmount: result.recalculatedOrder.totalAmount,
-              storeSlug,
-              trackingToken: result.recalculatedOrder.trackingToken,
-              productId: product.id,
-              productTitle: product.name,
-              quantity: activeOffer.quantity || 1,
-              items: newOrder.items,
-            }),
-          }).catch(() => {});
+          // (envoi vers la base effectué avant l'affichage de la confirmation)
         } catch (e) {
           console.warn("[Order Form] Erreur sauvegarde locale commande:", e);
         }
