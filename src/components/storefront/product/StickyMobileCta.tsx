@@ -9,6 +9,8 @@ interface StickyMobileCtaProps {
   productTitle: string;
   targetFormId?: string;
   isOutOfStock?: boolean;
+  /** Si fourni (mode pop-up), le bouton ouvre le formulaire au lieu de défiler vers la page */
+  onOrderClick?: () => void;
 }
 
 export function StickyMobileCta({
@@ -16,8 +18,13 @@ export function StickyMobileCta({
   productTitle,
   targetFormId = "cod-order-form",
   isOutOfStock = false,
+  onOrderClick,
 }: StickyMobileCtaProps) {
   const handleScrollToForm = () => {
+    if (onOrderClick) {
+      onOrderClick();
+      return;
+    }
     const el = document.getElementById(targetFormId);
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "start" });

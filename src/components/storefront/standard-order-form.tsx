@@ -50,6 +50,8 @@ interface StandardOrderFormProps {
   storeSlug: string;
   formId?: string;
   isOutOfStock?: boolean;
+  /** Mode compact (pop-up) : sans titre ni cadre, formulaire simplifié */
+  compact?: boolean;
   onOrderSuccess?: (order: OrderFormRecalculatedOrder) => void;
 }
 
@@ -64,6 +66,7 @@ export function StandardOrderForm({
   storeSlug,
   formId = "standard-cod-order-form",
   isOutOfStock,
+  compact = false,
   onOrderSuccess,
 }: StandardOrderFormProps) {
   const effectiveOutOfStock =
@@ -607,13 +610,16 @@ export function StandardOrderForm({
   return (
     <div
       id={formId}
-      className="rounded-3xl border border-black/[0.08] bg-white p-5 sm:p-7 shadow-xl space-y-6 text-[#111111]"
-      style={{
-        borderColor: themePalette?.border || "rgba(0,0,0,0.08)",
-      }}
+      className={cn(
+        "bg-white text-[#111111]",
+        compact
+          ? "p-1 space-y-4"
+          : "rounded-3xl border border-black/[0.08] p-5 sm:p-7 shadow-xl space-y-6"
+      )}
+      style={compact ? undefined : { borderColor: themePalette?.border || "rgba(0,0,0,0.08)" }}
     >
       {/* 1. Titre & Avertissement optionnel */}
-      <div className="space-y-1.5 border-b border-black/[0.06] pb-4">
+      <div className={cn("space-y-1.5 border-b border-black/[0.06] pb-4", compact && "hidden")}>
         <h3 className="text-base sm:text-lg font-black text-[#111111]">
           {settings.title}
         </h3>
