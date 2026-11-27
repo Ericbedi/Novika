@@ -843,6 +843,19 @@ export function ProductFormClient({
     });
   };
 
+  // Déplacer une image (flèches : fonctionne au doigt comme à la souris ; la première devient la principale)
+  const handleMoveMedia = (from: number, to: number) => {
+    setMediaItems((prev) => {
+      if (from === to || from < 0 || to < 0 || from >= prev.length || to >= prev.length) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next.map((m, i) => ({ ...m, isPrimary: i === 0 }));
+    });
+    setIsDirty(true);
+  };
+  const dragMediaRef = useRef<number | null>(null);
+
   const handleDeleteMedia = (index: number) => {
     setMediaItems((prev) =>
       prev.filter((_, i) => i !== index).map((m, idx) => ({ ...m, isPrimary: idx === 0 }))
@@ -1434,8 +1447,17 @@ export function ProductFormClient({
                 {mediaItems.map((item, idx) => (
                   <div
                     key={item.id}
+                    draggable
+                    onDragStart={() => { dragMediaRef.current = idx; }}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (dragMediaRef.current !== null) handleMoveMedia(dragMediaRef.current, idx);
+                      dragMediaRef.current = null;
+                    }}
                     className={cn(
-                      "group relative rounded-2xl border border-[#E6E0D4] bg-white overflow-hidden aspect-square flex items-center justify-center shadow-2xs transition-all",
+                      "group relative rounded-2xl border border-[#E6E0D4] bg-white overflow-hidden aspect-square flex items-center justify-center shadow-2xs transition-all cursor-grab active:cursor-grabbing",
                       item.isPrimary && "ring-2 ring-[#111111]"
                     )}
                   >
@@ -1451,6 +1473,28 @@ export function ProductFormClient({
                         Principale
                       </span>
                     )}
+
+                    {/* Flèches toujours visibles (mobile et ordinateur) */}
+                    <div className="absolute bottom-1.5 left-1.5 right-1.5 z-10 flex items-center justify-between">
+                      <button
+                        type="button"
+                        aria-label="Déplacer vers la gauche"
+                        disabled={idx === 0}
+                        onClick={(e) => { e.stopPropagation(); handleMoveMedia(idx, idx - 1); }}
+                        className="h-8 w-8 rounded-full bg-black/70 text-white text-base font-black flex items-center justify-center disabled:opacity-0"
+                      >
+                        ←
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Déplacer vers la droite"
+                        disabled={idx === mediaItems.length - 1}
+                        onClick={(e) => { e.stopPropagation(); handleMoveMedia(idx, idx + 1); }}
+                        className="h-8 w-8 rounded-full bg-black/70 text-white text-base font-black flex items-center justify-center disabled:opacity-0"
+                      >
+                        →
+                      </button>
+                    </div>
 
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
                       <div className="flex justify-end gap-1">

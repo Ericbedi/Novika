@@ -30,7 +30,11 @@ export async function GET(req: NextRequest) {
       const { data: dbRows, error } = await query;
 
       if (!error && dbRows && dbRows.length > 0) {
-        const mappedProducts: Product[] = dbRows.map((r: any) => ({
+        const mappedProducts: Product[] = dbRows.map((r: any) => {
+        // Stock jamais saisi = ventes illimitées (le produit n'est pas en rupture à tort)
+        const tracked = r.stock_tracked === true;
+        const qty = tracked ? Number(r.available_stock) || 0 : 9999;
+        return {
           id: r.product_id,
           legacy_id: r.legacy_id || undefined,
           name: r.name,
@@ -45,13 +49,15 @@ export async function GET(req: NextRequest) {
           salePrice: Number(r.sale_price) || 0,
           compareAtPrice: Number(r.compare_at_price) || 0,
           costPrice: 0,
-          stock: Number(r.available_stock) || 0,
+          stock: qty,
+          trackStock: tracked,
+          trackQuantity: tracked,
           status: r.status || "active",
           productStatus: r.status || "active",
-          stockStatus: Number(r.available_stock) > 0 ? "in_stock" : "out_of_stock",
+          stockStatus: qty > 0 ? "in_stock" : "out_of_stock",
           physicalStock: Number(r.physical_stock) || 0,
           reservedStock: 0,
-          availableStock: Number(r.available_stock) || 0,
+          availableStock: qty,
           published_to_storefront: Boolean(r.published_to_storefront),
           sku: r.variant_title || "DEFAULT-SKU",
           variants: r.variant_id
@@ -61,13 +67,14 @@ export async function GET(req: NextRequest) {
                   name: r.variant_title || "Standard",
                   price: Number(r.sale_price) || 0,
                   costPrice: 0,
-                  stock: Number(r.available_stock) || 0,
+                  stock: qty,
                   sku: r.variant_title || "DEFAULT-SKU",
                   image: r.image_url || "/products/serum-eclat.png",
                 },
               ]
             : [],
-        }));
+        };
+        });
 
         saveShopProductsList(storeSlug, mappedProducts);
 

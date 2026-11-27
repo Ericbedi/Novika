@@ -1,0 +1,4 @@
+-- Appliquées via MCP Supabase :
+-- 1) grant_stock_initialized_public_view : grant execute on function public._stock_initialized(uuid) to anon, authenticated;
+--    (sans ce droit, la vue publique product_availability échouait pour tout visiteur et l'API renvoyait une liste vide)
+-- 2) product_availability_stock_tracked : ajoute la colonne stock_tracked (= _stock_initialized(p.id)) à la vue product_availability.
