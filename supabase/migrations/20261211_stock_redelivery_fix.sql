@@ -1,0 +1,2 @@
+-- Appliquée via MCP (stock_redelivery_fix) : _orders_stock_trigger() calcule le solde (livraisons - retours) par commande et produit.
+-- Corrige : une commande re-livrée après un retour redécrémente maintenant le stock, et un second retour le restocke à nouveau.
