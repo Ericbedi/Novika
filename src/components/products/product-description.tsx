@@ -67,6 +67,7 @@ export function ProductDescription({
         "[&_img[data-ratio='1-1']]:aspect-square [&_img[data-ratio='4-3']]:aspect-[4/3] [&_img[data-ratio='3-4']]:aspect-[3/4] [&_img[data-ratio='16-9']]:aspect-video",
         "[&_img[data-pos='top']]:object-top [&_img[data-pos='bottom']]:object-bottom",
         "[&_img[data-size='small']]:max-w-[260px] [&_img[data-size='medium']]:max-w-[420px]",
+        "[&_img[data-size='w25']]:w-1/4 [&_img[data-size='w50']]:w-1/2 [&_img[data-size='w75']]:w-3/4 [&_img[data-size^='w']]:h-auto",
         // Liens sécurisés
         "[&_a]:text-blue-600 hover:[&_a]:text-blue-700 [&_a]:underline [&_a]:underline-offset-2 [&_a]:font-medium [&_a]:transition-colors",
         // Tableaux responsives avec défilement horizontal automatique sur mobile

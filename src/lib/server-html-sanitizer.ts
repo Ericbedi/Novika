@@ -335,7 +335,7 @@ export function sanitizeProductDescription(
         // Rognage non destructif : cadrage, position et taille (valeurs strictement validées)
         if (attribs["data-ratio"] && /^(1-1|4-3|3-4|16-9)$/.test(attribs["data-ratio"])) imgAttribs["data-ratio"] = attribs["data-ratio"];
         if (attribs["data-pos"] && /^(top|bottom)$/.test(attribs["data-pos"])) imgAttribs["data-pos"] = attribs["data-pos"];
-        if (attribs["data-size"] && /^(small|medium)$/.test(attribs["data-size"])) imgAttribs["data-size"] = attribs["data-size"];
+        if (attribs["data-size"] && /^(small|medium|w25|w50|w75)$/.test(attribs["data-size"])) imgAttribs["data-size"] = attribs["data-size"];
 
         return {
           tagName: "img",

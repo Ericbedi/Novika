@@ -117,13 +117,38 @@ export function RichDescriptionEditor({
     const pos = img.getAttribute("data-pos");
     const size = img.getAttribute("data-size");
     img.style.aspectRatio = ratio ? RATIO_STYLE[ratio] : "";
-    img.style.width = ratio ? "100%" : "";
+    const pct = size && /^w(25|50|75)$/.test(size) ? size.slice(1) : null;
+    img.style.width = pct ? `${pct}%` : ratio ? "100%" : "";
     img.style.objectFit = ratio ? "cover" : "";
     img.style.objectPosition = pos === "top" ? "top" : pos === "bottom" ? "bottom" : "center";
-    img.style.maxWidth = size === "small" ? "260px" : size === "medium" ? "420px" : "100%";
+    img.style.maxWidth = pct ? "100%" : size === "small" ? "260px" : size === "medium" ? "420px" : "100%";
     img.style.height = "auto";
     handleInput(true);
     setImgTick((n) => n + 1);
+  };
+
+  // Poignée d'étirement : la largeur s'accroche à 25 %, 50 %, 75 % ou 100 % de la zone de texte (souris et tactile)
+  const startResize = (e: React.PointerEvent<HTMLDivElement>) => {
+    const img = selectedImg;
+    const ed = editorRef.current;
+    if (!img || !ed) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startW = img.getBoundingClientRect().width;
+    const full = Math.max(1, ed.clientWidth - 32);
+    const move = (ev: PointerEvent) => {
+      const w = Math.min(full, Math.max(full * 0.2, startW + (ev.clientX - startX)));
+      const ratio = w / full;
+      const next = ratio > 0.88 ? null : ratio > 0.62 ? "w75" : ratio > 0.37 ? "w50" : "w25";
+      if ((img.getAttribute("data-size") || null) !== next) applyImgProps({ size: next });
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
   };
 
   const removeSelectedImage = () => {
@@ -776,7 +801,17 @@ export function RichDescriptionEditor({
         const cur = (a: string) => selectedImg.getAttribute(a) || null;
         const chip = (active: boolean) =>
           cn("px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer", active ? "bg-white text-black" : "bg-white/10 text-white hover:bg-white/20");
+        const hx = Math.min(r.right, ed.right) - root.left - 22;
+        const hy = Math.min(r.bottom, ed.bottom) - root.top - 22;
         return (
+          <>
+          <div
+            data-testid="image-resize-handle"
+            onPointerDown={startResize}
+            title="Glisser pour agrandir ou réduire"
+            style={{ left: hx, top: hy, touchAction: "none" }}
+            className="absolute z-20 h-5 w-5 cursor-nwse-resize rounded-md border-2 border-white bg-[#C2410C] shadow-lg"
+          />
           <div data-testid="image-floating-bar" style={{ top, left }} className="absolute z-20 max-w-[calc(100%-1rem)] space-y-1.5" onMouseDown={(e) => e.preventDefault()}>
             <div className="inline-flex items-center gap-1 rounded-xl bg-black/85 p-1 shadow-lg text-white">
               <button type="button" onClick={() => setCropOpen((v) => !v)} className={cn("inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold hover:bg-white/15", cropOpen && "bg-white/15")}>
@@ -809,6 +844,7 @@ export function RichDescriptionEditor({
               </div>
             )}
           </div>
+          </>
         );
       })()}
 
