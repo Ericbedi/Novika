@@ -92,24 +92,25 @@ describe("Prompt 08 : Résolution de la Vitrine & Étanchéité des Données", (
     }
   });
 
-  it("4. Les sections d'une nouvelle vitrine utilisent le modèle Kaelis prérempli par défaut", () => {
+  it("4. Les sections d'une nouvelle vitrine utilisent le modèle d'accueil neutre prérempli par défaut", () => {
     const defaultStorefront = createEmptyStorefront("kelio", "Kelio");
 
     expect(defaultStorefront.sections.length).toBeGreaterThan(0);
     expect(defaultStorefront.announcementBar.isEnabled).toBe(true);
-    expect(defaultStorefront.announcementBar.text).toContain("Livraison Gratuite");
+    expect(defaultStorefront.announcementBar.text).toContain("Paiement à la livraison");
 
-    // Vérification des blocs préremplis Kaelis
+    // Vérification des blocs préremplis (texte neutre, sans nom de marque tiers)
     const hero = defaultStorefront.sections.find((s) => s.type === "hero");
     expect(hero?.content?.headline).toContain("Bienvenue chez");
-    expect(hero?.content?.ctaText).toBe("Découvrir nos collections");
+    expect(hero?.content?.ctaText).toBe("Découvrir la collection");
     expect(hero?.content?.ctaUrl).toBe("/boutique/kelio/catalogue");
 
     const benefits = defaultStorefront.sections.find((s) => s.type === "benefits");
     expect(benefits?.content?.items?.length).toBe(4);
 
     const story = defaultStorefront.sections.find((s) => s.type === "brand_story");
-    expect(story?.content?.text).toContain("kairos");
+    expect(story?.content?.text).toContain("Kelio");
+    expect(JSON.stringify(defaultStorefront)).not.toMatch(/kaelis-story|kairos/i);
 
     const newsletter = defaultStorefront.sections.find((s) => s.type === "custom_banner");
     expect(newsletter?.content?.title).toContain("Rejoignez la Communauté");

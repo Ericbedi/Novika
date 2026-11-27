@@ -49,6 +49,7 @@ import { MOCK_PRODUCTS } from "@/mock-data/products";
 import { getShopProducts } from "@/lib/products-store";
 import { StorefrontData, ThemeConfig, PageSection, CustomerReview, StorefrontFooterConfig } from "@/server/data/storefront-types";
 import { resolveStorefrontData, createEmptyStorefront, setMemoryStorefront } from "@/lib/storefront-resolver";
+import { applyHomeConfig, buildHomeConfig, saveHomeConfig } from "@/lib/storefront-home-config";
 import { useApp } from "@/components/layout/app-shell";
 import { formatFcfa } from "@/lib/money";
 import { CountryFlag } from "@/components/ui/country-flag";
@@ -142,7 +143,7 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
   const [sections, setSections] = useState<PageSection[]>(() => initialResolved.storefront.sections);
   const [reviews, setReviews] = useState<CustomerReview[]>(() => initialResolved.storefront.reviews || []);
   const [footerConfig, setFooterConfig] = useState<StorefrontFooterConfig>(() => initialResolved.storefront.footer || {
-    tagline: `${activeStore.name || "Kaelis"} — La mode qui vous ressemble, chaque jour.`,
+    tagline: `${activeStore.name || "Ma Boutique"} — Commandez en ligne, payez à la livraison.`,
     quickLinks: [
       { label: "Notre Histoire", href: "#notre-histoire" },
       { label: "Nous Contacter", href: `/boutique/${storeSlug}/contact` },
@@ -152,10 +153,10 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
       { label: "Livraison et Retours", href: `/boutique/${storeSlug}/pages/livraison-retours` },
     ],
     followLinks: [
-      { label: "Products", href: `/boutique/${storeSlug}/catalogue` },
-      { label: "FAQ", href: `/boutique/${storeSlug}/contact` },
+      { label: "Catalogue", href: `/boutique/${storeSlug}/catalogue` },
+      { label: "Contact", href: `/boutique/${storeSlug}/contact` },
     ],
-    copyright: `© 2026 ${(activeStore.name || "kaelis").toLowerCase()}. All rights reserved.`,
+    copyright: `© ${new Date().getFullYear()} ${activeStore.name || "Ma Boutique"}. Tous droits réservés.`,
   });
   const [previewDevice, setPreviewDevice] = useState<PreviewDeviceId>("iphone-15-pro-max");
   const [previewOrientation, setPreviewOrientation] = useState<PreviewOrientation>("portrait");
@@ -176,6 +177,25 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
     setPreviewOrientation(next);
     setStoredPreviewOrientation(next);
   };
+
+  // Personnalisation enregistrée en base : prioritaire sur toute copie locale (même vue sur mobile et navigateur)
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/shop-home?store=${encodeURIComponent(storeSlug)}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (!alive || !d?.config || !Object.keys(d.config).length) return;
+        const merged = applyHomeConfig(initialResolved.storefront, d.config);
+        setStorefront(merged);
+        setDraftTheme(merged.draftTheme);
+        setSections(merged.sections);
+        if (merged.footer) setFooterConfig(merged.footer);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [storeSlug, initialResolved]);
 
   // Modales
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
@@ -501,7 +521,14 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
       );
     }
 
-    showToast("Informations de la boutique et vitrine enregistrées avec succès !");
+    // Enregistrement en base : la vitrine publique et le mobile voient les mêmes réglages
+    void saveHomeConfig(storeSlug, buildHomeConfig(fullStorefront)).then((ok) =>
+      showToast(
+        ok
+          ? "Informations de la boutique et vitrine enregistrées avec succès !"
+          : "Enregistré sur cet appareil, mais pas sur le serveur. Réessayez."
+      )
+    );
   };
 
   // Action : Annuler les modifications

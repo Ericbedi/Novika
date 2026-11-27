@@ -12,7 +12,7 @@ export interface ThemeColors {
   buttonText: string; // Couleur texte sur bouton principal
 }
 
-export type ThemeFontFamily = "Poppins" | "Plus Jakarta Sans" | "Inter" | "Montserrat";
+export type ThemeFontFamily = "Poppins" | "Plus Jakarta Sans" | "Inter" | "Montserrat" | "Playfair Display";
 export type ButtonStyle = "rounded" | "square" | "pill";
 export type CardBorderRadius = "none" | "sm" | "md" | "lg" | "full";
 

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, Eye, FilePlus2, FileText, LayoutTemplate, Settings2, ShoppingBag } from "lucide-react";
+import { ArrowRight, Eye, FilePlus2, FileText, LayoutTemplate, Palette, Settings2, ShoppingBag } from "lucide-react";
 
 interface PageRow {
   id: string;
@@ -55,6 +55,13 @@ export function StorefrontHub({ storeSlug }: { storeSlug: string }) {
               <LayoutTemplate className="h-4 w-4" />
               Ouvrir l&apos;éditeur
               <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              href={`${base}/apparence`}
+              className="min-h-[40px] px-4 rounded-xl border border-white/25 text-xs font-bold inline-flex items-center gap-2 hover:bg-white/10"
+            >
+              <Palette className="h-4 w-4" />
+              Apparence
             </Link>
             <Link
               href={`${base}/pages?new=1`}

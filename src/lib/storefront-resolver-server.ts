@@ -3,6 +3,7 @@ import { StorefrontData } from "@/server/data/storefront-types";
 import { formatStoreSlugToName, createEmptyStorefront, ResolvedStorefront, setMemoryStore, setMemoryStorefront } from "./storefront-resolver";
 import { saveShopProductsList } from "./products-store";
 import { createClient } from "./supabase/server";
+import { applyHomeConfig } from "./storefront-home-config";
 
 export async function resolveStorefrontDataAsync(storeSlug: string): Promise<ResolvedStorefront> {
   let store: Store = {
@@ -100,7 +101,23 @@ export async function resolveStorefrontDataAsync(storeSlug: string): Promise<Res
     (p) => (p.productStatus === "active" || p.status === "active") && !p.hiddenFromCatalog
   );
 
-  const storefront: StorefrontData = createEmptyStorefront(storeSlug, store.name);
+  // Identité et personnalisation enregistrées par le vendeur (même rendu sur mobile et navigateur)
+  let brand: { tagline?: string; description?: string; whatsapp?: string } = {};
+  let homeConfig: unknown = {};
+  try {
+    const supabase = await createClient();
+    const [b, h] = await Promise.all([
+      (supabase as any).rpc("shop_brand_public", { p_slug: storeSlug }),
+      (supabase as any).rpc("shop_home_public", { p_slug: storeSlug }),
+    ]);
+    if (b?.data?.brand && typeof b.data.brand === "object") brand = b.data.brand;
+    homeConfig = h?.data || {};
+  } catch {
+    /* valeurs par défaut */
+  }
+
+  let storefront: StorefrontData = createEmptyStorefront(storeSlug, store.name, brand);
+  storefront = applyHomeConfig(storefront, homeConfig);
   storefront.isPublished = true;
 
   const isPreparationMode = !storefront.isPublished || activeProducts.length === 0;

@@ -167,8 +167,12 @@ export function resolveStorefrontData(storeSlug: string): ResolvedStorefront {
  * Crée une vitrine neutre sans AUCUN contenu inventé (Prompt 08).
  * Zéro nom de démonstration, zéro avis inventé, zéro faux numéro.
  */
-export function createEmptyStorefront(storeSlug: string, storeName: string): StorefrontData {
-  const displayBrand = storeName && storeName !== "Ma Boutique" ? storeName : "Kaelis";
+export function createEmptyStorefront(
+  storeSlug: string,
+  storeName: string,
+  brand: { tagline?: string; description?: string } = {},
+): StorefrontData {
+  const displayBrand = storeName && storeName !== "Ma Boutique" ? storeName : "Ma Boutique";
 
   return {
     storeId: `store_${storeSlug}`,
@@ -231,12 +235,12 @@ export function createEmptyStorefront(storeSlug: string, storeName: string): Sto
     },
     announcementBar: {
       isEnabled: true,
-      text: "Livraison Gratuite Pour toutes les commandes supérieurs à 10000 XOF",
+      text: "Paiement à la livraison — Commandez maintenant !",
     },
     header: {
       logoPosition: "center",
       logoHeight: 36,
-      showSearch: false,
+      showSearch: true,
       showCountryPicker: true,
     },
     sections: [
@@ -247,10 +251,11 @@ export function createEmptyStorefront(storeSlug: string, storeName: string): Sto
         isVisible: true,
         order: 1,
         content: {
-          headline: `Bienvenue chez ${displayBrand.toUpperCase()}.`,
+          headline: brand.tagline || `Bienvenue chez ${displayBrand}`,
           subheadline:
-            "Ici, on n'achète pas un logo — on construit une allure. Chaque pièce est choisie pour notre climat, nos morphologies et nos journées qui commencent tôt et finissent après la nuit tombée.",
-          ctaText: "Découvrir nos collections",
+            brand.description ||
+            `Chez ${displayBrand}, chaque produit est sélectionné pour vous offrir qualité et confort au quotidien.`,
+          ctaText: "Découvrir la collection",
           ctaUrl: `/boutique/${storeSlug}/catalogue`,
           imageUrl: "",
           badgeText: "",
@@ -269,30 +274,30 @@ export function createEmptyStorefront(storeSlug: string, storeName: string): Sto
           items: [
             {
               id: "b1",
-              title: "Livraison Rapide",
+              title: "Paiement à la Livraison",
               description:
-                "Vos commandes sont expédiées en 24 à 48 heures pour une réception ultra-rapide.",
-              icon: "truck",
-            },
-            {
-              id: "b2",
-              title: "Paiement Sécurisé",
-              description:
-                "Toutes vos transactions sont protégées par un cryptage SSL de haute sécurité.",
+                "Vous réglez en espèces au livreur, après avoir vérifié votre colis.",
               icon: "shield",
             },
             {
-              id: "b3",
-              title: "Retours Faciles",
+              id: "b2",
+              title: "Livraison à Domicile",
               description:
-                "Profitez de 30 jours pour retourner votre article sans aucune question posée.",
+                "Votre commande est livrée directement chez vous, là où vous êtes.",
+              icon: "truck",
+            },
+            {
+              id: "b3",
+              title: "Service Client à l'Écoute",
+              description:
+                "Une question sur votre commande ? Notre équipe vous répond sur WhatsApp.",
               icon: "rotate-ccw",
             },
             {
               id: "b4",
-              title: "Qualité Garantie",
+              title: "Qualité Sélectionnée",
               description:
-                "Chaque produit est sélectionné avec soin pour vous garantir un niveau de qualité irréprochable.",
+                "Chaque produit est choisi avec soin pour vous offrir satisfaction au quotidien.",
               icon: "award",
             },
           ],
@@ -319,7 +324,7 @@ export function createEmptyStorefront(storeSlug: string, storeName: string): Sto
         content: {
           title: `Rejoignez la Communauté ${displayBrand}`,
           subtitle:
-            "Inscrivez-vous à notre newsletter et soyez le premier à découvrir nos nouvelles collections et offres exclusives.",
+            "Inscrivez-vous à notre newsletter et soyez le premier à découvrir nos nouvelles arrivées et offres exclusives.",
           buttonText: "S'abonner",
           placeholder: "Votre adresse e-mail",
         },
@@ -332,9 +337,11 @@ export function createEmptyStorefront(storeSlug: string, storeName: string): Sto
         order: 5,
         content: {
           title: "Notre Histoire",
-          text: `${displayBrand.toUpperCase()} vient de kairos : le moment qui compte. On apprend aux hommes que l'apparence est secondaire. Puis on les juge dessus en huit secondes. Personne ne vous dira jamais que votre allure a joué — mais chaque homme, au fond, le sait. L'élégance masculine n'a pas été importée sur ce continent : elle y était déjà. Nos pères savaient qu'on ne se présente pas devant une famille ou une assemblée sans soigner ce qu'on donne à voir. Ce n'était pas de la vanité. C'était du respect. Il manquait simplement une maison à la hauteur de cet héritage. Nous l'avons construite. Pièces pensées pour notre climat et nos morphologies. Livraison à domicile et paiement à la réception. ${displayBrand.toUpperCase()} — Soyez prêt.`,
-          imageUrl: "/brand/kaelis-story.jpg",
-          ctaText: "Voir nos collections",
+          text: brand.description
+            ? `${brand.description}`
+            : `Chez ${displayBrand}, nous sélectionnons avec soin chaque produit pour vous garantir une expérience de qualité au quotidien. Commandez en ligne, recevez chez vous et payez à la livraison.`,
+          imageUrl: "",
+          ctaText: "Voir nos produits",
           ctaUrl: `/boutique/${storeSlug}/catalogue`,
         },
       },
@@ -353,7 +360,7 @@ export function createEmptyStorefront(storeSlug: string, storeName: string): Sto
     ],
     reviews: [],
     footer: {
-      tagline: `${displayBrand} — La mode qui vous ressemble, chaque jour.`,
+      tagline: `${displayBrand} — Commandez en ligne, payez à la livraison.`,
       quickLinks: [
         { label: "Notre Histoire", href: "#notre-histoire" },
         { label: "Nous Contacter", href: `/boutique/${storeSlug}/contact` },
@@ -363,10 +370,10 @@ export function createEmptyStorefront(storeSlug: string, storeName: string): Sto
         { label: "Livraison et Retours", href: `/boutique/${storeSlug}/pages/livraison-retours` },
       ],
       followLinks: [
-        { label: "Products", href: `/boutique/${storeSlug}/catalogue` },
-        { label: "FAQ", href: `/boutique/${storeSlug}/contact` },
+        { label: "Catalogue", href: `/boutique/${storeSlug}/catalogue` },
+        { label: "Contact", href: `/boutique/${storeSlug}/contact` },
       ],
-      copyright: `© 2026 ${displayBrand.toLowerCase()}. All rights reserved.`,
+      copyright: `© ${new Date().getFullYear()} ${displayBrand}. Tous droits réservés.`,
     },
     contact: {
       phone: "",

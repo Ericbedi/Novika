@@ -1,0 +1,3 @@
+-- Personnalisation de la page d'accueil de chaque boutique (textes, police, couleurs, bandeau d'annonce).
+-- Colonne shops.home_config (jsonb) + shop_home_save_server (réservée au serveur, protégée par le secret)
+-- + shop_home_public (lecture publique). Appliquée via Supabase MCP (migration « shop_home_config »).

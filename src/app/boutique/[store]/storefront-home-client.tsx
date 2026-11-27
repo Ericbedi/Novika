@@ -25,6 +25,7 @@ import { formatFcfa } from "@/lib/money";
 import { ProductImage } from "@/components/ui/ProductImage";
 import { getProductPublicUrl } from "@/lib/storefront-urls";
 import { cn } from "@/lib/utils";
+import { buildHomeConfig, saveHomeConfig } from "@/lib/storefront-home-config";
 
 interface StorefrontHomeClientProps {
   storeSlug: string;
@@ -53,27 +54,11 @@ export function StorefrontHomeClient({
       const role = localStorage.getItem("novika_active_role");
       const ownerStatus = verified && role === "owner";
       setIsOwner(ownerStatus);
-
-      // Rafraîchir les données depuis le localStorage SI présent
-      const savedStorefront = localStorage.getItem(
-        `novika_storefront_settings_${storeSlug}`,
-      );
-      if (savedStorefront) {
-        try {
-          const parsed = JSON.parse(savedStorefront);
-          if (parsed && typeof parsed === "object") {
-            const resolved = resolveStorefrontData(storeSlug);
-            setData(resolved);
-          }
-        } catch (err) {
-          console.warn(
-            "[Storefront Home] Erreur rafraîchissement réglages localStorage:",
-            err,
-          );
-        }
-      } else if (initialResolved.products.length > 0) {
-        setData(initialResolved);
-      }
+      // Droit de modification vérifié côté serveur : identique sur mobile et navigateur
+      fetch(`/api/stores/home?store=${encodeURIComponent(storeSlug)}`, { cache: "no-store" })
+        .then((r) => r.json())
+        .then((d) => setIsOwner(Boolean(d?.canEdit)))
+        .catch(() => {});
     }
   }, [storeSlug, initialResolved]);
 
@@ -91,12 +76,6 @@ export function StorefrontHomeClient({
       ...storefront,
       isPublished: !storefront.isPublished,
     };
-    if (typeof window !== "undefined") {
-      localStorage.setItem(
-        `novika_storefront_settings_${storeSlug}`,
-        JSON.stringify(updatedStorefront),
-      );
-    }
     setData((prev) => ({
       ...prev,
       storefront: updatedStorefront,
@@ -114,12 +93,8 @@ export function StorefrontHomeClient({
       ...storefront,
       sections: updatedSections,
     };
-    if (typeof window !== "undefined") {
-      localStorage.setItem(
-        `novika_storefront_settings_${storeSlug}`,
-        JSON.stringify(updatedStorefront),
-      );
-    }
+    // Enregistrement en base : visible tout de suite sur mobile et navigateur
+    void saveHomeConfig(storeSlug, buildHomeConfig(updatedStorefront));
     setData((prev) => ({
       ...prev,
       storefront: updatedStorefront,
@@ -205,9 +180,9 @@ export function StorefrontHomeClient({
   const storyTitle = brandStorySection?.content?.title ?? "Notre Histoire";
   const storyText =
     brandStorySection?.content?.text ??
-    `${store.name.toUpperCase()} vient de kairos : le moment qui compte. On apprend aux hommes que l'apparence est secondaire. Puis on les juge dessus en huit secondes. Personne ne vous dira jamais que votre allure a joué — mais chaque homme, au fond, le sait. L'élégance masculine n'a pas été importée sur ce continent : elle y était déjà. Nos pères savaient qu'on ne se présente pas devant une famille ou une assemblée sans soigner ce qu'on donne à voir. Ce n'était pas de la vanité. C'était du respect. Il manquait simplement une maison à la hauteur de cet héritage. Nous l'avons construite. Pièces pensées pour notre climat et nos morphologies. Livraison à domicile et paiement à la réception. ${store.name.toUpperCase()} — Soyez prêt.`;
+    `Chez ${store.name}, nous sélectionnons avec soin chaque produit pour vous garantir une expérience de qualité au quotidien.`;
   const storyImageUrl =
-    brandStorySection?.content?.imageUrl || "/brand/kaelis-story.jpg";
+    brandStorySection?.content?.imageUrl || "";
   const storyCtaText =
     brandStorySection?.content?.ctaText ?? "Voir nos collections";
   const storyCtaUrl =
@@ -345,6 +320,132 @@ export function StorefrontHomeClient({
             ) : null}
           </section>
         )}
+
+      {/* ========================================================================= */}
+      {/* 6. PRODUITS DISPONIBLES (GRILLE VENTE DIRECTE COD) */}
+      {/* ========================================================================= */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-12 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 border-b border-black/[0.08] pb-4">
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-black text-[#111111] tracking-tight">
+              Nos Coups de Cœur
+            </h2>
+            <p className="text-xs text-[#666660] mt-0.5">
+              Découvrez notre sélection : commandez en ligne et payez à la livraison.
+            </p>
+          </div>
+          {activeProducts.length > 0 && (
+            <Link
+              href={`/boutique/${storeSlug}/catalogue`}
+              className="text-xs font-bold text-[#111111] hover:underline inline-flex items-center gap-1"
+            >
+              <span>Découvrir tout le catalogue ({activeProducts.length})</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          )}
+        </div>
+
+        {activeProducts.length > 0 ? (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-6">
+            {activeProducts.map((prod) => {
+              const isOutOfStock = prod.stock <= 0;
+              const threshold = prod.lowStockThreshold ?? 5;
+              const isLowStock = prod.stock > 0 && prod.stock <= threshold;
+              const prodUrl = getProductPublicUrl(prod, storeSlug);
+              const prodImageSrc =
+                (prod.images && prod.images[0]) || (prod as any).image || "";
+
+              return (
+                <div
+                  key={prod.id}
+                  className="group rounded-3xl border border-black/[0.08] bg-white p-3 sm:p-4 space-y-3 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between"
+                >
+                  <div className="space-y-3">
+                    <Link
+                      href={prodUrl}
+                      className="relative block h-44 sm:h-52 rounded-2xl bg-[#FAF8F5] overflow-hidden border border-black/[0.04]"
+                    >
+                      <ProductImage
+                        src={prodImageSrc}
+                        alt={prod.name}
+                        fill
+                        fallbackLabel={prod.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+
+                      {prod.compareAtPrice && !isOutOfStock && (
+                        <span className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-black shadow-xs z-10">
+                          Promo
+                        </span>
+                      )}
+
+                      {isLowStock && (
+                        <span className="absolute top-2.5 right-2.5 px-2.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-black shadow-xs z-10">
+                          Stock Bas ({prod.stock})
+                        </span>
+                      )}
+
+                      {isOutOfStock && (
+                        <div className="absolute inset-0 bg-black/40 backdrop-blur-2xs flex items-center justify-center z-10">
+                          <span className="px-3 py-1 rounded-full bg-[#111111] text-white text-xs font-black">
+                            Épuisé
+                          </span>
+                        </div>
+                      )}
+                    </Link>
+
+                    <div>
+                      <span className="text-[10px] font-bold uppercase text-[#888880] block">
+                        {prod.category}
+                      </span>
+                      <Link
+                        href={prodUrl}
+                        className="text-xs sm:text-sm font-black text-[#111111] hover:text-emerald-700 transition-colors line-clamp-2 mt-0.5"
+                      >
+                        {prod.name}
+                      </Link>
+                    </div>
+
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-base font-black text-[#111111]">
+                        {formatFcfa(prod.salePrice)}
+                      </span>
+                      {prod.compareAtPrice && (
+                        <span className="text-xs text-[#888880] line-through font-semibold">
+                          {formatFcfa(prod.compareAtPrice)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {isOutOfStock ? (
+                    <button
+                      disabled
+                      className="w-full py-2.5 px-3 rounded-xl bg-black/5 text-[#888880] text-xs font-bold cursor-not-allowed text-center block"
+                    >
+                      Victime de son succès
+                    </button>
+                  ) : (
+                    <Link
+                      href={prodUrl}
+                      className="w-full py-2.5 px-3 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-all text-center block shadow-2xs cursor-pointer"
+                      style={{ backgroundColor: themePrimary }}
+                    >
+                      Commander en Paiement Cash
+                    </Link>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="py-12 px-6 rounded-3xl border border-black/[0.06] bg-[#FAF8F5] text-center max-w-md mx-auto space-y-2">
+            <p className="text-xs font-semibold text-[#666660]">
+              Aucun produit n'est actuellement publié sur cette boutique.
+            </p>
+          </div>
+        )}
+      </section>
 
       {/* ========================================================================= */}
       {/* 3. AVIS CLIENTS (RÈGLE STRICTE : MASQUÉ SI AUCUN AVIS DISPONIBLE) */}
@@ -509,9 +610,9 @@ export function StorefrontHomeClient({
               </button>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center">
-              {/* Photo d'illustration à gauche */}
-              <div className="lg:col-span-6">
+            <div className={cn("grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center", !storyImageUrl && "max-w-3xl mx-auto text-center")}>
+              {/* Photo d'illustration à gauche (masquée si aucune image) */}
+              <div className={cn("lg:col-span-6", !storyImageUrl && "hidden")}>
                 <div className="relative aspect-4/3 w-full rounded-3xl overflow-hidden shadow-sm border border-black/[0.06] bg-stone-100">
                   <img
                     src={storyImageUrl}
@@ -522,7 +623,7 @@ export function StorefrontHomeClient({
               </div>
 
               {/* Texte à droite */}
-              <div className="lg:col-span-6 space-y-6">
+              <div className={cn("space-y-6", storyImageUrl ? "lg:col-span-6" : "lg:col-span-12")}>
                 <h2 className="text-2xl sm:text-4xl font-black text-[#111111] tracking-tight">
                   {storyTitle}
                 </h2>
@@ -542,131 +643,6 @@ export function StorefrontHomeClient({
           </section>
         )}
 
-      {/* ========================================================================= */}
-      {/* 6. PRODUITS DISPONIBLES (GRILLE VENTE DIRECTE COD) */}
-      {/* ========================================================================= */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-12 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 border-b border-black/[0.08] pb-4">
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-black text-[#111111] tracking-tight">
-              Produits Disponibles
-            </h2>
-            <p className="text-xs text-[#666660] mt-0.5">
-              Commandez directement en ligne avec règlement en espèces à la livraison.
-            </p>
-          </div>
-          {activeProducts.length > 0 && (
-            <Link
-              href={`/boutique/${storeSlug}/catalogue`}
-              className="text-xs font-bold text-[#111111] hover:underline inline-flex items-center gap-1"
-            >
-              <span>Découvrir tout le catalogue ({activeProducts.length})</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          )}
-        </div>
-
-        {activeProducts.length > 0 ? (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-6">
-            {activeProducts.map((prod) => {
-              const isOutOfStock = prod.stock <= 0;
-              const threshold = prod.lowStockThreshold ?? 5;
-              const isLowStock = prod.stock > 0 && prod.stock <= threshold;
-              const prodUrl = getProductPublicUrl(prod, storeSlug);
-              const prodImageSrc =
-                (prod.images && prod.images[0]) || (prod as any).image || "";
-
-              return (
-                <div
-                  key={prod.id}
-                  className="group rounded-3xl border border-black/[0.08] bg-white p-3 sm:p-4 space-y-3 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between"
-                >
-                  <div className="space-y-3">
-                    <Link
-                      href={prodUrl}
-                      className="relative block h-44 sm:h-52 rounded-2xl bg-[#FAF8F5] overflow-hidden border border-black/[0.04]"
-                    >
-                      <ProductImage
-                        src={prodImageSrc}
-                        alt={prod.name}
-                        fill
-                        fallbackLabel={prod.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-
-                      {prod.compareAtPrice && !isOutOfStock && (
-                        <span className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-black shadow-xs z-10">
-                          Promo
-                        </span>
-                      )}
-
-                      {isLowStock && (
-                        <span className="absolute top-2.5 right-2.5 px-2.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-black shadow-xs z-10">
-                          Stock Bas ({prod.stock})
-                        </span>
-                      )}
-
-                      {isOutOfStock && (
-                        <div className="absolute inset-0 bg-black/40 backdrop-blur-2xs flex items-center justify-center z-10">
-                          <span className="px-3 py-1 rounded-full bg-[#111111] text-white text-xs font-black">
-                            Épuisé
-                          </span>
-                        </div>
-                      )}
-                    </Link>
-
-                    <div>
-                      <span className="text-[10px] font-bold uppercase text-[#888880] block">
-                        {prod.category}
-                      </span>
-                      <Link
-                        href={prodUrl}
-                        className="text-xs sm:text-sm font-black text-[#111111] hover:text-emerald-700 transition-colors line-clamp-2 mt-0.5"
-                      >
-                        {prod.name}
-                      </Link>
-                    </div>
-
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-base font-black text-[#111111]">
-                        {formatFcfa(prod.salePrice)}
-                      </span>
-                      {prod.compareAtPrice && (
-                        <span className="text-xs text-[#888880] line-through font-semibold">
-                          {formatFcfa(prod.compareAtPrice)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {isOutOfStock ? (
-                    <button
-                      disabled
-                      className="w-full py-2.5 px-3 rounded-xl bg-black/5 text-[#888880] text-xs font-bold cursor-not-allowed text-center block"
-                    >
-                      Victime de son succès
-                    </button>
-                  ) : (
-                    <Link
-                      href={prodUrl}
-                      className="w-full py-2.5 px-3 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-all text-center block shadow-2xs cursor-pointer"
-                      style={{ backgroundColor: themePrimary }}
-                    >
-                      Commander en Paiement Cash
-                    </Link>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="py-12 px-6 rounded-3xl border border-black/[0.06] bg-[#FAF8F5] text-center max-w-md mx-auto space-y-2">
-            <p className="text-xs font-semibold text-[#666660]">
-              Aucun produit n'est actuellement publié sur cette boutique.
-            </p>
-          </div>
-        )}
-      </section>
 
       {/* TIROIR D'ÉDITION EN DIRECT (MODE ADMIN PROPRIÉTAIRE) */}
       <SectionEditorDrawer

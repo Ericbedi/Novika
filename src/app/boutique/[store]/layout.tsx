@@ -27,6 +27,8 @@ import { MOCK_STOREFRONT_LOME } from "@/mock-data/storefront-data";
 import { MOCK_SHOP_BANNER_ITEMS } from "@/mock-data/product-page-data";
 import { ShopBannerItem } from "@/server/data/product-page-types";
 import { resolveStorefrontData } from "@/lib/storefront-resolver";
+import { applyHomeConfig, sanitizeHomeConfig, storefrontFontStack, type HomeConfig } from "@/lib/storefront-home-config";
+import { loadShopBrand } from "@/lib/use-shop-brand";
 import { brandConfig, APP_NAME } from "@/config/brand";
 import { AnnouncementBanner } from "@/components/storefront/announcement-banner";
 import { StorefrontBrand } from "@/components/storefront/storefront-brand";
@@ -67,9 +69,25 @@ export default function StorefrontLayout({
   const { store: storeSlug } = use(params);
   const pathname = usePathname();
 
+  // Personnalisation enregistrée en base (textes, police, couleurs) : identique sur mobile et navigateur
+  const [homeConfig, setHomeConfig] = useState<HomeConfig>({});
+  const [brandIntro, setBrandIntro] = useState<{ tagline?: string; description?: string }>({});
+  React.useEffect(() => {
+    let alive = true;
+    fetch(`/api/shop-home?store=${encodeURIComponent(storeSlug)}`)
+      .then((r) => r.json())
+      .then((d) => alive && d?.config && setHomeConfig(sanitizeHomeConfig(d.config)))
+      .catch(() => {});
+    loadShopBrand(storeSlug).then((b) => alive && setBrandIntro({ tagline: b.tagline, description: b.description }));
+    return () => {
+      alive = false;
+    };
+  }, [storeSlug]);
+
   const resolved = resolveStorefrontData(storeSlug);
   const store = resolved.store;
-  const storefront = resolved.storefront;
+  const storefront = applyHomeConfig(resolved.storefront, homeConfig);
+  void brandIntro;
 
   const bannerItems: ShopBannerItem[] =
     storeSlug === "lome-glow"
@@ -141,12 +159,17 @@ export default function StorefrontLayout({
 
   return (
     <div
-      className="min-h-screen flex flex-col font-sans text-[#111111] antialiased selection:bg-emerald-100 overflow-x-clip"
+      className="sf-root min-h-screen flex flex-col text-[#111111] antialiased selection:bg-emerald-100 overflow-x-clip"
       style={{
         backgroundColor: storefront.activeTheme?.colors?.background || "#FFFFFF",
-        fontFamily: storefront.activeTheme?.typography?.fontFamily || "Poppins",
+        color: storefront.activeTheme?.colors?.text || "#111111",
+        fontFamily: storefrontFontStack(storefront.activeTheme?.typography?.fontFamily),
+        ["--sf-heading-font" as string]: storefrontFontStack(
+          storefront.activeTheme?.typography?.headingFont || storefront.activeTheme?.typography?.fontFamily,
+        ),
       }}
     >
+      <style>{`.sf-root h1,.sf-root h2,.sf-root h3{font-family:var(--sf-heading-font)}`}</style>
       {/* Réglage d'indexation « Visible sur Google » (Prompt 21-b) : noindex par défaut */}
       {storefront.seo?.visibleOnGoogle ? (
         <meta name="robots" content="index, follow" />
@@ -177,7 +200,8 @@ export default function StorefrontLayout({
 
       {/* EN-TÊTE DE LA VITRINE (MODÈLE KAELIS) */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-black/[0.08] shadow-2xs">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+          <div className="flex items-center justify-start">
           {/* Mobile : Menu Hamburger */}
           <div className="flex items-center md:hidden">
             <button
@@ -209,11 +233,12 @@ export default function StorefrontLayout({
               })}
             </nav>
           )}
+          </div>
 
-          {/* Logo centré KAELIS / Boutique */}
+          {/* Logo centré */}
           <Link
             href={`/boutique/${storeSlug}`}
-            className="flex items-center justify-center group flex-1 md:flex-initial text-center"
+            className="flex items-center justify-center group text-center"
           >
             {storefront.header?.logoUrl ? (
               <img
@@ -222,13 +247,27 @@ export default function StorefrontLayout({
                 className="h-8 sm:h-9 w-auto object-contain max-w-[160px]"
               />
             ) : (
-              <span className="font-extrabold text-xl sm:text-2xl tracking-tight text-[#111111] font-sans lowercase">
+              <span className="font-extrabold text-xl sm:text-2xl tracking-tight text-[#111111] lowercase">
                 {store.name.toLowerCase()}
               </span>
             )}
           </Link>
 
-          {/* Raccourcis Droite : Pays, Panier & WhatsApp */}
+          {/* Droite : recherche et panier */}
+          <div className="flex items-center justify-end gap-1 shrink-0 sm:col-start-3">
+            {storefront.header?.showSearch !== false && (
+              <Link
+                href={`/boutique/${storeSlug}/recherche`}
+                className="h-10 w-10 inline-flex items-center justify-center rounded-xl hover:bg-black/5 transition-colors"
+                aria-label="Rechercher"
+              >
+                <Search className="h-5 w-5" />
+              </Link>
+            )}
+            <HeaderCartButton storeSlug={storeSlug} />
+          </div>
+
+          {/* Raccourcis cachés : Pays & WhatsApp */}
           {/* Masqué par réglage (SHOW_HEADER_QUICK_ACTIONS) : repasser à true pour réafficher */}
           <div className={`${SHOW_HEADER_QUICK_ACTIONS ? "flex" : "hidden"} items-center gap-1.5 sm:gap-2.5 shrink-0`}>
             <StorefrontCountrySelector
@@ -236,8 +275,6 @@ export default function StorefrontLayout({
               storeCurrency={store.currency || "XOF"}
               defaultCountryCode={store.country || "TG"}
             />
-
-            <HeaderCartButton storeSlug={storeSlug} />
 
             <a
               href={`https://wa.me/${storefront.contact?.whatsappNumber ? storefront.contact.whatsappNumber.replace(/[^0-9]/g, "") : ""}?text=${encodeURIComponent(
@@ -280,7 +317,7 @@ export default function StorefrontLayout({
       <main className="flex-1">{children}</main>
 
       {/* PIED DE PAGE DE LA VITRINE (MODÈLE KAELIS) */}
-      <footer className="bg-white border-t border-black/[0.08] pt-14 pb-10 mt-16 font-sans">
+      <footer className="bg-white border-t border-black/[0.08] pt-14 pb-10 mt-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-12">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12">
             {/* Colonne 1 (Gauche) : Logo & Slogan Kaelis */}
