@@ -66,6 +66,7 @@ import { formatFcfa } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/components/layout/app-shell";
 import { ensureListImagesRemote } from "@/lib/upload-data-images";
+import { publishActiveProducts } from "@/lib/publish-products";
 import { ProductsNavTabs } from "@/components/products/products-nav-tabs";
 import { CsvImportModal } from "@/components/products/csv-import-modal";
 import { sanitizeCellForCsv, rollbackImportBatch } from "@/lib/csv-import-engine";
@@ -162,6 +163,23 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
       setOrders(ords);
     }
   }, [storeSlug]);
+
+  // Mise en ligne automatique des produits actifs jamais publiés (une fois par session et par boutique)
+  useEffect(() => {
+    if (typeof window === "undefined" || !canView) return;
+    const key = `kelio:auto-publish:${storeSlug}`;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, "1");
+    } catch {
+      /* stockage indisponible : on tente quand même */
+    }
+    publishActiveProducts(storeSlug, activeRole).then((r) => {
+      setProducts(getShopProductsRaw(storeSlug));
+      if (r.ok && r.count > 0) showToast(`${r.count} produit(s) mis en ligne sur la vitrine.`);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeSlug, canView]);
 
   // Synchronisation sauvegarde produits
   useEffect(() => {
@@ -2581,6 +2599,11 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
           const count = Array.isArray(imported) ? imported.length : imported;
           setProducts(getShopProductsRaw(storeSlug));
           showToast(`${count} produit(s) importé(s) avec succès !`);
+          // Mise en ligne immédiate : visible sur mobile et commandable par les clients
+          publishActiveProducts(storeSlug, activeRole).then((r) => {
+            setProducts(getShopProductsRaw(storeSlug));
+            showToast(r.ok ? (r.count > 0 ? `${r.count} produit(s) mis en ligne sur la vitrine !` : "Produits à jour sur la vitrine.") : `${r.error} Utilisez « Synchroniser ».`);
+          });
         }}
       />
 

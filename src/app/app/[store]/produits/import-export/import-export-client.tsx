@@ -1,5 +1,6 @@
 "use client";
 
+import { publishActiveProducts } from "@/lib/publish-products";
 import React, { useState } from "react";
 import { Download, Upload, FileSpreadsheet, ArrowDownUp, CheckCircle2, AlertCircle } from "lucide-react";
 import { ProductsNavTabs } from "@/components/products/products-nav-tabs";
@@ -200,6 +201,9 @@ export function ImportExportClient({ storeSlug }: ImportExportClientProps) {
           onImportSuccess={(importedProducts) => {
             setIsImportModalOpen(false);
             showToast(`${importedProducts.length} produit(s) importé(s) avec succès !`);
+            publishActiveProducts(storeSlug, activeRole).then((r) => {
+              if (r.ok && r.count > 0) showToast(`${r.count} produit(s) mis en ligne sur la vitrine !`);
+            });
           }}
         />
       </div>

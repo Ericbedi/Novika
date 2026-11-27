@@ -15,6 +15,7 @@
  * 6. Protection SSRF sur les URL d'images
  */
 
+import { shortSlug } from "@/lib/slug";
 import { Product, ProductVariant, UserRole } from "@/server/data/types";
 import { cleanHtmlToPlainText } from "./html-sanitizer";
 import { sanitizeProductDescription, HtmlSanitizeReport } from "./server-html-sanitizer";
@@ -636,9 +637,9 @@ export function convertDraftToProduct(
   existingProduct?: Product,
   forcedStatus?: "active" | "draft"
 ): Product {
-  let effectiveSlug = draft.handle;
+  let effectiveSlug = shortSlug(draft.handle, draft.handle);
   if (strategy === "copy" && existingProduct) {
-    effectiveSlug = `${draft.handle}-copie-${Math.random().toString(36).slice(2, 6)}`;
+    effectiveSlug = `${effectiveSlug}-copie-${Math.random().toString(36).slice(2, 6)}`;
   }
 
   // Filtrer les images sécurisées
