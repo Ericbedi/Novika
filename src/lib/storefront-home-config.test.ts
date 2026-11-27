@@ -37,3 +37,28 @@ describe("Personnalisation de la page d'accueil", () => {
     expect(applyHomeConfig(createEmptyStorefront("demo", "Demo"), cfg).sections.find((s) => s.id === "sec_hero")?.content.headline).toBe("Mon slogan");
   });
 });
+
+describe("Bannières d'accueil", () => {
+  it("garde uniquement les images https ou du site, 5 au maximum", () => {
+    const c = sanitizeHomeConfig({
+      banners: [
+        { id: "a", imageUrl: "https://cdn.exemple.com/a.jpg", mobileImageUrl: "https://cdn.exemple.com/a-m.jpg", linkUrl: "/boutique/x/catalogue" },
+        { id: "b", imageUrl: "javascript:alert(1)" },
+        { id: "c", imageUrl: "data:image/png;base64,AAAA" },
+        { id: "d", imageUrl: "/banners/hero.jpg", linkUrl: "javascript:alert(1)" },
+        ...Array.from({ length: 8 }, (_, i) => ({ id: `z${i}`, imageUrl: `https://cdn.exemple.com/${i}.jpg` })),
+      ],
+    });
+    expect(c.banners?.length).toBe(5);
+    expect(c.banners?.[0].mobileImageUrl).toBe("https://cdn.exemple.com/a-m.jpg");
+    expect(c.banners?.find((b) => b.id === "d")?.linkUrl).toBeUndefined();
+    expect(c.banners?.some((b) => b.imageUrl.startsWith("data:") || b.imageUrl.startsWith("javascript"))).toBe(false);
+  });
+
+  it("applique les bannières sur la vitrine et les retire quand la liste est vide", () => {
+    const base = createEmptyStorefront("demo", "Demo");
+    const withB = applyHomeConfig(base, { banners: [{ id: "a", imageUrl: "https://cdn.exemple.com/a.jpg" }] });
+    expect(withB.homeBanners?.length).toBe(1);
+    expect(applyHomeConfig(withB, { banners: [] }).homeBanners).toEqual([]);
+  });
+});

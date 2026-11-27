@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, ExternalLink, ImagePlus, Trash2 } from "lucide-react";
+import { ImagePicker } from "@/components/media/ImagePicker";
 import { HOME_FONTS, storefrontFontStack, type HomeConfig } from "@/lib/storefront-home-config";
 
 const FONT_LABELS: Record<string, string> = {
@@ -23,6 +24,12 @@ export function AppearanceClient({ storeSlug }: { storeSlug: string }) {
   const [cfg, setCfg] = useState<HomeConfig>({});
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [picker, setPicker] = useState<
+    | { kind: "banner"; id: string; field: "imageUrl" | "mobileImageUrl" }
+    | { kind: "story" }
+    | { kind: "logo" }
+    | null
+  >(null);
 
   useEffect(() => {
     fetch(`/api/shop-home?store=${encodeURIComponent(storeSlug)}`, { cache: "no-store" })
@@ -37,6 +44,30 @@ export function AppearanceClient({ storeSlug }: { storeSlug: string }) {
   const ann = cfg.announcementBar || {};
 
   const set = (patch: Partial<HomeConfig>) => setCfg((c) => ({ ...c, ...patch }));
+  const banners = cfg.banners || [];
+  const setBanners = (next: NonNullable<HomeConfig["banners"]>) => set({ banners: next });
+  const addBanner = () => {
+    if (banners.length >= 5) return;
+    const id = `bn_${Date.now().toString(36)}`;
+    setBanners([...banners, { id, imageUrl: "" }]);
+    setPicker({ kind: "banner", id, field: "imageUrl" });
+  };
+  const moveBanner = (i: number, d: number) => {
+    const j = i + d;
+    if (j < 0 || j >= banners.length) return;
+    const next = [...banners];
+    [next[i], next[j]] = [next[j], next[i]];
+    setBanners(next);
+  };
+  const storyImage = (cfg.sections?.sec_brand_story?.content?.imageUrl as string | undefined) || "";
+
+  function onPicked(url: string) {
+    if (!picker) return;
+    if (picker.kind === "banner") setBanners(banners.map((b) => (b.id === picker.id ? { ...b, [picker.field]: url } : b)));
+    if (picker.kind === "story") set({ sections: { ...cfg.sections, sec_brand_story: { ...cfg.sections?.sec_brand_story, content: { ...cfg.sections?.sec_brand_story?.content, imageUrl: url } } } });
+    if (picker.kind === "logo") set({ header: { ...cfg.header, logoUrl: url } });
+    setPicker(null);
+  }
 
   async function save() {
     setSaving(true);
@@ -65,7 +96,62 @@ export function AppearanceClient({ storeSlug }: { storeSlug: string }) {
       </Link>
       <div>
         <h1 className="text-2xl font-black text-[#111111]">Apparence de la vitrine</h1>
-        <p className="text-xs text-[#666660]">Police, couleurs et bandeau d&apos;annonce de votre page d&apos;accueil.</p>
+        <p className="text-xs text-[#666660]">Bannières, logo, police, couleurs et bandeau d&apos;annonce de votre page d&apos;accueil.</p>
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-xs font-black uppercase tracking-wide text-[#666660]">Bannières d&apos;accueil ({banners.filter((b) => b.imageUrl).length}/5)</h2>
+          <button type="button" onClick={addBanner} disabled={banners.length >= 5} className="min-h-[40px] px-3 rounded-xl bg-[#111111] text-white text-xs font-bold inline-flex items-center gap-1.5 disabled:opacity-40 cursor-pointer">
+            <ImagePlus className="h-4 w-4" /> Ajouter une bannière
+          </button>
+        </div>
+        <p className="text-[11px] text-[#666660]">Images affichées en haut de l&apos;accueil, en défilement automatique. Format conseillé : 1920×700 pour l&apos;ordinateur, 1080×1350 pour le mobile (facultatif).</p>
+        {banners.length === 0 && <div className="rounded-2xl border border-dashed border-black/[0.15] p-6 text-center text-xs text-[#666660]">Aucune bannière. Ajoutez votre première image.</div>}
+        {banners.map((b, i) => (
+          <div key={b.id} className="rounded-2xl border border-black/[0.08] bg-white p-3 space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              {(["imageUrl", "mobileImageUrl"] as const).map((f) => (
+                <button key={f} type="button" onClick={() => setPicker({ kind: "banner", id: b.id, field: f })} className="relative aspect-[16/9] rounded-xl border border-dashed border-black/[0.2] bg-[#F8F7F2] overflow-hidden flex items-center justify-center text-[11px] font-bold text-[#666660] cursor-pointer">
+                  {b[f] ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={b[f]} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                  ) : (
+                    <span className="px-2 text-center">{f === "imageUrl" ? "Image ordinateur" : "Image mobile (facultatif)"}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+            <input className={input} placeholder="Lien au clic (facultatif, ex : /boutique/ma-boutique/catalogue)" value={b.linkUrl ?? ""} onChange={(e) => setBanners(banners.map((x) => (x.id === b.id ? { ...x, linkUrl: e.target.value } : x)))} />
+            <div className="flex items-center gap-1">
+              <button type="button" onClick={() => moveBanner(i, -1)} className="h-10 w-10 inline-flex items-center justify-center rounded-lg hover:bg-black/5 cursor-pointer" aria-label="Monter"><ArrowUp className="h-4 w-4" /></button>
+              <button type="button" onClick={() => moveBanner(i, 1)} className="h-10 w-10 inline-flex items-center justify-center rounded-lg hover:bg-black/5 cursor-pointer" aria-label="Descendre"><ArrowDown className="h-4 w-4" /></button>
+              <button type="button" onClick={() => setBanners(banners.filter((x) => x.id !== b.id))} className="ml-auto h-10 px-3 inline-flex items-center gap-1.5 rounded-lg text-rose-600 text-xs font-bold hover:bg-rose-50 cursor-pointer"><Trash2 className="h-4 w-4" /> Supprimer</button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="space-y-3">
+        <h2 className="text-xs font-black uppercase tracking-wide text-[#666660]">Autres images</h2>
+        <div className="grid grid-cols-2 gap-3">
+          <button type="button" onClick={() => setPicker({ kind: "logo" })} className="relative aspect-[16/9] rounded-xl border border-dashed border-black/[0.2] bg-white overflow-hidden flex items-center justify-center text-[11px] font-bold text-[#666660] cursor-pointer">
+            {cfg.header?.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={cfg.header.logoUrl} alt="" className="absolute inset-0 h-full w-full object-contain p-3" />
+            ) : (
+              <span className="px-2 text-center">Logo de la boutique</span>
+            )}
+          </button>
+          <button type="button" onClick={() => setPicker({ kind: "story" })} className="relative aspect-[16/9] rounded-xl border border-dashed border-black/[0.2] bg-white overflow-hidden flex items-center justify-center text-[11px] font-bold text-[#666660] cursor-pointer">
+            {storyImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={storyImage} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            ) : (
+              <span className="px-2 text-center">Image « Notre histoire »</span>
+            )}
+          </button>
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -140,6 +226,16 @@ export function AppearanceClient({ storeSlug }: { storeSlug: string }) {
           <ExternalLink className="h-4 w-4" /> Voir la vitrine
         </a>
       </div>
+      <ImagePicker
+        isOpen={picker !== null}
+        onClose={() => {
+          if (picker?.kind === "banner") setBanners(banners.filter((b) => b.imageUrl || b.id !== picker.id));
+          setPicker(null);
+        }}
+        onSelectImage={(d) => onPicked(d.url)}
+        storeSlug={storeSlug}
+        context={picker?.kind === "logo" ? "logo" : "banner"}
+      />
     </div>
   );
 }

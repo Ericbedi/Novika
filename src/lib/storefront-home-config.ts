@@ -2,7 +2,7 @@
  * Personnalisation de la page d'accueil d'une boutique, enregistrée en base (shops.home_config).
  * Identique sur mobile et navigateur : la vitrine et l'éditeur lisent la même source.
  */
-import type { PageSection, StorefrontData, ThemeFontFamily } from "@/server/data/storefront-types";
+import type { HomeBanner, PageSection, StorefrontData, ThemeFontFamily } from "@/server/data/storefront-types";
 
 export const HOME_FONTS = ["Playfair Display", "Inter", "Poppins", "Montserrat", "Plus Jakarta Sans"] as const;
 
@@ -13,9 +13,16 @@ export interface HomeConfig {
   footer?: { tagline?: string; copyright?: string };
   typography?: { fontFamily?: string; headingFont?: string };
   colors?: { primary?: string; background?: string; text?: string };
+  banners?: HomeBanner[];
 }
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
+/** Image acceptée : adresse https ou chemin du site, jamais d'image intégrée ni de script. */
+export const safeImageUrl = (v: unknown): string | undefined =>
+  typeof v === "string" && v.length <= 600 && (/^https:\/\//i.test(v) || /^\/(?!\/)/.test(v)) ? v : undefined;
+/** Lien accepté : chemin du site, https ou lien WhatsApp. */
+export const safeLinkUrl = (v: unknown): string | undefined =>
+  typeof v === "string" && v.length <= 600 && (/^https:\/\//i.test(v) || /^\/(?!\/)/.test(v) || /^#/.test(v)) ? v : undefined;
 const str = (v: unknown, max: number) => (typeof v === "string" ? v.slice(0, max) : undefined);
 
 /** Ne garde que les champs connus, avec des longueurs bornées (la configuration est publique). */
@@ -84,6 +91,22 @@ export function sanitizeHomeConfig(input: unknown): HomeConfig {
       if ((HOME_FONTS as readonly string[]).includes(c.typography[k])) out.typography[k] = c.typography[k];
     }
   }
+  if (Array.isArray(c.banners)) {
+    out.banners = [];
+    for (const b of c.banners) {
+      if (out.banners.length >= 5) break;
+      const imageUrl = safeImageUrl(b?.imageUrl);
+      if (!imageUrl) continue;
+      const id = typeof b.id === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(b.id) ? b.id : `bn_${out.banners.length + 1}`;
+      out.banners.push({
+        id,
+        imageUrl,
+        ...(safeImageUrl(b.mobileImageUrl) ? { mobileImageUrl: safeImageUrl(b.mobileImageUrl) } : {}),
+        ...(safeLinkUrl(b.linkUrl) ? { linkUrl: safeLinkUrl(b.linkUrl) } : {}),
+        ...(str(b.altText, 160) ? { altText: str(b.altText, 160) } : {}),
+      });
+    }
+  }
   if (c.colors && typeof c.colors === "object") {
     out.colors = {};
     for (const k of ["primary", "background", "text"] as const) {
@@ -126,6 +149,7 @@ export function applyHomeConfig(storefront: StorefrontData, raw: unknown): Store
     announcementBar: { ...storefront.announcementBar, ...(cfg.announcementBar || {}) },
     header: { ...storefront.header, ...(cfg.header || {}) },
     footer: { ...(storefront.footer || {}), ...(cfg.footer || {}) },
+    homeBanners: cfg.banners ?? storefront.homeBanners ?? [],
   };
 }
 
@@ -155,6 +179,7 @@ export function buildHomeConfig(sf: StorefrontData): HomeConfig {
     header: { showSearch: sf.header?.showSearch, logoUrl: sf.header?.logoUrl },
     footer: { tagline: sf.footer?.tagline, copyright: sf.footer?.copyright },
     typography: { fontFamily: sf.activeTheme?.typography?.fontFamily, headingFont: sf.activeTheme?.typography?.headingFont },
+    banners: sf.homeBanners,
     colors: { primary: sf.activeTheme?.colors?.primary, background: sf.activeTheme?.colors?.background, text: sf.activeTheme?.colors?.text },
   });
 }

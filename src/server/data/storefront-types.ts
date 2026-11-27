@@ -135,7 +135,16 @@ export interface StorefrontFooterConfig {
   copyright?: string;
 }
 
+export interface HomeBanner {
+  id: string;
+  imageUrl: string;
+  mobileImageUrl?: string;
+  linkUrl?: string;
+  altText?: string;
+}
+
 export interface StorefrontData {
+  homeBanners?: HomeBanner[]; // Bannières de la page d'accueil (carrousel, jusqu'à 5)
   storeId: string;
   storeSlug: string;
   subdomain: string;

@@ -25,6 +25,7 @@ import { formatFcfa } from "@/lib/money";
 import { ProductImage } from "@/components/ui/ProductImage";
 import { getProductPublicUrl } from "@/lib/storefront-urls";
 import { cn } from "@/lib/utils";
+import { HomeBannerCarousel } from "@/components/storefront/home-banner-carousel";
 import { buildHomeConfig, saveHomeConfig } from "@/lib/storefront-home-config";
 
 interface StorefrontHomeClientProps {
@@ -190,8 +191,13 @@ export function StorefrontHomeClient({
 
   return (
     <div className="space-y-16 sm:space-y-24 pb-20 relative font-sans">
+      {/* BANNIÈRES D'ACCUEIL (images choisies par le vendeur) */}
+      {storefront.homeBanners && storefront.homeBanners.length > 0 && (
+        <HomeBannerCarousel banners={storefront.homeBanners} />
+      )}
+
       {/* ========================================================================= */}
-      {/* 1. HÉRO CENTRÉ ÉPURÉ KAELIS */}
+      {/* 1. HÉRO CENTRÉ ÉPURÉ */}
       {/* ========================================================================= */}
       {heroSection &&
         (heroSection.isVisible || isEditMode) &&

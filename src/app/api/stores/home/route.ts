@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
     footer: { ...(prev.footer || {}), ...(incoming.footer || {}) },
     typography: { ...(prev.typography || {}), ...(incoming.typography || {}) },
     colors: { ...(prev.colors || {}), ...(incoming.colors || {}) },
+    banners: incoming.banners ?? prev.banners,
   });
   const { data, error } = await supabase.rpc("shop_home_save_server", { p_secret: a.secret, p_slug: body.store, p_config: merged });
   if (error || !data?.success) return NextResponse.json({ success: false, error: data?.error || "Enregistrement impossible." }, { status: 500 });
