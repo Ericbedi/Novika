@@ -55,8 +55,8 @@ export default function DemarrerAssistantPage() {
         } catch {}
       }
 
-      // Si aucune boutique créée, ouvrir automatiquement le créateur de boutique
-      setIsCreateStoreOpen(true);
+      // Si aucune boutique créée, ouvrir l'assistant de création en 3 étapes
+      router.push("/nouvelle-boutique");
     }
   }, []);
 

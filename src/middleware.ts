@@ -178,6 +178,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/app") ||
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/demarrer") ||
+    pathname.startsWith("/nouvelle-boutique") ||
     pathname.startsWith("/platform-admin");
 
   const isPrivateApi =

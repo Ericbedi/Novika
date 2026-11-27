@@ -29,6 +29,7 @@ import { ShopBannerItem } from "@/server/data/product-page-types";
 import { resolveStorefrontData } from "@/lib/storefront-resolver";
 import { brandConfig, APP_NAME } from "@/config/brand";
 import { AnnouncementBanner } from "@/components/storefront/announcement-banner";
+import { StorefrontBrand } from "@/components/storefront/storefront-brand";
 import { StorefrontPresencePing } from "@/components/storefront/storefront-presence-ping";
 import { MetaPixelRunner } from "@/components/storefront/meta-pixel-runner";
 import { CookieConsentBanner } from "@/components/storefront/cookie-consent-banner";
@@ -157,6 +158,7 @@ export default function StorefrontLayout({
       <StorefrontAntiSpyShield storeSlug={storeSlug} />
 
       {/* Télémétrie anonyme de présence en direct (sans cookie ni stockage d'IP) */}
+      <StorefrontBrand storeSlug={storeSlug} />
       <StorefrontPresencePing storeSlug={storeSlug} />
 
       {/* BANDEAU MODE APERÇU PRIVÉ SIGNÉ (Isolé dans un Suspense boundary) */}

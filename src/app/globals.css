@@ -358,3 +358,39 @@
   min-height: 44px;
   min-width: 44px;
 }
+
+/* Identité de la boutique (couleur et style choisis dans l'assistant de création) */
+html[data-nv-brand] .bg-\[\#C2410C\] {
+  background-color: var(--nv-accent);
+  color: var(--nv-on-accent);
+}
+html[data-nv-brand] .hover\:bg-\[\#a83609\]:hover,
+html[data-nv-brand] .hover\:bg-\[\#9A3412\]:hover {
+  background-color: var(--nv-accent);
+  filter: brightness(0.9);
+}
+html[data-nv-brand] .text-\[\#C2410C\] {
+  color: var(--nv-accent);
+}
+html[data-nv-brand] .border-\[\#C2410C\] {
+  border-color: var(--nv-accent);
+}
+html[data-nv-style="elegant"] main h1,
+html[data-nv-style="elegant"] main h2 {
+  font-family: Georgia, "Times New Roman", serif;
+}
+html[data-nv-style="bold"] main h1,
+html[data-nv-style="bold"] main h2 {
+  font-weight: 900;
+}
+html[data-nv-style="sleek"] main h1,
+html[data-nv-style="sleek"] main h2 {
+  letter-spacing: -0.02em;
+}
+html[data-nv-style="rounded"] .bg-\[\#C2410C\] {
+  border-radius: 9999px;
+}
+html[data-nv-style="elegant"] .bg-\[\#C2410C\],
+html[data-nv-style="bold"] .bg-\[\#C2410C\] {
+  border-radius: 6px;
+}

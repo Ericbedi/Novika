@@ -1,5 +1,6 @@
 "use client";
 
+import { useShopBrand } from "@/lib/use-shop-brand";
 import React, { useState, useId, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -69,6 +70,7 @@ export function StandardOrderForm({
   compact = false,
   onOrderSuccess,
 }: StandardOrderFormProps) {
+  const shopBrand = useShopBrand(storeSlug);
   const effectiveOutOfStock =
     isOutOfStock ??
     ((product.availableStock !== undefined
@@ -844,8 +846,8 @@ export function StandardOrderForm({
                 <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
                 <span>Cette boutique ne livre pas encore dans ce pays ({getCountryByCode(countryCode)?.name || countryCode}).</span>
               </div>
-              <a
-                href={`https://wa.me/22890000000?text=${encodeURIComponent(
+              {shopBrand.whatsapp && (              <a
+                href={`https://wa.me/${(shopBrand.whatsapp || "").replace(/\D/g, "")}?text=${encodeURIComponent(
                   `Bonjour, je souhaite commander depuis ${getCountryByCode(countryCode)?.name || countryCode} : ${product.name}`
                 )}`}
                 target="_blank"
@@ -855,6 +857,7 @@ export function StandardOrderForm({
                 <MessageCircle className="w-3.5 h-3.5 fill-white" />
                 <span>WhatsApp</span>
               </a>
+              )}
             </div>
           )}
 

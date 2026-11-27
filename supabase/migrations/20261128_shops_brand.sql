@@ -1,0 +1,2 @@
+-- Identité visuelle et contact de la boutique (couleur, style, accroche, WhatsApp), lisible publiquement.
+-- Voir migration appliquée « shops_brand » : colonne shops.brand + shop_brand_public + shop_set_brand_server.

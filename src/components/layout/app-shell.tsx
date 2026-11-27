@@ -233,7 +233,7 @@ function AppShellInner({
         const found = userStores.find((s) => s.slug === initialStoreSlug) || userStores[0];
         setActiveStore(found);
       } else {
-        setIsCreateStoreOpen(true);
+        router.push("/nouvelle-boutique");
       }
 
       const savedRole = (localStorage.getItem("novika_active_role") || localStorage.getItem("afribuilder_active_role")) as UserRole | null;
@@ -459,15 +459,8 @@ function AppShellInner({
         stores: storesList,
         currentUser,
         openCreateStoreModal: () => {
-          if (
-            storesList.length >= 1 &&
-            currentUser.email !== "admin@novika.com" &&
-            currentUser.email !== "demo@novika.com"
-          ) {
-            alert("Règle de la plateforme : Un compte marchand est limité à la création d'une seule boutique unique.");
-            return;
-          }
-          setIsCreateStoreOpen(true);
+          // L'assistant en 3 étapes ; la limite de boutiques par compte est contrôlée côté serveur
+          router.push("/nouvelle-boutique");
         },
       }}
     >
@@ -991,7 +984,7 @@ function AppShellInner({
                 <button
                   type="button"
                   id="btn-create-first-store"
-                  onClick={() => setIsCreateStoreOpen(true)}
+                  onClick={() => router.push("/nouvelle-boutique")}
                   className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-[#111111] hover:bg-black text-[#FAF8F5] text-xs font-bold transition-all shadow-md cursor-pointer active:scale-95"
                 >
                   <Plus className="h-4 w-4" />
