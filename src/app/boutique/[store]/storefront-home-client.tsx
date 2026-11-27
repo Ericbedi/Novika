@@ -390,7 +390,7 @@ export function StorefrontHomeClient({
         {activeProducts.length > 0 ? (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-6">
             {activeProducts.slice(0, Math.min(24, Math.max(1, Number(featuredSection?.content?.maxProducts) || 8))).map((prod) => {
-              const isOutOfStock = prod.stock <= 0;
+              const isOutOfStock = false;
               const threshold = prod.lowStockThreshold ?? 5;
               const isLowStock = prod.stock > 0 && prod.stock <= threshold;
               const prodUrl = getProductPublicUrl(prod, storeSlug);
@@ -415,7 +415,7 @@ export function StorefrontHomeClient({
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
 
-                      {prod.compareAtPrice && !isOutOfStock && (
+                      {Number(prod.compareAtPrice) > 0 && (
                         <span className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-black shadow-xs z-10">
                           Promo
                         </span>
@@ -452,9 +452,9 @@ export function StorefrontHomeClient({
                       <span className="text-base font-black text-[#111111]">
                         {formatFcfa(prod.salePrice)}
                       </span>
-                      {prod.compareAtPrice && (
+                      {Number(prod.compareAtPrice) > 0 && (
                         <span className="text-xs text-[#888880] line-through font-semibold">
-                          {formatFcfa(prod.compareAtPrice)}
+                          {formatFcfa(prod.compareAtPrice as number)}
                         </span>
                       )}
                     </div>

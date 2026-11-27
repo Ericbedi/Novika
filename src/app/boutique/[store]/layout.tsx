@@ -210,7 +210,7 @@ export default function StorefrontLayout({
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 grid grid-cols-[1fr_auto_1fr] items-center gap-4">
           <div className="flex items-center justify-start">
           {/* Mobile : Menu Hamburger */}
-          <div className="flex items-center md:hidden">
+          <div className="hidden">
             <button
               type="button"
               onClick={() => setIsMobileNavOpen(!isMobileNavOpen)}
@@ -222,7 +222,7 @@ export default function StorefrontLayout({
           </div>
 
           {/* Desktop : Navigation principale (Accueil, Catalogue, Contact) */}
-          {!themeSettings.hideHeaderMenu && (
+          {false && !themeSettings.hideHeaderMenu && (
             <nav className="hidden md:flex items-center gap-6 text-xs font-bold text-[#444440]">
               {navLinks.map((link) => {
                 const isActive = pathname === link.href;
@@ -262,7 +262,7 @@ export default function StorefrontLayout({
 
           {/* Droite : recherche et panier */}
           <div className="flex items-center justify-end gap-1 shrink-0 sm:col-start-3">
-            {storefront.header?.showSearch !== false && (
+            {false && storefront.header?.showSearch !== false && (
               <Link
                 href={`/boutique/${storeSlug}/recherche`}
                 className="h-10 w-10 inline-flex items-center justify-center rounded-xl hover:bg-black/5 transition-colors"
@@ -299,7 +299,7 @@ export default function StorefrontLayout({
         </div>
 
         {/* Menu Déroulant Mobile */}
-        {isMobileNavOpen && (
+        {false && isMobileNavOpen && (
           <div className="md:hidden border-t border-black/[0.08] bg-white px-4 py-4 space-y-3 shadow-lg animate-in slide-in-from-top duration-200">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;

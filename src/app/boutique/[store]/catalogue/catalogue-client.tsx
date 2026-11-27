@@ -256,7 +256,7 @@ export function CatalogueClient({
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-6">
           {filteredProducts.map((prod) => {
-            const isOutOfStock = prod.stock <= 0;
+            const isOutOfStock = false;
             const threshold = prod.lowStockThreshold ?? 5;
             const isLowStock = prod.stock > 0 && prod.stock <= threshold;
 
@@ -283,7 +283,7 @@ export function CatalogueClient({
                     />
 
                     {/* Badge Promo */}
-                    {prod.compareAtPrice && !isOutOfStock && (
+                    {Number(prod.compareAtPrice) > 0 && (
                       <span className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-black shadow-xs z-10">
                         Promo
                       </span>
@@ -324,9 +324,9 @@ export function CatalogueClient({
                     <span className="text-base font-black text-[#111111]">
                       {formatFcfa(prod.salePrice)}
                     </span>
-                    {prod.compareAtPrice && (
+                    {Number(prod.compareAtPrice) > 0 && (
                       <span className="text-xs text-[#888880] line-through font-semibold">
-                        {formatFcfa(prod.compareAtPrice)}
+                        {formatFcfa(prod.compareAtPrice as number)}
                       </span>
                     )}
                   </div>
