@@ -58,7 +58,7 @@ export async function resolveStorefrontDataAsync(storeSlug: string): Promise<Res
         seenIds.add(r.product_id);
         return true;
       });
-      products = uniqueRows.map((r: any) => ({
+      products = uniqueRows.map((r: any): any => ({
         id: r.product_id,
         legacy_id: r.legacy_id || undefined,
         name: r.name,
