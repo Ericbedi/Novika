@@ -1,6 +1,5 @@
 "use client";
 
-import { productSheetTemplateHtml } from "@/lib/product-sheet-template";
 import { cleanSlug, shortSlug } from "@/lib/slug";
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
@@ -1284,31 +1283,6 @@ export function ProductFormClient({
                   Bénéfices du produit, conseils d'utilisation et réassurance pour le paiement à la livraison.
                 </p>
               </div>
-
-              <button
-                type="button"
-                id="btn-insert-sheet-template"
-                onClick={() => {
-                  const plain = description.replace(/<[^>]*>/g, "").trim();
-                  if (plain && !confirm("Ajouter la trame en 13 blocs à la fin de votre description ?")) return;
-                  setDescription((d) => (d || "") + productSheetTemplateHtml());
-                  setIsDirty(true);
-                }}
-                className="px-3 py-1.5 rounded-xl border border-[#E6E0D4] hover:bg-[#FAF8F5] text-xs font-bold text-[#111111] transition-colors"
-              >
-                Trame fiche (13 blocs)
-              </button>
-
-              {Boolean(initialProduct?.originalRawDescription || initialProduct?.sanitizationReport) && (
-                <button
-                  type="button"
-                  id="btn-open-comparison-modal"
-                  onClick={() => setIsComparisonModalOpen(true)}
-                  className="px-3 py-1.5 rounded-xl border border-[#E6E0D4] hover:bg-[#FAF8F5] text-xs font-bold text-[#111111] transition-colors"
-                >
-                  Voir avant / après (Source 30j)
-                </button>
-              )}
             </div>
 
             <RichDescriptionEditor
