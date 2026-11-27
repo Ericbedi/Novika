@@ -1,5 +1,15 @@
 import type { Order, OrderStatus } from "@/server/data/types";
 
+export const ORDER_SOURCE_OPTIONS: { value: string; label: string }[] = [
+  { value: "whatsapp", label: "WhatsApp" },
+  { value: "facebook", label: "Facebook" },
+  { value: "instagram", label: "Instagram" },
+  { value: "tiktok", label: "TikTok" },
+  { value: "snapchat", label: "Snapchat" },
+  { value: "manual", label: "Manuel" },
+  { value: "online_store", label: "Boutique en ligne" },
+];
+
 /** Transforme une commande renvoyée par /api/orders en commande de l'interface. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function mapApiOrder(o: any): Order {
@@ -21,6 +31,10 @@ export function mapApiOrder(o: any): Order {
     createdAt: o.created_at || new Date().toISOString(),
     updatedAt: o.updated_at || o.updatedAt || o.created_at || new Date().toISOString(),
     items: o.order_items || o.items || [],
+    notes: o.notes || undefined,
+    utm: o.source_channel
+      ? { source: ORDER_SOURCE_OPTIONS.find((x) => x.value === o.source_channel)?.label || o.source_channel }
+      : undefined,
   } as Order;
 }
 

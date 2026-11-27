@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -14,7 +14,9 @@ import {
   User,
   ShoppingBag,
 } from "lucide-react";
-import { MOCK_PRODUCTS } from "@/mock-data/products";
+import { getShopProducts } from "@/lib/products-store";
+import { ORDER_SOURCE_OPTIONS } from "@/lib/orders-api";
+import type { Product } from "@/server/data/types";
 import { formatFcfa } from "@/lib/money";
 import { CountryFlagSvg } from "@/components/app/bits";
 import { whatsappLink } from "@/lib/phone";
@@ -38,15 +40,21 @@ export function NewManualOrderClient({ storeSlug }: { storeSlug: string }) {
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [shippingFee, setShippingFee] = useState<number>(1500);
 
-  // Lignes de produits dynamiques
+  // Détails de la commande
+  const [source, setSource] = useState("whatsapp");
+  const [notes, setNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  // Produits réels de la boutique (catalogue partagé)
+  const [products, setProducts] = useState<Product[]>([]);
   const [items, setItems] = useState<DynamicItem[]>([
-    {
-      id: "line_1",
-      productId: MOCK_PRODUCTS[0].id,
-      variantId: MOCK_PRODUCTS[0].variants[0]?.id || "",
-      quantity: 1,
-    },
+    { id: "line_1", productId: "", variantId: "", quantity: 1 },
   ]);
+  useEffect(() => {
+    const list = getShopProducts(storeSlug).filter((p) => p.status !== "archived");
+    setProducts(list);
+    setItems((prev) => prev.map((it) => (it.productId ? it : { ...it, productId: list[0]?.id || "" })));
+  }, [storeSlug]);
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -56,13 +64,14 @@ export function NewManualOrderClient({ storeSlug }: { storeSlug: string }) {
   };
 
   const handleAddItem = () => {
-    const firstProd = MOCK_PRODUCTS[0];
+    const firstProd = products[0];
+    if (!firstProd) return;
     setItems((prev) => [
       ...prev,
       {
         id: `line_${Date.now()}`,
         productId: firstProd.id,
-        variantId: firstProd.variants[0]?.id || "",
+        variantId: "",
         quantity: 1,
       },
     ]);
@@ -77,18 +86,7 @@ export function NewManualOrderClient({ storeSlug }: { storeSlug: string }) {
   };
 
   const handleProductChange = (lineId: string, newProdId: string) => {
-    const prod = MOCK_PRODUCTS.find((p) => p.id === newProdId);
-    setItems((prev) =>
-      prev.map((it) =>
-        it.id === lineId
-          ? {
-              ...it,
-              productId: newProdId,
-              variantId: prod?.variants[0]?.id || "",
-            }
-          : it
-      )
-    );
+    setItems((prev) => prev.map((it) => (it.id === lineId ? { ...it, productId: newProdId } : it)));
   };
 
   const handleVariantChange = (lineId: string, newVarId: string) => {
@@ -111,35 +109,63 @@ export function NewManualOrderClient({ storeSlug }: { storeSlug: string }) {
 
   // Calculs automatiques
   const subtotal = items.reduce((acc, it) => {
-    const prod = MOCK_PRODUCTS.find((p) => p.id === it.productId);
-    const variant = prod?.variants.find((v) => v.id === it.variantId);
-    const price = variant?.price || prod?.salePrice || 0;
-    return acc + price * it.quantity;
+    const prod = products.find((p) => p.id === it.productId);
+    return acc + (prod?.salePrice || 0) * it.quantity;
   }, 0);
 
   const totalAmount = subtotal + shippingFee;
 
-  const handleSubmit = (contactOnWa: boolean) => {
+  const handleSubmit = async (contactOnWa: boolean) => {
     if (!customerName.trim() || !customerPhone.trim() || !deliveryAddress.trim()) {
       alert("Veuillez renseigner le nom, téléphone et adresse du client.");
       return;
     }
-
-    const orderNum = `CMD-${Math.floor(10000 + Math.random() * 90000)}`;
-
-    if (contactOnWa) {
-      const firstItem = MOCK_PRODUCTS.find((p) => p.id === items[0].productId);
-      const msg = `Bonjour ${customerName}, votre commande #${orderNum} (${firstItem?.name}) d'un montant de ${formatFcfa(
-        totalAmount
-      )} a bien été enregistrée pour livraison à ${city}. Êtes-vous bien disponible pour réceptionner le colis ?`;
-      const waUrl = whatsappLink(customerPhone, msg);
-      window.open(waUrl, "_blank");
+    if (items.some((it) => !it.productId)) {
+      alert("Choisissez un produit pour chaque ligne.");
+      return;
     }
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/orders/manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          store: storeSlug,
+          customerName,
+          customerPhone,
+          city,
+          deliveryAddress,
+          country,
+          shippingFee,
+          channel: source,
+          notes,
+          items: items.map((it) => ({ productId: it.productId, quantity: it.quantity })),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.success) {
+        showToast(data?.error || "La commande n'a pas pu être enregistrée.");
+        setSubmitting(false);
+        return;
+      }
+      const orderNum: string = data.order.order_number;
 
-    showToast(`Commande ${orderNum} enregistrée avec succès !`);
-    setTimeout(() => {
-      router.push(`/app/${storeSlug}/commandes`);
-    }, 1200);
+      if (contactOnWa) {
+        const firstItem = products.find((p) => p.id === items[0].productId);
+        const msg = `Bonjour ${customerName}, votre commande #${orderNum} (${firstItem?.name}) d'un montant de ${formatFcfa(
+          data.order.total_amount
+        )} a bien été enregistrée pour livraison à ${city}. Êtes-vous bien disponible pour réceptionner le colis ?`;
+        window.open(whatsappLink(customerPhone, msg), "_blank");
+      }
+
+      showToast(`Commande ${orderNum} enregistrée avec succès !`);
+      setTimeout(() => {
+        router.push(`/app/${storeSlug}/commandes`);
+      }, 1200);
+    } catch {
+      showToast("Connexion impossible : la commande n'a pas été enregistrée.");
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -262,6 +288,35 @@ export function NewManualOrderClient({ storeSlug }: { storeSlug: string }) {
             </div>
           </div>
 
+          {/* Détails de la commande : source */}
+          <div className="rounded-[20px] border border-black/[0.08] bg-[#FAF8F5] p-5 shadow-2xs space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[#111111]">Détails de la commande</h3>
+            <div>
+              <label className="block text-xs font-semibold text-[#111111] mb-1">Source</label>
+              <select
+                value={source}
+                onChange={(e) => setSource(e.target.value)}
+                className="w-full p-2.5 text-sm rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
+              >
+                {ORDER_SOURCE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#111111] mb-1">Note interne (facultatif)</label>
+              <input
+                type="text"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Ex: client joignable après 16h"
+                className="w-full p-2.5 text-sm rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
+              />
+            </div>
+          </div>
+
           {/* 2. Sélection de produits dynamique */}
           <div className="rounded-[20px] border border-black/[0.08] bg-[#FAF8F5] p-5 shadow-2xs space-y-4">
             <div className="flex items-center justify-between">
@@ -281,9 +336,8 @@ export function NewManualOrderClient({ storeSlug }: { storeSlug: string }) {
 
             <div className="space-y-3">
               {items.map((lineItem, idx) => {
-                const prod = MOCK_PRODUCTS.find((p) => p.id === lineItem.productId) || MOCK_PRODUCTS[0];
-                const variant = prod.variants.find((v) => v.id === lineItem.variantId) || prod.variants[0];
-                const unitPrice = variant?.price || prod.salePrice;
+                const prod = products.find((p) => p.id === lineItem.productId);
+                const unitPrice = prod?.salePrice || 0;
                 const lineTotal = unitPrice * lineItem.quantity;
 
                 return (
@@ -309,30 +363,15 @@ export function NewManualOrderClient({ storeSlug }: { storeSlug: string }) {
 
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center">
                       {/* Select Produit */}
-                      <div className="sm:col-span-6">
+                      <div className="sm:col-span-8">
                         <select
                           value={lineItem.productId}
                           onChange={(e) => handleProductChange(lineItem.id, e.target.value)}
                           className="w-full p-2 text-xs rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
                         >
-                          {MOCK_PRODUCTS.map((p) => (
+                          {products.map((p) => (
                             <option key={p.id} value={p.id}>
-                              {p.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Select Variante */}
-                      <div className="sm:col-span-4">
-                        <select
-                          value={lineItem.variantId}
-                          onChange={(e) => handleVariantChange(lineItem.id, e.target.value)}
-                          className="w-full p-2 text-xs rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
-                        >
-                          {prod.variants.map((v) => (
-                            <option key={v.id} value={v.id}>
-                              {v.name} ({formatFcfa(v.price)})
+                              {p.name} ({formatFcfa(p.salePrice)})
                             </option>
                           ))}
                         </select>
@@ -408,6 +447,7 @@ export function NewManualOrderClient({ storeSlug }: { storeSlug: string }) {
             <div className="pt-3 border-t border-black/[0.08] space-y-2.5">
               <button
                 type="button"
+                disabled={submitting}
                 onClick={() => handleSubmit(false)}
                 className="w-full py-2.5 px-4 rounded-xl border border-black/[0.08] bg-white text-xs font-bold text-[#111111] hover:bg-[#FAF8F5] transition-all shadow-2xs flex items-center justify-center gap-2 cursor-pointer"
               >
@@ -417,6 +457,7 @@ export function NewManualOrderClient({ storeSlug }: { storeSlug: string }) {
 
               <button
                 type="button"
+                disabled={submitting}
                 onClick={() => handleSubmit(true)}
                 className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
               >

@@ -1,0 +1,2 @@
+-- Commandes manuelles (closeuse / WhatsApp / réseaux sociaux) avec canal d'origine, et canal exposé dans la liste.
+-- Voir la migration appliquée « manual_orders_and_source » : create_manual_order_server + orders_list_server (source_channel, notes).
