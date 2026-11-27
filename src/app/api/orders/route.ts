@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { reserveStockForOrder } from "@/lib/stock-settings-store";
 import { getAuthFromRequest } from "@/server/auth/request-auth";
+import { assessOrderIp } from "@/server/robtex/client";
 
 export const dynamic = "force-dynamic";
 
@@ -87,6 +88,12 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = await createClient();
+    // Contrôle IP (Robtex) : informatif, jamais bloquant, 1,5 s maximum
+    const { data: shopRow } = await supabase.from("shops").select("country_code").eq("slug", storeSlug).maybeSingle();
+    const ipInfo = await assessOrderIp(
+      req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip"),
+      shopRow?.country_code ?? undefined
+    );
     const { data, error } = await (supabase as any).rpc("create_order_server", {
       p_secret: secret,
       p_shop_slug: storeSlug,
@@ -99,6 +106,7 @@ export async function POST(req: NextRequest) {
         subtotal,
         productId: targetProductId,
         quantity: orderQty,
+        ipInfo,
       },
     });
 

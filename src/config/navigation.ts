@@ -308,6 +308,13 @@ export const getNavigationConfig = (basePath: string, role: UserRole = "owner"):
             allowedRoles: ["owner", "admin"],
           },
           {
+            id: "item-robtex",
+            name: "Analyse web",
+            pathSuffix: "/outils/robtex",
+            icon: Globe2,
+            allowedRoles: ["owner", "admin", "manager"],
+          },
+          {
             id: "item-mediatheque",
             name: "Médiathèque",
             pathSuffix: "/mediatheque",
