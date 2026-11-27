@@ -165,7 +165,7 @@ export function NovikaProductPage({
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-12 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] sm:pb-12 overflow-x-hidden w-full safe-area-top">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-12 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] sm:pb-12 overflow-x-hidden w-full safe-area-top">
       {/* Fil d'ariane minimaliste */}
       <nav className="flex items-center gap-1.5 text-xs text-[#666660]">
         <Link href={`/boutique/${storeSlug}`} className="hover:underline">
@@ -182,9 +182,9 @@ export function NovikaProductPage({
       </nav>
 
       {/* Grille principale : Galerie (gauche) & Fiche d'achat COD (droite) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-6 items-start">
         {/* Colonne Galerie (6 colonnes sur grand écran) */}
-        <div className="lg:col-span-6 space-y-4">
+        <div className="md:col-span-6 space-y-4">
           <ProductGallery
             images={product.images || []}
             productTitle={product.title || product.name}
@@ -195,7 +195,7 @@ export function NovikaProductPage({
         </div>
 
         {/* Colonne Détails & Formulaire COD (6 colonnes sur grand écran) */}
-        <div className="lg:col-span-6 space-y-6">
+        <div className="md:col-span-6 space-y-6">
           {/* En-tête : Titre, Étoiles réelles & Partage */}
           <div className="space-y-2">
             <div className="flex items-start justify-between gap-4">
