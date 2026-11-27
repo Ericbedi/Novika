@@ -30,6 +30,21 @@ export async function GET(req: NextRequest) {
       const { data: dbRows, error } = await query;
 
       if (!error && dbRows && dbRows.length > 0) {
+        // Toutes les images de chaque produit, dans l'ordre choisi (la vue n'expose que la première)
+        const ids = Array.from(new Set(dbRows.map((r: any) => r.product_id)));
+        const { data: mediaRows } = await (supabase as any)
+          .from("product_media")
+          .select("product_id, media_url, position, media_type")
+          .in("product_id", ids)
+          .order("position", { ascending: true });
+        const imagesByProduct = new Map<string, string[]>();
+        for (const m of (mediaRows || []) as any[]) {
+          if (m.media_type && m.media_type !== "image") continue;
+          const list = imagesByProduct.get(m.product_id) || [];
+          if (m.media_url && !list.includes(m.media_url)) list.push(m.media_url);
+          imagesByProduct.set(m.product_id, list);
+        }
+
         const mappedProducts: Product[] = dbRows.map((r: any) => {
         // Stock jamais saisi = ventes illimitées (le produit n'est pas en rupture à tort)
         const tracked = r.stock_tracked === true;
@@ -45,7 +60,7 @@ export async function GET(req: NextRequest) {
           description: r.description || "",
           category: r.category || "Santé & Bien-être",
           collection: r.category || "Santé & Bien-être",
-          images: [r.image_url || "/products/serum-eclat.png"],
+          images: imagesByProduct.get(r.product_id)?.length ? imagesByProduct.get(r.product_id)! : [r.image_url || "/products/serum-eclat.png"],
           salePrice: Number(r.sale_price) || 0,
           compareAtPrice: Number(r.compare_at_price) || 0,
           costPrice: 0,

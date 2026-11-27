@@ -100,11 +100,9 @@ export function StandardOrderForm({
   };
   const [extras, setExtras] = useState<Record<string, string>>({});
   const orderButtonLabel = fc?.buttonText || shopBrand.formButton || "Je commande";
-  const effectiveOutOfStock =
-    isOutOfStock ??
-    ((product.availableStock !== undefined
-      ? product.availableStock
-      : (product.stock ?? 0)) <= 0);
+  // Les commandes restent toujours possibles, même sans stock (décision de la boutique)
+  const effectiveOutOfStock = false;
+  void isOutOfStock;
   const rawId = useId();
   const [idempotencyKey, setIdempotencyKey] = useState("");
 
@@ -707,7 +705,7 @@ export function StandardOrderForm({
           <div className="flex flex-wrap gap-2">
             {product.variants.map((variant) => {
               const isSelected = selectedVariantId === variant.id;
-              const isOutOfStock = variant.stock !== undefined && variant.stock <= 0;
+              const isOutOfStock = false;
               return (
                 <button
                   key={variant.id}

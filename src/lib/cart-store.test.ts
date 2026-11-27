@@ -72,7 +72,7 @@ describe("Prompt 12-b Phase 3 : Panier Multi-Produits (cart-store)", () => {
     expect(getCartSubtotal(secondAdd.cart)).toBe(30000);
   });
 
-  it("4. Contrôle strict de stock : bloque si la quantité dépasse le stock disponible", () => {
+  it("4. Commandes toujours possibles : la quantité peut dépasser le stock affiché", () => {
     addToCart(storeA, {
       productId: "prod_rare",
       name: "Édition Limitée Or",
@@ -90,13 +90,11 @@ describe("Prompt 12-b Phase 3 : Panier Multi-Produits (cart-store)", () => {
       stock: 3,
     });
 
-    expect(overflowAdd.success).toBe(false);
-    expect(overflowAdd.error).toMatch(/Stock insuffisant/);
-    // Le panier reste inchangé à 2
-    expect(getCart(storeA)[0].quantity).toBe(2);
+    expect(overflowAdd.success).toBe(true);
+    expect(getCart(storeA)[0].quantity).toBe(4);
   });
 
-  it("5. Met à jour la quantité d'un article et borne par le stock", () => {
+  it("5. Met à jour la quantité d'un article (plafond 99, sans lien avec le stock)", () => {
     addToCart(storeA, {
       productId: "prod_02",
       name: "Savon Noir d'Afrique",
@@ -108,9 +106,9 @@ describe("Prompt 12-b Phase 3 : Panier Multi-Produits (cart-store)", () => {
     const updated = updateCartItemQuantity(storeA, "prod_02_default", 3);
     expect(updated[0].quantity).toBe(3);
 
-    // Si on demande plus que le stock (ex: 10), il est borné à 4
-    const clamped = updateCartItemQuantity(storeA, "prod_02_default", 10);
-    expect(clamped[0].quantity).toBe(4);
+    // Le stock ne limite plus la commande
+    const more = updateCartItemQuantity(storeA, "prod_02_default", 10);
+    expect(more[0].quantity).toBe(10);
   });
 
   it("6. updateCartItemQuantity avec quantité 0 supprime l'article", () => {

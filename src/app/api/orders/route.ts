@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { reserveStockForOrder } from "@/lib/stock-settings-store";
 import { getAuthFromRequest } from "@/server/auth/request-auth";
 import { assessOrderIp } from "@/server/robtex/client";
 import { notifyNewOrder } from "@/server/notify/new-order";
@@ -70,20 +69,7 @@ export async function POST(req: NextRequest) {
     }
     const orderQty = Math.min(Math.max(Number(quantity) || 1, 1), 50);
 
-    // Politique de stock de la boutique (si configurée)
-    const stockRes = reserveStockForOrder({
-      storeSlug,
-      productId: targetProductId,
-      quantity: orderQty,
-      orderNumber,
-      isCloserConfirmation: false,
-    });
-    if (!stockRes.success && stockRes.orderStatus === "rejected_out_of_stock") {
-      return NextResponse.json(
-        { success: false, error: stockRes.error || "Ce produit est actuellement épuisé.", code: "OUT_OF_STOCK" },
-        { status: 409 }
-      );
-    }
+    // Les commandes restent toujours possibles, même sans stock.
 
     const secret = process.env.PRODUCT_SYNC_SECRET;
     if (!secret) {

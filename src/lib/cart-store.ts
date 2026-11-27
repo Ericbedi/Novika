@@ -83,7 +83,7 @@ export function addToCart(
 ): { success: boolean; cart: CartItem[]; error?: string } {
   const currentCart = getCart(storeSlug);
   const itemId = item.id || `${item.productId}_${item.variantId || "default"}`;
-  const maxStock = Math.max(1, item.stock || 99);
+  const maxStock = 99; // commandes toujours possibles, sans plafond de stock
 
   const existingIndex = currentCart.findIndex((i) => i.id === itemId);
 

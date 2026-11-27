@@ -143,7 +143,10 @@ export function NovikaProductPage({
       : product.stock !== undefined
       ? product.stock
       : 0;
-  const isOutOfStock = isStockTracked && realStock <= 0;
+  // Les commandes restent toujours possibles, même sans stock
+  const isOutOfStock = false;
+  void isStockTracked;
+  void realStock;
 
   // Avis réels de commandes livrées
   const deliveredReviews = reviews.filter((r) => r.verifiedPurchase);
@@ -268,7 +271,7 @@ export function NovikaProductPage({
               </label>
               <div className="flex flex-wrap gap-2">
                 {product.variants.map((variant) => {
-                  const isVariantOutOfStock = isOutOfStock || (variant.stock !== undefined && variant.stock <= 0);
+                  const isVariantOutOfStock = false;
                   return (
                     <button
                       key={variant.id}
@@ -428,7 +431,7 @@ export function NovikaProductPage({
                 <button
                   type="button"
                   onClick={() => setSelectedPackQuantity((prev) => prev + 1)}
-                  disabled={isOutOfStock || (isStockTracked && selectedPackQuantity >= realStock)}
+                  disabled={false}
                   className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm text-[#111111] hover:bg-[#FAF8F5] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
                   aria-label="Augmenter la quantité"
                 >
