@@ -1,0 +1,4 @@
+-- Pages de la vitrine (À propos, livraison, CGV…) : table shop_pages + fonctions
+-- shop_pages_list_server, shop_page_save_server, shop_page_delete_server (réservées au serveur, protégées par le secret)
+-- et shop_page_public (lecture publique des pages publiées). Appliquée via Supabase MCP (migrations « shop_pages » et « shop_pages_slug_accents »).
+-- Les réglages du formulaire de commande sont stockés dans shops.brand (clés formTitle, formButton, formEmail…).

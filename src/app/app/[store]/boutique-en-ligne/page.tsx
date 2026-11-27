@@ -1,5 +1,5 @@
 import React, { Suspense } from "react";
-import { StorefrontClient } from "./storefront-client";
+import { StorefrontHub } from "./storefront-hub";
 
 export default async function BoutiqueEnLignePage({
   params,
@@ -8,8 +8,8 @@ export default async function BoutiqueEnLignePage({
 }) {
   const { store } = await params;
   return (
-    <Suspense fallback={<div className="p-8 text-xs font-bold text-[#666660]">Chargement de l'éditeur de boutique...</div>}>
-      <StorefrontClient storeSlug={store} />
+    <Suspense fallback={<div className="p-8 text-xs font-bold text-[#666660]">Chargement…</div>}>
+      <StorefrontHub storeSlug={store} />
     </Suspense>
   );
 }

@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     if (!cleanSlug || !brand || typeof brand !== "object") {
       return NextResponse.json({ success: false, error: "Paramètres invalides." }, { status: 400 });
     }
-    const allowed = ["color", "style", "tagline", "description", "whatsapp"];
+    const allowed = ["color", "style", "tagline", "description", "whatsapp", "formTitle", "formWarning", "formButton", "formCommitmentText", "formEmail", "formInstructions", "formCommitment"];
     const clean: Record<string, string> = {};
     for (const k of allowed) if (typeof brand[k] === "string") clean[k] = brand[k].slice(0, 300);
     if (clean.color && !/^#[0-9a-fA-F]{6}$/.test(clean.color)) delete clean.color;

@@ -8,6 +8,13 @@ export interface ShopBrand {
   tagline?: string;
   description?: string;
   whatsapp?: string;
+  formTitle?: string;
+  formWarning?: string;
+  formButton?: string;
+  formCommitmentText?: string;
+  formEmail?: string;
+  formInstructions?: string;
+  formCommitment?: string;
 }
 
 const cache = new Map<string, Promise<ShopBrand>>();

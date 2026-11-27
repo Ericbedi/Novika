@@ -2,6 +2,9 @@ import React from "react";
 import Link from "next/link";
 import { ChevronRight, ShieldAlert, CheckCircle2 } from "lucide-react";
 import { resolveStorefrontData } from "@/lib/storefront-resolver";
+import { createClient } from "@/lib/supabase/server";
+
+export const dynamic = "force-dynamic";
 
 export default async function StorefrontCustomPage({
   params,
@@ -55,7 +58,23 @@ export default async function StorefrontCustomPage({
     },
   };
 
-  const pageData = pagesContent[slug] || pagesContent["a-propos"];
+  // Page créée par le vendeur dans « Boutique en ligne > Pages » (prioritaire sur les textes types)
+  let custom: { title: string; content: string } | null = null;
+  try {
+    const supabase = await createClient();
+    const { data } = await (supabase as any).rpc("shop_page_public", { p_slug: storeSlug, p_page_slug: slug });
+    if (data && typeof data.title === "string") custom = data;
+  } catch {
+    custom = null;
+  }
+
+  const pageData = custom
+    ? {
+        title: custom.title,
+        subtitle: "",
+        content: custom.content.split(/\n{2,}|\r\n\r\n/).map((x) => x.trim()).filter(Boolean),
+      }
+    : pagesContent[slug] || pagesContent["a-propos"];
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-8">
@@ -72,7 +91,7 @@ export default async function StorefrontCustomPage({
         <h1 className="text-2xl sm:text-4xl font-black text-[#111111] tracking-tight">
           {pageData.title}
         </h1>
-        <p className="text-xs sm:text-sm text-[#666660]">{pageData.subtitle}</p>
+        {pageData.subtitle && <p className="text-xs sm:text-sm text-[#666660]">{pageData.subtitle}</p>}
       </div>
 
       <div className="rounded-3xl bg-white border border-black/10 p-6 sm:p-10 shadow-2xs space-y-6 text-xs sm:text-sm text-[#444440] leading-relaxed">
@@ -80,7 +99,7 @@ export default async function StorefrontCustomPage({
           <p key={idx}>{p}</p>
         ))}
 
-        {slug === "cgv" && (
+        {!custom && slug === "cgv" && (
           <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center gap-2 mt-6">
             <ShieldAlert className="h-4 w-4 text-amber-600 shrink-0" />
             <span>

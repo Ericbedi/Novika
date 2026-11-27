@@ -61,7 +61,7 @@ const ALL_COUNTRIES_LIST = getSortedAfricanCountries();
 
 export function StandardOrderForm({
   product,
-  settings,
+  settings: baseSettings,
   quantityOffers,
   themePalette,
   storeSlug,
@@ -71,6 +71,17 @@ export function StandardOrderForm({
   onOrderSuccess,
 }: StandardOrderFormProps) {
   const shopBrand = useShopBrand(storeSlug);
+  // Réglages « Formulaire de commande » du vendeur (champs, textes, bouton)
+  const settings: OrderFormSettings = {
+    ...baseSettings,
+    ...(shopBrand.formTitle ? { title: shopBrand.formTitle } : {}),
+    ...(shopBrand.formWarning ? { warningText: shopBrand.formWarning, isWarningEnabled: true } : {}),
+    ...(shopBrand.formCommitmentText ? { commitmentCheckboxText: shopBrand.formCommitmentText } : {}),
+    ...(shopBrand.formEmail ? { showEmailField: shopBrand.formEmail === "1" } : {}),
+    ...(shopBrand.formInstructions ? { showDeliveryInstructions: shopBrand.formInstructions === "1" } : {}),
+    ...(shopBrand.formCommitment ? { requireCommitmentCheckbox: shopBrand.formCommitment === "1" } : {}),
+  };
+  const orderButtonLabel = shopBrand.formButton || "Je commande";
   const effectiveOutOfStock =
     isOutOfStock ??
     ((product.availableStock !== undefined
@@ -1151,7 +1162,7 @@ export function StandardOrderForm({
             <span className="flex items-center gap-2">
               <ShoppingBag className="h-4 w-4" />
               <span>
-                {isExpedition ? "Commander (Paiement avant expédition)" : "Je commande"} — {estimatedTotal.toLocaleString("fr-FR")} FCFA
+                {isExpedition ? "Commander (Paiement avant expédition)" : orderButtonLabel} — {estimatedTotal.toLocaleString("fr-FR")} FCFA
               </span>
             </span>
           )}

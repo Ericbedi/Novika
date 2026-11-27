@@ -34,6 +34,7 @@ import { ProductDescription } from "@/components/products/product-description";
 import { formatFcfa } from "@/lib/money";
 import { ProductPageTemplateType } from "@/lib/theme-engine/types";
 import { cn } from "@/lib/utils";
+import { useShopBrand } from "@/lib/use-shop-brand";
 
 // Masqué par réglage : quantité, « Ajouter au panier » et « Je commande ».
 // La commande se fait via le formulaire intégré. Repasser à true pour réafficher.
@@ -101,6 +102,7 @@ export function NovikaProductPage({
   const [selectedPackQuantity, setSelectedPackQuantity] = useState<number>(1);
   const [copiedLink, setCopiedLink] = useState(false);
   const [isOrderOpen, setIsOrderOpen] = useState(false);
+  const shopBrandForButton = useShopBrand(storeSlug);
   const [addedToCartAnim, setAddedToCartAnim] = useState(false);
 
   const handleAddToCart = () => {
@@ -493,7 +495,7 @@ export function NovikaProductPage({
                   className="w-full min-h-[56px] px-5 py-3.5 rounded-2xl bg-gradient-to-r from-amber-200 to-amber-500 text-[#1a1a1a] text-sm sm:text-base font-black italic flex items-center justify-center gap-2.5 shadow-lg active:scale-[0.98] transition-transform cursor-pointer"
                 >
                   <ShoppingBag className="w-5 h-5 shrink-0" />
-                  <span>Commander maintenant - Paiement à la livraison</span>
+                  <span>{shopBrandForButton.formButton || "Commander maintenant - Paiement à la livraison"}</span>
                 </button>
               )}
               <OrderPopup open={isOrderOpen} onClose={() => setIsOrderOpen(false)}>
