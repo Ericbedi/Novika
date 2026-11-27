@@ -1,0 +1,30 @@
+feature,area,priority,original,clone,notes
+Création de boutique en 3 étapes (nom, style, photos),Onboarding,must,Selika (captures du compte utilisateur),yes,Assistant /nouvelle-boutique + WhatsApp + prix
+Textes de la boutique et du produit rédigés par l'IA,Onboarding,must,Selika / EasyAfrik,partial,Actif seulement avec GEMINI_API_KEY ; sinon texte sobre
+Couleur et style appliqués à la vitrine,Onboarding,should,Selika,yes,Couleur des boutons + style des titres
+Page produit générée (photos / textes / minuteur / stock restant),Page produit,must,EasyAfrik,partial,Minuteur et stock restant non affichés
+Avis clients sur la page produit,Page produit,could,EasyAfrik,skip,Jamais d'avis inventés ; seulement de vrais avis
+Packs / offres de quantité,Page produit,should,EasyAfrik,partial,Table et réglages présents ; miniatures à refaire
+Import depuis un lien produit (AliExpress / Shopify / YouCan),Catalogue,should,EasyAfrik,no,Import CSV seulement
+Formulaire de commande court (nom / téléphone / ville) en pop-up,Commande,must,EasyAfrik,yes,
+Commande enregistrée avec prix recalculé en base,Commande,must,EasyAfrik,yes,
+Alerte à chaque commande (Telegram / email / son),Commande,must,EasyAfrik,partial,Code prêt ; clés à ajouter dans Vercel
+Statuts de commande (reçue / confirmée / programmée / livrée) en base,Commande,must,EasyAfrik,yes,Historique dans order_events
+Commande manuelle avec source (WhatsApp / TikTok / Facebook…),Commande,must,Selika (capture utilisateur),yes,
+Répartition des commandes entre closeuses,Équipe,must,EasyAfrik,no,Écran de démonstration seulement
+Gestion d'équipe avec accès par rôle,Équipe,must,EasyAfrik,partial,0 membre en base
+Envoi de la commande à un livreur et suivi,Livraison,must,EasyAfrik,no,Livreurs / zones / tarifs en démonstration
+Paniers abandonnés avec relance,Relance,should,EasyAfrik,no,Page présente sans données
+Bénéfice net réel (ventes livrées moins coûts / livraison / pub),Finances,must,EasyAfrik,no,Chiffres de démonstration retirés ; rien de réel
+Dépenses et publicité par produit,Finances,should,EasyAfrik,no,
+Performance par produit (visiteurs / formulaires / commandes / conversion),Statistiques,should,EasyAfrik,partial,Événements vitrine en base ; écrans à relier
+Plusieurs boutiques par compte,Compte,should,EasyAfrik (Pro 3 / Premium 10),yes,Administrateurs : 20
+Domaine personnalisé et sous-domaine gratuit,Compte,should,EasyAfrik,partial,Écran et vérification DNS (Robtex) ; pas de branchement Vercel
+Abonnements et facturation,Compte,should,EasyAfrik,no,Écran sans paiement réel
+Agent Telegram / assistante de relance (SAV),Automatisation,could,EasyAfrik,no,
+Compteur de visiteurs en direct sur la vitrine,Page produit,could,EasyAfrik,no,Page Live côté admin seulement
+Contrôle antifraude par IP,Commande,could,—,yes,Robtex (amélioration propre à Novika)
+Connexion sécurisée par mot de passe,Compte,must,—,yes,
+Catalogue partagé mobile / navigateur,Catalogue,must,—,yes,
+Mobile Money / paiement en ligne,Paiement,could,non mentionné sur la page EasyAfrik,skip,Hors périmètre COD
+Réseau et base d'utilisateurs de l'original,Hors périmètre,skip,EasyAfrik / Selika,skip,Ne se copie pas
