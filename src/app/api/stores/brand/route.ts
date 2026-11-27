@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { sanitizeFormConfig } from "@/lib/order-form-config";
 import { getAuthFromRequest } from "@/server/auth/request-auth";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +19,11 @@ export async function POST(req: NextRequest) {
     const clean: Record<string, string> = {};
     for (const k of allowed) if (typeof brand[k] === "string") clean[k] = brand[k].slice(0, 300);
     if (clean.color && !/^#[0-9a-fA-F]{6}$/.test(clean.color)) delete clean.color;
+    const cleanBrand: Record<string, unknown> = { ...clean };
+    if (brand.formConfig && typeof brand.formConfig === "object") {
+      const fc = sanitizeFormConfig(brand.formConfig);
+      if (fc) cleanBrand.formConfig = fc;
+    }
 
     const secret = process.env.PRODUCT_SYNC_SECRET;
     if (!secret) return NextResponse.json({ success: false, error: "Non configuré." }, { status: 500 });
@@ -26,7 +32,7 @@ export async function POST(req: NextRequest) {
     if (!shop || (auth.role === "owner" && shop.owner_email?.toLowerCase() !== auth.email)) {
       return NextResponse.json({ success: false, error: "Cette boutique ne vous appartient pas." }, { status: 403 });
     }
-    const { data } = await (supabase as any).rpc("shop_set_brand_server", { p_secret: secret, p_slug: cleanSlug, p_brand: clean });
+    const { data } = await (supabase as any).rpc("shop_set_brand_server", { p_secret: secret, p_slug: cleanSlug, p_brand: cleanBrand });
     return NextResponse.json({ success: !!data?.success });
   } catch {
     return NextResponse.json({ success: false, error: "Erreur interne" }, { status: 500 });

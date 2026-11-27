@@ -1,5 +1,6 @@
 "use client";
 
+import type { OrderFormConfig } from "./order-form-config";
 import { useEffect, useState } from "react";
 
 export interface ShopBrand {
@@ -15,6 +16,7 @@ export interface ShopBrand {
   formEmail?: string;
   formInstructions?: string;
   formCommitment?: string;
+  formConfig?: OrderFormConfig;
 }
 
 const cache = new Map<string, Promise<ShopBrand>>();

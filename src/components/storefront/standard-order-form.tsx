@@ -41,6 +41,7 @@ import {
 import { cn } from "@/lib/utils";
 import { CountryFlag } from "@/components/ui/country-flag";
 import { getSortedAfricanCountries, getCountryByCode, AfricanCountryConfig } from "@/config/countries";
+import { readableTextColor, type FormFieldDef } from "@/lib/order-form-config";
 import { isCountryEnabledForShop } from "@/server/data/shop-countries";
 
 interface StandardOrderFormProps {
@@ -57,7 +58,7 @@ interface StandardOrderFormProps {
 }
 
 // Les 54 pays d'Afrique triés alphabétiquement selon Prompt 05-P
-const ALL_COUNTRIES_LIST = getSortedAfricanCountries();
+const ALL_COUNTRIES_LIST_FULL = getSortedAfricanCountries();
 
 export function StandardOrderForm({
   product,
@@ -74,14 +75,31 @@ export function StandardOrderForm({
   // Réglages « Formulaire de commande » du vendeur (champs, textes, bouton)
   const settings: OrderFormSettings = {
     ...baseSettings,
-    ...(shopBrand.formTitle ? { title: shopBrand.formTitle } : {}),
+    ...((shopBrand.formConfig?.name || shopBrand.formTitle) ? { title: shopBrand.formConfig?.name || shopBrand.formTitle } : {}),
+    ...(shopBrand.formConfig ? { showEmailField: false, showDeliveryInstructions: false, showDeliveryPrecision: false } : {}),
     ...(shopBrand.formWarning ? { warningText: shopBrand.formWarning, isWarningEnabled: true } : {}),
     ...(shopBrand.formCommitmentText ? { commitmentCheckboxText: shopBrand.formCommitmentText } : {}),
-    ...(shopBrand.formEmail ? { showEmailField: shopBrand.formEmail === "1" } : {}),
-    ...(shopBrand.formInstructions ? { showDeliveryInstructions: shopBrand.formInstructions === "1" } : {}),
+    ...(shopBrand.formEmail && !shopBrand.formConfig ? { showEmailField: shopBrand.formEmail === "1" } : {}),
+    ...(shopBrand.formInstructions && !shopBrand.formConfig ? { showDeliveryInstructions: shopBrand.formInstructions === "1" } : {}),
     ...(shopBrand.formCommitment ? { requireCommitmentCheckbox: shopBrand.formCommitment === "1" } : {}),
   };
-  const orderButtonLabel = shopBrand.formButton || "Je commande";
+  const fc = shopBrand.formConfig;
+  const fcFields: FormFieldDef[] = fc?.fields || [];
+  const primaryOf = (kind: string) => fcFields.find((f) => f.kind === kind);
+  const fName = primaryOf("name");
+  const fPhone = primaryOf("phone");
+  const fCity = primaryOf("city");
+  const fAddress = primaryOf("address");
+  const primaryIds = new Set([fName?.id, fPhone?.id, fCity?.id, fAddress?.id]);
+  const extraFields = fcFields.filter((f) => !primaryIds.has(f.id));
+  const showAddress = !fc || !!fAddress;
+  const ALL_COUNTRIES_LIST = fc && fc.countries.length ? ALL_COUNTRIES_LIST_FULL.filter((c) => fc.countries.includes(c.code)) : ALL_COUNTRIES_LIST_FULL;
+  const ordOf = (id: string | undefined, fallback: number) => {
+    const i = id ? fcFields.findIndex((f) => f.id === id) : -1;
+    return i >= 0 ? (i + 1) * 10 : fallback;
+  };
+  const [extras, setExtras] = useState<Record<string, string>>({});
+  const orderButtonLabel = fc?.buttonText || shopBrand.formButton || "Je commande";
   const effectiveOutOfStock =
     isOutOfStock ??
     ((product.availableStock !== undefined
@@ -225,6 +243,14 @@ export function StandardOrderForm({
   const estimatedTotal = activeOffer.totalPrice || 0;
 
   // Mise à jour de l'indicatif lors du changement de pays (Prompt 05-P)
+  useEffect(() => {
+    if (fc && fc.countries.length && !fc.countries.includes(countryCode)) {
+      const first = ALL_COUNTRIES_LIST_FULL.find((c) => fc.countries.includes(c.code));
+      if (first) handleCountryChange(first.code);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shopBrand.formConfig]);
+
   const handleCountryChange = (cCode: string) => {
     setCountryCode(cCode);
     const found = getCountryByCode(cCode);
@@ -296,9 +322,15 @@ export function StandardOrderForm({
       setErrorMessage("Veuillez saisir un numéro de téléphone valide d'au moins 8 chiffres.");
       return;
     }
-    if (!address.trim()) {
+    if (showAddress && (!fAddress || fAddress.required) && !address.trim()) {
       setErrorMessage("Veuillez indiquer votre adresse ou un point de repère précis.");
       return;
+    }
+    for (const f of extraFields) {
+      if (f.required && !(extras[f.id] || "").trim()) {
+        setErrorMessage(`Veuillez renseigner : ${f.label}.`);
+        return;
+      }
     }
 
     // Détection de doublon 24h
@@ -327,7 +359,7 @@ export function StandardOrderForm({
           isWhatsApp,
           city,
           district: district.trim() || undefined,
-          address,
+          address: address.trim() || city,
           deliveryPrecision: deliveryPrecision.trim() || undefined,
           email: email.trim() || undefined,
           commitmentChecked,
@@ -345,6 +377,11 @@ export function StandardOrderForm({
         return;
       }
 
+      const extrasSuffix = extraFields
+        .filter((f) => (extras[f.id] || "").trim())
+        .map((f) => ` | ${f.label}: ${(extras[f.id] || "").trim().slice(0, 200)}`)
+        .join("");
+
       // Enregistrement RÉEL de la commande dans la base : la confirmation n'est affichée que si elle est bien reçue
       try {
         const saveRes = await fetch("/api/orders", {
@@ -355,7 +392,7 @@ export function StandardOrderForm({
             customerName: result.recalculatedOrder.customerName,
             customerPhone: result.recalculatedOrder.customerPhone,
             city: result.recalculatedOrder.city,
-            deliveryAddress: result.recalculatedOrder.address,
+            deliveryAddress: (result.recalculatedOrder.address + extrasSuffix).slice(0, 480),
             subtotal: result.recalculatedOrder.subtotal,
             storeSlug,
             productId: product.id,
@@ -459,8 +496,8 @@ export function StandardOrderForm({
     setProofError(null);
   };
 
-  const primaryColor = themePalette?.primary || "#111111";
-  const contrastTextColor = themePalette?.contrastText || "#FFFFFF";
+  const primaryColor = fc?.buttonColor || themePalette?.primary || "#111111";
+  const contrastTextColor = fc?.buttonColor ? readableTextColor(fc.buttonColor) : themePalette?.contrastText || "#FFFFFF";
 
   // ========================================================
   // ÉCRAN DE CONFIRMATION SUCCÈS
@@ -799,7 +836,7 @@ export function StandardOrderForm({
       )}
 
       {/* Formulaire de coordonnées */}
-      <form onSubmit={handleSubmit} onFocusCapture={notifyInitiateCheckout} className="space-y-4">
+      <form onSubmit={handleSubmit} onFocusCapture={notifyInitiateCheckout} className="flex flex-col gap-4">
         {/* Champ anti-robot Honeypot invisible */}
         <input
           type="text"
@@ -813,9 +850,9 @@ export function StandardOrderForm({
         />
 
         {/* Nom & Prénom */}
-        <div>
+        <div style={{ order: ordOf(fName?.id, 10) }}>
           <label className="block text-xs font-bold text-[#111111] mb-1">
-            Nom et prénom <span className="text-rose-600">*</span>
+            {fName?.label || "Nom et prénom"} <span className="text-rose-600">*</span>
           </label>
           <input
             type="text"
@@ -823,15 +860,15 @@ export function StandardOrderForm({
             autoComplete="name"
             value={customerName}
             onChange={(e) => setCustomerName(e.target.value)}
-            placeholder="Ex: Prénom Nom"
+            placeholder={fName?.placeholder || "Ex: Prénom Nom"}
             className="w-full min-h-[44px] px-3.5 py-2.5 text-base sm:text-xs rounded-xl border border-black/[0.1] bg-white text-[#111111] placeholder:text-[#888880] focus:outline-none focus:ring-2 focus:ring-black/[0.15]"
           />
         </div>
 
         {/* Téléphone avec indicatif pays dans un conteneur unique arrondi (Prompt 05-F) */}
-        <div className="space-y-1.5">
+        <div className="space-y-1.5" style={{ order: ordOf(fPhone?.id, 20) }}>
           <label className="block text-xs font-bold text-[#111111]">
-            Numéro de téléphone joignable <span className="text-rose-600">*</span>
+            {fPhone?.label || "Numéro de téléphone joignable"} <span className="text-rose-600">*</span>
           </label>
           <div className="flex items-center rounded-xl border border-black/[0.1] bg-white overflow-hidden focus-within:ring-2 focus-within:ring-black/[0.15] focus-within:border-transparent min-h-[44px]">
             {/* Sélecteur de pays compact ~96px avec drapeau SVG + indicatif */}
@@ -861,7 +898,7 @@ export function StandardOrderForm({
               autoComplete="tel"
               value={phoneLocal}
               onChange={(e) => setPhoneLocal(e.target.value)}
-              placeholder="Ex: 07 48 29 11 02"
+              placeholder={fPhone?.placeholder || "Ex: 07 48 29 11 02"}
               className="flex-1 min-w-0 h-[44px] px-3 text-base sm:text-sm font-mono text-[#111111] placeholder:text-[#888880] focus:outline-none bg-transparent"
             />
           </div>
@@ -929,9 +966,9 @@ export function StandardOrderForm({
         </div>
 
         {/* Ville ou quartier saisie librement avec détection de zone par signaux */}
-        <div className="space-y-1.5">
+        <div className="space-y-1.5" style={{ order: ordOf(fCity?.id, 30) }}>
           <label className="block text-xs font-bold text-[#111111]">
-            Ville ou quartier <span className="text-rose-600">*</span>
+            {fCity?.label || "Ville ou quartier"} <span className="text-rose-600">*</span>
           </label>
           <div className="relative">
             <input
@@ -941,7 +978,7 @@ export function StandardOrderForm({
               autoComplete="address-level2"
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              placeholder="Ex. Lomé, Agoè, Kara, Abidjan..."
+              placeholder={fCity?.placeholder || "Ex. Lomé, Agoè, Kara, Abidjan..."}
               className="w-full min-h-[44px] px-3.5 py-2.5 text-base sm:text-xs rounded-xl border border-black/[0.1] bg-white text-[#111111] placeholder:text-[#888880] focus:outline-none focus:ring-2 focus:ring-black/[0.15]"
             />
             {isCheckingZone && (
@@ -1005,7 +1042,7 @@ export function StandardOrderForm({
 
         {/* Bannière informative spécifique selon la zone de livraison */}
         {isExpedition && (
-          <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-950 flex items-start gap-2.5">
+          <div style={{ order: ordOf(fCity?.id, 30) + 1 }} className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-950 flex items-start gap-2.5">
             <Truck className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
             <div>
               <strong className="block font-bold">Zone d'expédition interurbaine (3 à 5 jours)</strong>
@@ -1017,7 +1054,7 @@ export function StandardOrderForm({
         )}
 
         {isNotServed && (
-          <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-950 flex items-start gap-2.5">
+          <div style={{ order: ordOf(fCity?.id, 30) + 1 }} className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-950 flex items-start gap-2.5">
             <AlertTriangle className="h-4 w-4 text-rose-700 shrink-0 mt-0.5" />
             <div>
               <strong className="block font-bold text-rose-900">Livraison indisponible dans cette ville</strong>
@@ -1029,23 +1066,59 @@ export function StandardOrderForm({
         )}
 
         {/* Adresse ou point de repère précis */}
-        <div>
+        {showAddress && (
+        <div style={{ order: ordOf(fAddress?.id, 50) }}>
           <label className="block text-xs font-bold text-[#111111] mb-1">
-            Adresse exacte ou point de repère <span className="text-rose-600">*</span>
+            {fAddress?.label || "Adresse exacte ou point de repère"} {(!fAddress || fAddress.required) && <span className="text-rose-600">*</span>}
           </label>
           <input
             type="text"
-            required
+            required={!fAddress || fAddress.required}
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            placeholder="Ex: Près de la Pharmacie de la Paix, maison clôturée..."
+            placeholder={fAddress?.placeholder || "Ex: Près de la Pharmacie de la Paix, maison clôturée..."}
             className="w-full min-h-[44px] px-3.5 py-2.5 text-base sm:text-xs rounded-xl border border-black/[0.1] bg-white text-[#111111] placeholder:text-[#888880] focus:outline-none focus:ring-2 focus:ring-black/[0.15]"
           />
         </div>
+        )}
+
+        {/* Champs ajoutés par le vendeur (Formulaire de commande) */}
+        {extraFields.map((f) => {
+          const common = "w-full px-3.5 text-base sm:text-sm rounded-xl border border-black/[0.1] bg-white text-[#111111] placeholder:text-[#888880] focus:outline-none focus:ring-2 focus:ring-black/[0.15]";
+          const val = extras[f.id] || "";
+          const set = (v: string) => setExtras((x) => ({ ...x, [f.id]: v }));
+          return (
+            <div key={f.id} style={{ order: ordOf(f.id, 60) }}>
+              <label className="block text-xs font-bold text-[#111111] mb-1">
+                {f.label} {f.required && <span className="text-rose-600">*</span>}
+              </label>
+              {f.kind === "textarea" ? (
+                <textarea rows={3} required={f.required} value={val} onChange={(e) => set(e.target.value)} placeholder={f.placeholder} className={`${common} py-2.5`} />
+              ) : f.kind === "select" || f.kind === "country" ? (
+                <select required={f.required} value={val} onChange={(e) => set(e.target.value)} className={`${common} min-h-[44px]`}>
+                  <option value="">{f.placeholder || "Choisissez…"}</option>
+                  {(f.kind === "country" ? ALL_COUNTRIES_LIST.map((c) => c.name) : f.options || []).map((o) => (
+                    <option key={o} value={o}>{o}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type={f.kind === "email" ? "email" : f.kind === "phone" ? "tel" : "text"}
+                  inputMode={f.kind === "phone" ? "tel" : undefined}
+                  required={f.required}
+                  value={val}
+                  onChange={(e) => set(e.target.value)}
+                  placeholder={f.placeholder}
+                  className={`${common} min-h-[44px] py-2.5`}
+                />
+              )}
+            </div>
+          );
+        })}
 
         {/* Précision pour la livraison */}
         {(settings.showDeliveryInstructions || settings.showDeliveryPrecision) && (
-          <div>
+          <div style={{ order: 70 }}>
             <label className="block text-[11px] font-bold text-[#666660] uppercase mb-1">
               Précision pour le livreur (Facultatif)
             </label>
@@ -1061,7 +1134,7 @@ export function StandardOrderForm({
 
         {/* E-mail optionnel */}
         {settings.showEmailField && (
-          <div>
+          <div style={{ order: 80 }}>
             <label className="block text-[11px] font-bold text-[#666660] uppercase mb-1">
               Adresse e-mail (Facultatif)
             </label>
@@ -1077,7 +1150,7 @@ export function StandardOrderForm({
 
         {/* Case d'engagement (S'adapte dynamiquement si expédition prépayée) */}
         {settings.requireCommitmentCheckbox && !isNotServed && (
-          <label className="flex items-start gap-2.5 p-3 rounded-2xl bg-[#FAF8F5] border border-black/[0.06] cursor-pointer select-none">
+          <label style={{ order: 900 }} className="flex items-start gap-2.5 p-3 rounded-2xl bg-[#FAF8F5] border border-black/[0.06] cursor-pointer select-none">
             <input
               type="checkbox"
               required
@@ -1094,7 +1167,7 @@ export function StandardOrderForm({
         )}
 
         {/* Récapitulatif financier interactif (LIVRAISON GRATUITE ABSOLUE) */}
-        <div className="rounded-2xl border border-black/[0.08] bg-[#FAF8F5] p-4 space-y-2 text-xs">
+        <div style={{ order: 910 }} className="rounded-2xl border border-black/[0.08] bg-[#FAF8F5] p-4 space-y-2 text-xs">
           <div className="flex justify-between text-[#666660]">
             <span>Sous-total articles :</span>
             <span className="font-semibold text-[#111111]">
@@ -1134,7 +1207,7 @@ export function StandardOrderForm({
 
         {/* Message d'erreur serveur */}
         {errorMessage && (
-          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 font-medium">
+          <div style={{ order: 920 }} className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 font-medium">
             {errorMessage}
           </div>
         )}
@@ -1144,6 +1217,7 @@ export function StandardOrderForm({
           type="submit"
           disabled={isSubmitting || isNotServed || effectiveOutOfStock}
           style={{
+            order: 930,
             backgroundColor: effectiveOutOfStock || isNotServed ? "#888880" : primaryColor,
             color: contrastTextColor,
           }}
@@ -1169,7 +1243,7 @@ export function StandardOrderForm({
         </button>
 
         {/* Microtextes de réassurance */}
-        <div className="space-y-1 text-center pt-1">
+        <div style={{ order: 940 }} className="space-y-1 text-center pt-1">
           <p className="text-[11px] text-[#666660] flex items-center justify-center gap-1.5">
             <Truck className="h-3 w-3 text-emerald-600 shrink-0" />
             <span>Livraison gratuite partout · Aucun frais caché</span>
