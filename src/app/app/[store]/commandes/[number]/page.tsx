@@ -1,5 +1,5 @@
 import React from "react";
-import { OrderDetailClient } from "./order-detail-client";
+import { OrderDetailLoader } from "./order-detail-loader";
 import { MOCK_STORES } from "@/mock-data/stores";
 import { MOCK_ORDERS } from "@/mock-data/orders";
 
@@ -19,5 +19,5 @@ export default async function OrderDetailPage({
   params: Promise<{ store: string; number: string }>;
 }) {
   const { store, number } = await params;
-  return <OrderDetailClient storeSlug={store} orderNumber={number} />;
+  return <OrderDetailLoader storeSlug={store} orderNumber={number} />;
 }

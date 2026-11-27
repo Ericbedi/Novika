@@ -26,6 +26,8 @@ import {
 import { generatePendingStockWhatsAppUrl } from "@/lib/stock-settings-store";
 import { Order, OrderStatus, ORDER_STATUSES, ORDER_STATUS_LABELS } from "@/server/data/types";
 import { MOCK_ORDERS } from "@/mock-data/orders";
+import { mapApiOrder, persistOrderStatus } from "@/lib/orders-api";
+import { notificationSound } from "@/lib/notification-sound";
 import { MOCK_RIDERS } from "@/mock-data/deliveries";
 import { MOCK_RECEIPTS_DATA } from "@/mock-data/receipts";
 import { PageHeader } from "@/components/app/page-header";
@@ -85,50 +87,35 @@ export function OrdersListClient({ storeSlug }: OrdersListClientProps) {
         }
       }
 
-      // Synchronisation avec les commandes enregistrées sur le serveur
-      fetch(`/api/orders?store=${encodeURIComponent(storeSlug)}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (!isMounted) return;
-          if (data?.orders && Array.isArray(data.orders) && data.orders.length > 0) {
+      // La base de données fait foi : on remplace la liste locale par les commandes réelles
+      const loadServerOrders = (notify: boolean) =>
+        fetch(`/api/orders?store=${encodeURIComponent(storeSlug)}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (!isMounted || !data?.success || !Array.isArray(data.orders)) return;
+            const mapped: Order[] = data.orders.map(mapApiOrder);
             setOrders((prev) => {
-              const combined = [...prev];
-              for (const o of data.orders) {
-                const mapped: Order = {
-                  id: o.id || o.order_number,
-                  orderNumber: o.order_number || o.orderNumber,
-                  customerName: o.customer_name || o.customerName,
-                  customerPhone: o.customer_phone || o.customerPhone,
-                  city: o.city,
-                  district: o.district || "",
-                  country: o.country || "TG",
-                  currency: o.currency || "XOF",
-                  deliveryAddress: o.delivery_address || o.deliveryAddress,
-                  status: (o.status === "NOUVELLE" ? "pending" : (o.status || "pending")) as OrderStatus,
-                  statusReason: o.status_reason || null,
-                  subtotal: Number(o.subtotal) || Number(o.total_amount) || 0,
-                  shippingFee: Number(o.shipping_fee) || 0,
-                  totalAmount: Number(o.total_amount) || Number(o.subtotal) || 0,
-                  createdAt: o.created_at || new Date().toISOString(),
-                  updatedAt: o.updated_at || o.updatedAt || o.created_at || new Date().toISOString(),
-                  items: o.order_items || o.items || [],
-                };
-                if (!combined.some((c) => c.orderNumber === mapped.orderNumber)) {
-                  combined.unshift(mapped);
-                }
+              if (notify && mapped.length > prev.length) {
+                notificationSound.playOrderSound();
+                showToast(`Nouvelle commande reçue (${mapped.length - prev.length})`);
               }
-              try {
-                localStorage.setItem(`novika_store_orders_${storeSlug}`, JSON.stringify(combined));
-              } catch (err) {
-                console.warn("[Orders List] Erreur sauvegarde localStorage:", err);
-              }
-              return combined;
+              return mapped;
             });
-          }
-        })
-        .catch((err) => {
-          console.warn("[Orders List] Erreur fetch API:", err);
-        });
+            try {
+              localStorage.setItem(`novika_store_orders_${storeSlug}`, JSON.stringify(mapped));
+            } catch (err) {
+              console.warn("[Orders List] Erreur sauvegarde localStorage:", err);
+            }
+          })
+          .catch((err) => {
+            console.warn("[Orders List] Erreur fetch API:", err);
+          });
+      loadServerOrders(false);
+      const timer = setInterval(() => loadServerOrders(true), 30000);
+      return () => {
+        isMounted = false;
+        clearInterval(timer);
+      };
     }
     return () => {
       isMounted = false;
@@ -274,14 +261,23 @@ export function OrdersListClient({ storeSlug }: OrdersListClientProps) {
     return getRangeDisplayLabel(selectedPreset, selectedRange);
   }, [selectedPreset, selectedRange]);
 
-  const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
+  const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
     if (activeRole === "closer" && newStatus === "delivered") {
       showToast("Action interdite : Seul le livreur ou l'administrateur peut marquer une commande comme Livrée.");
       return;
     }
+    const target = orders.find((o) => o.id === orderId);
+    if (!target) return;
+    const previousStatus = target.status;
     setOrders((prev) =>
       prev.map((o) => (o.id === orderId ? { ...o, status: newStatus, updatedAt: "À l'instant" } : o))
     );
+    const err = await persistOrderStatus(storeSlug, target.orderNumber, newStatus);
+    if (err) {
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: previousStatus } : o)));
+      showToast(err);
+      return;
+    }
     showToast(`Statut mis à jour : ${ORDER_STATUS_LABELS[newStatus]}`);
   };
 

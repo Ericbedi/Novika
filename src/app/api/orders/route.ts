@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { reserveStockForOrder } from "@/lib/stock-settings-store";
 import { getAuthFromRequest } from "@/server/auth/request-auth";
 import { assessOrderIp } from "@/server/robtex/client";
+import { notifyNewOrder } from "@/server/notify/new-order";
 
 export const dynamic = "force-dynamic";
 
@@ -118,6 +119,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Alerte au propriétaire (Telegram / e-mail si configurés) — jamais bloquante
+    try {
+      const { data: shopInfo } = await supabase.from("shops").select("name, owner_email").eq("slug", storeSlug).maybeSingle();
+      await notifyNewOrder({
+        shopName: shopInfo?.name || storeSlug,
+        ownerEmail: shopInfo?.owner_email,
+        orderNumber: data.order_number || orderNumber,
+        customerName,
+        customerPhone,
+        city,
+        total: Number(data.total_amount) || Number(subtotal) || 0,
+        quantity: orderQty,
+      });
+    } catch {
+      /* ignoré */
+    }
+
     return NextResponse.json({
       success: true,
       order: { order_number: data.order_number, total_amount: data.total_amount, status: "pending" },
@@ -125,5 +143,50 @@ export async function POST(req: NextRequest) {
   } catch (err: unknown) {
     console.error("[Orders API] erreur:", err instanceof Error ? err.message : err);
     return NextResponse.json({ success: false, error: "Erreur serveur, réessayez." }, { status: 500 });
+  }
+}
+
+const DB_STATUSES = [
+  "pending", "confirmed", "prepared", "unreachable", "scheduled", "postponed", "shipped", "delivered",
+  "failed", "cancelled", "returned", "rejected", "rejected_invalid_number", "lost_unreachable", "pending_stock",
+];
+
+/** PATCH : changement de statut d'une commande (membres connectés uniquement). */
+export async function PATCH(req: NextRequest) {
+  try {
+    const auth = await getAuthFromRequest(req);
+    if (!auth) return NextResponse.json({ success: false, error: "Session absente ou expirée." }, { status: 401 });
+
+    const { store, orderNumber, status, note } = await req.json();
+    if (!store || !orderNumber || !DB_STATUSES.includes(status)) {
+      return NextResponse.json({ success: false, error: "Paramètres invalides." }, { status: 400 });
+    }
+    if (auth.role === "closer" && status === "delivered") {
+      return NextResponse.json({ success: false, error: "Une closeuse ne peut pas marquer une commande Livrée." }, { status: 403 });
+    }
+    const secret = process.env.PRODUCT_SYNC_SECRET;
+    if (!secret) return NextResponse.json({ success: false, error: "Non configuré sur le serveur." }, { status: 500 });
+
+    const supabase = await createClient();
+    if (auth.role === "owner") {
+      const { data: shop } = await supabase.from("shops").select("owner_email").eq("slug", store).maybeSingle();
+      if (shop?.owner_email && shop.owner_email.toLowerCase() !== auth.email) {
+        return NextResponse.json({ success: false, error: "Cette boutique ne vous appartient pas." }, { status: 403 });
+      }
+    }
+    const { data, error } = await (supabase as any).rpc("order_set_status_server", {
+      p_secret: secret,
+      p_shop_slug: store,
+      p_order_number: orderNumber,
+      p_status: status,
+      p_note: typeof note === "string" ? note.slice(0, 300) : null,
+      p_actor: auth.email || auth.role,
+    });
+    if (error || !data?.success) {
+      return NextResponse.json({ success: false, error: data?.error || "Mise à jour impossible." }, { status: error ? 500 : 422 });
+    }
+    return NextResponse.json({ success: true, status: data.status });
+  } catch {
+    return NextResponse.json({ success: false, error: "Erreur interne" }, { status: 500 });
   }
 }

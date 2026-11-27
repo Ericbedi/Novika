@@ -58,18 +58,20 @@ import {
   generatePendingStockWhatsAppUrl,
 } from "@/lib/stock-settings-store";
 import { notificationSound } from "@/lib/notification-sound";
+import { persistOrderStatus } from "@/lib/orders-api";
 
 interface OrderDetailClientProps {
   storeSlug: string;
   orderNumber: string;
+  initialOrder?: Order;
 }
 
-export function OrderDetailClient({ storeSlug, orderNumber }: OrderDetailClientProps) {
+export function OrderDetailClient({ storeSlug, orderNumber, initialOrder: providedOrder }: OrderDetailClientProps) {
   const router = useRouter();
   const { activeRole } = useApp();
 
   const initialOrder =
-    MOCK_ORDERS.find((o) => o.orderNumber === orderNumber) || MOCK_ORDERS[0];
+    providedOrder || MOCK_ORDERS.find((o) => o.orderNumber === orderNumber) || MOCK_ORDERS[0];
 
   const [order, setOrder] = useState<Order>(initialOrder);
   const [internalNotes, setInternalNotes] = useState(
@@ -172,7 +174,7 @@ export function OrderDetailClient({ storeSlug, orderNumber }: OrderDetailClientP
     showToast("Message de suivi WhatsApp copié dans le presse-papier !");
   };
 
-  const handleSaveStatus = (e: React.FormEvent) => {
+  const handleSaveStatus = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Règle métier stricte : une closeuse ne peut jamais marquer Livrée
@@ -235,6 +237,18 @@ export function OrderDetailClient({ storeSlug, orderNumber }: OrderDetailClientP
       }
     } else if (selectedNewStatus === "scheduled" || selectedNewStatus === "postponed") {
       reasonText = `Programmée pour : ${scheduledDateInput}`;
+    }
+
+    // Enregistrement en base : en cas d'échec, rien ne change à l'écran
+    const persistErr = await persistOrderStatus(
+      storeSlug,
+      order.orderNumber,
+      selectedNewStatus,
+      reasonText || undefined
+    );
+    if (persistErr) {
+      showToast(persistErr);
+      return;
     }
 
     // Gestion de la réservation de stock (Prompt 16-b)
