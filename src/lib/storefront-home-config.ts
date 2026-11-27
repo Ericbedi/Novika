@@ -14,6 +14,7 @@ export interface HomeConfig {
   typography?: { fontFamily?: string; headingFont?: string };
   colors?: { primary?: string; background?: string; text?: string };
   banners?: HomeBanner[];
+  order?: string[];
 }
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
@@ -107,6 +108,9 @@ export function sanitizeHomeConfig(input: unknown): HomeConfig {
       });
     }
   }
+  if (Array.isArray(c.order)) {
+    out.order = c.order.filter((x: unknown): x is string => typeof x === "string" && /^[a-z0-9_]{1,40}$/.test(x)).slice(0, 20);
+  }
   if (c.colors && typeof c.colors === "object") {
     out.colors = {};
     for (const k of ["primary", "background", "text"] as const) {
@@ -150,6 +154,7 @@ export function applyHomeConfig(storefront: StorefrontData, raw: unknown): Store
     header: { ...storefront.header, ...(cfg.header || {}) },
     footer: { ...(storefront.footer || {}), ...(cfg.footer || {}) },
     homeBanners: cfg.banners ?? storefront.homeBanners ?? [],
+    homeOrder: cfg.order ?? storefront.homeOrder,
   };
 }
 
@@ -180,6 +185,7 @@ export function buildHomeConfig(sf: StorefrontData): HomeConfig {
     footer: { tagline: sf.footer?.tagline, copyright: sf.footer?.copyright },
     typography: { fontFamily: sf.activeTheme?.typography?.fontFamily, headingFont: sf.activeTheme?.typography?.headingFont },
     banners: sf.homeBanners,
+    order: sf.homeOrder,
     colors: { primary: sf.activeTheme?.colors?.primary, background: sf.activeTheme?.colors?.background, text: sf.activeTheme?.colors?.text },
   });
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { sanitizePageBlocks } from "@/lib/page-sections";
 import { authorizeShop } from "@/server/auth/shop-access";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
   const { data, error } = await (a.supabase as any).rpc("shop_page_save_server", {
     p_secret: a.secret,
     p_slug: body.store,
-    p_page: { id: p.id || null, title: String(p.title || ""), slug: String(p.slug || ""), content: String(p.content || ""), published: p.published !== false },
+    p_page: { id: p.id || null, title: String(p.title || ""), slug: String(p.slug || ""), content: String(p.content || ""), sections: sanitizePageBlocks(p.sections), published: p.published !== false },
   });
   if (error || !data?.success) return NextResponse.json({ success: false, error: data?.error || "Enregistrement impossible." }, { status: error ? 500 : 422 });
   return NextResponse.json({ success: true, id: data.id, slug: data.slug });

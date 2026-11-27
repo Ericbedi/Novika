@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { ChevronRight, ShieldAlert, CheckCircle2 } from "lucide-react";
 import { resolveStorefrontData } from "@/lib/storefront-resolver";
+import { CustomPageBlocks } from "@/components/storefront/custom-page-blocks";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -59,7 +60,7 @@ export default async function StorefrontCustomPage({
   };
 
   // Page créée par le vendeur dans « Boutique en ligne > Pages » (prioritaire sur les textes types)
-  let custom: { title: string; content: string } | null = null;
+  let custom: { title: string; content: string; sections?: unknown[] } | null = null;
   try {
     const supabase = await createClient();
     const { data } = await (supabase as any).rpc("shop_page_public", { p_slug: storeSlug, p_page_slug: slug });
@@ -72,7 +73,7 @@ export default async function StorefrontCustomPage({
     ? {
         title: custom.title,
         subtitle: "",
-        content: custom.content.split(/\n{2,}|\r\n\r\n/).map((x) => x.trim()).filter(Boolean),
+        content: (custom.content || "").split(/\n{2,}|\r\n\r\n/).map((x) => x.trim()).filter(Boolean),
       }
     : pagesContent[slug] || pagesContent["a-propos"];
 
@@ -95,9 +96,18 @@ export default async function StorefrontCustomPage({
       </div>
 
       <div className="rounded-3xl bg-white border border-black/10 p-6 sm:p-10 shadow-2xs space-y-6 text-xs sm:text-sm text-[#444440] leading-relaxed">
-        {pageData.content.map((p, idx) => (
-          <p key={idx}>{p}</p>
-        ))}
+        {custom && Array.isArray(custom.sections) && custom.sections.length > 0 ? (
+          <CustomPageBlocks blocks={custom.sections} storeSlug={storeSlug} />
+        ) : custom ? (
+          <>
+            <CustomPageBlocks blocks={[]} storeSlug={storeSlug} />
+            {pageData.content.map((p, idx) => (
+              <p key={idx}>{p}</p>
+            ))}
+          </>
+        ) : (
+          pageData.content.map((p, idx) => <p key={idx}>{p}</p>)
+        )}
 
         {!custom && slug === "cgv" && (
           <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center gap-2 mt-6">

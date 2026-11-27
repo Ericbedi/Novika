@@ -27,9 +27,10 @@ import { MOCK_STOREFRONT_LOME } from "@/mock-data/storefront-data";
 import { MOCK_SHOP_BANNER_ITEMS } from "@/mock-data/product-page-data";
 import { ShopBannerItem } from "@/server/data/product-page-types";
 import { resolveStorefrontData } from "@/lib/storefront-resolver";
-import { applyHomeConfig, sanitizeHomeConfig, storefrontFontStack, type HomeConfig } from "@/lib/storefront-home-config";
+import { applyHomeConfig, buildHomeConfig, sanitizeHomeConfig, storefrontFontStack, type HomeConfig } from "@/lib/storefront-home-config";
 import { loadShopBrand } from "@/lib/use-shop-brand";
 import { brandConfig, APP_NAME } from "@/config/brand";
+import { useStudioDraft, postStudioBase } from "@/lib/studio-bridge";
 import { AnnouncementBanner } from "@/components/storefront/announcement-banner";
 import { StorefrontBrand } from "@/components/storefront/storefront-brand";
 import { StorefrontPresencePing } from "@/components/storefront/storefront-presence-ping";
@@ -86,7 +87,13 @@ export default function StorefrontLayout({
 
   const resolved = resolveStorefrontData(storeSlug);
   const store = resolved.store;
-  const storefront = applyHomeConfig(resolved.storefront, homeConfig);
+  const studioDraft = useStudioDraft();
+  const storefront = applyHomeConfig(resolved.storefront, studioDraft.draft.config ?? homeConfig);
+  const hasStudioDraft = !!studioDraft.draft.config;
+  React.useEffect(() => {
+    if (studioDraft.active && !hasStudioDraft) postStudioBase("layout", buildHomeConfig(applyHomeConfig(resolved.storefront, homeConfig)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studioDraft.active, hasStudioDraft, homeConfig]);
   void brandIntro;
 
   const bannerItems: ShopBannerItem[] =

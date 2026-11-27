@@ -145,6 +145,7 @@ export interface HomeBanner {
 
 export interface StorefrontData {
   homeBanners?: HomeBanner[]; // Bannières de la page d'accueil (carrousel, jusqu'à 5)
+  homeOrder?: string[]; // Ordre d'affichage des sections de l'accueil
   storeId: string;
   storeSlug: string;
   subdomain: string;

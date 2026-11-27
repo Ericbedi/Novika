@@ -25,6 +25,8 @@ import { formatFcfa } from "@/lib/money";
 import { ProductImage } from "@/components/ui/ProductImage";
 import { getProductPublicUrl } from "@/lib/storefront-urls";
 import { cn } from "@/lib/utils";
+import { applyHomeConfig } from "@/lib/storefront-home-config";
+import { useStudioDraft, postStudioBase } from "@/lib/studio-bridge";
 import { HomeBannerCarousel } from "@/components/storefront/home-banner-carousel";
 import { buildHomeConfig, saveHomeConfig } from "@/lib/storefront-home-config";
 
@@ -63,7 +65,19 @@ export function StorefrontHomeClient({
     }
   }, [storeSlug, initialResolved]);
 
-  const { store, storefront, activeProducts } = data;
+  // Aperçu dans le Studio : le brouillon remplace temporairement la configuration enregistrée
+  const studio = useStudioDraft();
+  const { store, activeProducts } = data;
+  const storefront = studio.draft.config ? applyHomeConfig(data.storefront, studio.draft.config) : data.storefront;
+  const DEFAULT_ORDER = ["banners", "sec_hero", "sec_benefits", "sec_featured_products", "sec_customer_reviews", "sec_newsletter", "sec_brand_story"];
+  const orderList = [...(storefront.homeOrder || []), ...DEFAULT_ORDER.filter((id) => !(storefront.homeOrder || []).includes(id))];
+  const ord = (id: string) => ({ order: Math.max(0, orderList.indexOf(id)) * 10 });
+  const hasStudioDraft = !!studio.draft.config;
+  useEffect(() => {
+    if (studio.active && !hasStudioDraft) postStudioBase("home", buildHomeConfig(data.storefront));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studio.active, hasStudioDraft]);
+  const featuredSection = storefront.sections?.find((s) => s.id === "sec_featured_products");
   const themePrimary = storefront.activeTheme?.colors?.primary || "#111111";
 
   // Bascule du mode édition
@@ -106,6 +120,9 @@ export function StorefrontHomeClient({
 
   // Sections du modèle Kaelis
   const heroSection = storefront.sections?.find((s) => s.id === "sec_hero");
+  const heroBgRaw = String(heroSection?.content?.imageUrl || "");
+  const heroBgUrl = /^(https?:\/\/|\/)/.test(heroBgRaw) ? heroBgRaw : "";
+  const heroOverlay = Math.min(0.8, Math.max(0, Number(heroSection?.content?.overlay ?? 35) / 100));
   const benefitsSection = storefront.sections?.find(
     (s) => s.id === "sec_benefits",
   );
@@ -190,10 +207,12 @@ export function StorefrontHomeClient({
     brandStorySection?.content?.ctaUrl ?? `/boutique/${storeSlug}/catalogue`;
 
   return (
-    <div className="space-y-16 sm:space-y-24 pb-20 relative font-sans">
+    <div className="flex flex-col gap-16 sm:gap-24 pb-20 relative">
       {/* BANNIÈRES D'ACCUEIL (images choisies par le vendeur) */}
       {storefront.homeBanners && storefront.homeBanners.length > 0 && (
-        <HomeBannerCarousel banners={storefront.homeBanners} />
+        <div style={ord("banners")}>
+          <HomeBannerCarousel banners={storefront.homeBanners} />
+        </div>
       )}
 
       {/* ========================================================================= */}
@@ -202,7 +221,23 @@ export function StorefrontHomeClient({
       {heroSection &&
         (heroSection.isVisible || isEditMode) &&
         (heroHeadline || isEditMode) && (
-          <section className="relative group max-w-4xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-4 text-center space-y-6">
+          <section
+            style={{
+              ...ord("sec_hero"),
+              ...(heroBgUrl
+                ? {
+                    backgroundImage: `linear-gradient(rgba(0,0,0,${heroOverlay}), rgba(0,0,0,${heroOverlay})), url(${JSON.stringify(heroBgUrl)})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  }
+                : {}),
+            }}
+            className={`relative group mx-auto px-4 sm:px-6 text-center space-y-6 ${
+              heroBgUrl
+                ? "w-[calc(100%-2rem)] max-w-6xl rounded-3xl py-16 sm:py-28 [&_h1]:!text-white [&_p]:!text-white/90"
+                : "max-w-4xl pt-12 sm:pt-20 pb-4"
+            }`}
+          >
             {isOwner && isEditMode && (
               <button
                 type="button"
@@ -257,7 +292,7 @@ export function StorefrontHomeClient({
       {benefitsSection &&
         (benefitsSection.isVisible || isEditMode) &&
         (benefitsItems.length > 0 || isEditMode) && (
-          <section className="relative group max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-6 space-y-10 sm:space-y-12">
+          <section style={ord("sec_benefits")} className="relative group max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-6 space-y-10 sm:space-y-12">
             {isOwner && isEditMode && (
               <button
                 type="button"
@@ -330,14 +365,15 @@ export function StorefrontHomeClient({
       {/* ========================================================================= */}
       {/* 6. PRODUITS DISPONIBLES (GRILLE VENTE DIRECTE COD) */}
       {/* ========================================================================= */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-12 space-y-6">
+      {(featuredSection?.isVisible ?? true) && (
+      <section style={ord("sec_featured_products")} className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-12 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 border-b border-black/[0.08] pb-4">
           <div>
             <h2 className="text-2xl sm:text-3xl font-black text-[#111111] tracking-tight">
-              Nos Coups de Cœur
+              {featuredSection?.content?.title ?? "Nos Coups de Cœur"}
             </h2>
             <p className="text-xs text-[#666660] mt-0.5">
-              Découvrez notre sélection : commandez en ligne et payez à la livraison.
+              {featuredSection?.content?.subtitle ?? "Découvrez notre sélection : commandez en ligne et payez à la livraison."}
             </p>
           </div>
           {activeProducts.length > 0 && (
@@ -353,7 +389,7 @@ export function StorefrontHomeClient({
 
         {activeProducts.length > 0 ? (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-6">
-            {activeProducts.map((prod) => {
+            {activeProducts.slice(0, Math.min(24, Math.max(1, Number(featuredSection?.content?.maxProducts) || 8))).map((prod) => {
               const isOutOfStock = prod.stock <= 0;
               const threshold = prod.lowStockThreshold ?? 5;
               const isLowStock = prod.stock > 0 && prod.stock <= threshold;
@@ -452,6 +488,7 @@ export function StorefrontHomeClient({
           </div>
         )}
       </section>
+      )}
 
       {/* ========================================================================= */}
       {/* 3. AVIS CLIENTS (RÈGLE STRICTE : MASQUÉ SI AUCUN AVIS DISPONIBLE) */}
@@ -459,7 +496,7 @@ export function StorefrontHomeClient({
       {reviewsSection &&
         (reviewsSection.isVisible || isEditMode) &&
         (reviewsList.length > 0 || isEditMode) && (
-          <section className="relative group max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-6 space-y-8 sm:space-y-10">
+          <section style={ord("sec_customer_reviews")} className="relative group max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-6 space-y-8 sm:space-y-10">
             {isOwner && isEditMode && (
               <button
                 type="button"
@@ -532,7 +569,7 @@ export function StorefrontHomeClient({
       {newsletterSection &&
         (newsletterSection.isVisible || isEditMode) &&
         (newsletterTitle || newsletterSubtitle || isEditMode) && (
-          <section className="relative group max-w-4xl mx-auto px-4 sm:px-6 pt-6 pb-6 text-center space-y-6">
+          <section style={ord("sec_newsletter")} className="relative group max-w-4xl mx-auto px-4 sm:px-6 pt-6 pb-6 text-center space-y-6">
             {isOwner && isEditMode && (
               <button
                 type="button"
@@ -601,7 +638,7 @@ export function StorefrontHomeClient({
       {brandStorySection &&
         (brandStorySection.isVisible || isEditMode) &&
         (storyText || isEditMode) && (
-          <section
+          <section style={ord("sec_brand_story")}
             id="notre-histoire"
             className="relative group max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-6"
           >

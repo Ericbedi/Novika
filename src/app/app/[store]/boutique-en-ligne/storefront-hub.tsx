@@ -49,7 +49,7 @@ export function StorefrontHub({ storeSlug }: { storeSlug: string }) {
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
-              href={`${base}/editeur`}
+              href={`${base}/studio/home`}
               className="min-h-[40px] px-4 rounded-xl bg-[#c8f26b] text-[#111111] text-xs font-bold inline-flex items-center gap-2 hover:brightness-95"
             >
               <LayoutTemplate className="h-4 w-4" />
