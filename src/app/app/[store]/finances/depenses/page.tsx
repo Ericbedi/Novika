@@ -1,11 +1,7 @@
-import React from "react";
-import { DepensesClient } from "./depenses-client";
+import { redirect } from "next/navigation";
 
-export default async function ExpensesPage({
-  params,
-}: {
-  params: Promise<{ store: string }>;
-}) {
+// Les dépenses (dont la publicité) sont gérées sur l'écran Finances, branché sur la base.
+export default async function Page({ params }: { params: Promise<{ store: string }> }) {
   const { store } = await params;
-  return <DepensesClient storeSlug={store} />;
+  redirect(`/app/${store}/finances`);
 }

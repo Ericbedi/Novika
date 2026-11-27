@@ -1,11 +1,7 @@
-import React from "react";
-import { PubliciteClient } from "./publicite-client";
+import { redirect } from "next/navigation";
 
-export default async function AdvertisingPage({
-  params,
-}: {
-  params: Promise<{ store: string }>;
-}) {
+// Les dépenses (dont la publicité) sont gérées sur l'écran Finances, branché sur la base.
+export default async function Page({ params }: { params: Promise<{ store: string }> }) {
   const { store } = await params;
-  return <PubliciteClient storeSlug={store} />;
+  redirect(`/app/${store}/finances`);
 }

@@ -1,635 +1,210 @@
 "use client";
 
-import React, { useState } from "react";
-import {
-  DollarSign,
-  TrendingUp,
-  CreditCard,
-  Truck,
-  Plus,
-  Trash2,
-  Edit2,
-  Calendar,
-  AlertCircle,
-  HelpCircle,
-  ArrowDownRight,
-  ArrowUpRight,
-  Wallet,
-  CheckCircle2,
-  FileText,
-  Building2,
-  ShoppingBag,
-  Package,
-} from "lucide-react";
-import { StatCard, StatCardsGrid } from "@/components/app/stat-card";
-import { MOCK_FINANCE_SUMMARY, MOCK_EXPENSES, MOCK_CASHBOOK } from "@/mock-data/finances";
-import { Expense, CashbookEntry } from "@/server/data/types";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Loader2, Plus, Trash2, TrendingDown, TrendingUp } from "lucide-react";
 import { formatFcfa } from "@/lib/money";
-import { FinancesNavTabs } from "@/components/finances/finances-nav-tabs";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { cn } from "@/lib/utils";
 
-interface FinancesClientProps {
-  storeSlug: string;
+interface Summary {
+  revenue: number;
+  product_cost: number;
+  rider_fees: number;
+  expenses: number;
+  net_profit: number;
+  delivered_count: number;
+  orders_count: number;
+  failed_count: number;
+  cash_in_transit: number;
+  by_category: Record<string, number>;
+}
+interface Expense {
+  id: string;
+  category: string;
+  amount: number;
+  spent_on: string;
+  note: string | null;
 }
 
-export function FinancesClient({ storeSlug }: FinancesClientProps) {
-  const [period, setPeriod] = useState<"last7" | "last30" | "today">("last7");
-  const summary = MOCK_FINANCE_SUMMARY[period] || MOCK_FINANCE_SUMMARY.last7;
+const CATS: Record<string, string> = { pub: "Publicité", stock: "Achat de stock", salaire: "Salaires / commissions", loyer: "Loyer", transport: "Transport", autre: "Autre" };
+const PERIODS = [
+  { id: "today", label: "Aujourd'hui" },
+  { id: "7", label: "7 jours" },
+  { id: "30", label: "30 jours" },
+  { id: "month", label: "Ce mois" },
+] as const;
 
-  // Dépenses interactives (ajouter, modifier, supprimer)
-  const [expenses, setExpenses] = useState<Expense[]>(MOCK_EXPENSES);
-  const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
-  const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
+const iso = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+function range(p: string): { from: string; to: string } {
+  const now = new Date();
+  const to = iso(now);
+  if (p === "today") return { from: to, to };
+  if (p === "month") return { from: iso(new Date(now.getFullYear(), now.getMonth(), 1)), to };
+  const n = Number(p) - 1;
+  return { from: iso(new Date(now.getTime() - n * 86400000)), to };
+}
 
-  const [expLabel, setExpLabel] = useState("");
-  const [expAmount, setExpAmount] = useState<number>(0);
-  const [expDate, setExpDate] = useState("15/11/2026");
-  const [expCategory, setExpCategory] = useState<"ads" | "shipping" | "packaging" | "salary" | "software" | "other">("packaging");
+export function FinancesClient({ storeSlug }: { storeSlug: string }) {
+  const [period, setPeriod] = useState<string>("30");
+  const [summary, setSummary] = useState<Summary | null>(null);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [error, setError] = useState("");
+  const [cat, setCat] = useState("pub");
+  const [amount, setAmount] = useState("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  // Livre de compte
-  const [cashbook] = useState<CashbookEntry[]>(MOCK_CASHBOOK);
+  const r = useMemo(() => range(period), [period]);
 
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
-
-  const handleOpenAddExpense = () => {
-    setEditingExpenseId(null);
-    setExpLabel("");
-    setExpAmount(0);
-    setExpDate(new Date().toLocaleDateString("fr-FR"));
-    setExpCategory("packaging");
-    setShowAddExpenseModal(true);
-  };
-
-  const handleOpenEditExpense = (item: Expense) => {
-    setEditingExpenseId(item.id);
-    setExpLabel(item.label);
-    setExpAmount(item.amount);
-    setExpDate(item.date);
-    setExpCategory(item.category);
-    setShowAddExpenseModal(true);
-  };
-
-  const handleDeleteExpense = (id: string) => {
-    if (confirm("Voulez-vous vraiment supprimer cette dépense ?")) {
-      setExpenses((prev) => prev.filter((e) => e.id !== id));
-      showToast("Dépense supprimée !");
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/finance?store=${encodeURIComponent(storeSlug)}&from=${r.from}&to=${r.to}`);
+      const d = await res.json();
+      if (!res.ok || !d.success) throw new Error(d.error || "Lecture impossible.");
+      setSummary(d.summary);
+      setExpenses(d.expenses);
+      setError("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Lecture impossible.");
+      setSummary((s) => s);
     }
-  };
+  }, [storeSlug, r]);
 
-  const handleSaveExpense = (e: React.FormEvent) => {
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const add = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!expLabel.trim() || expAmount <= 0) {
-      alert("Veuillez renseigner un libellé et un montant valide.");
-      return;
-    }
-
-    const categoryLabels: Record<string, string> = {
-      ads: "Publicité Meta / TikTok",
-      shipping: "Frais de livraison",
-      packaging: "Emballage & Colisage",
-      salary: "Commissions Closeuse / Équipe",
-      software: "Logiciels & Outils",
-      other: "Autre charge",
-    };
-
-    if (editingExpenseId) {
-      setExpenses((prev) =>
-        prev.map((item) =>
-          item.id === editingExpenseId
-            ? {
-                ...item,
-                label: expLabel,
-                amount: expAmount,
-                date: expDate,
-                category: expCategory,
-                categoryLabel: categoryLabels[expCategory] || "Autre",
-              }
-            : item
-        )
-      );
-      showToast("Dépense mise à jour avec succès !");
-    } else {
-      const newExp: Expense = {
-        id: `exp_${Date.now()}`,
-        label: expLabel,
-        amount: expAmount,
-        date: expDate,
-        category: expCategory,
-        categoryLabel: categoryLabels[expCategory] || "Autre",
-      };
-      setExpenses((prev) => [newExp, ...prev]);
-      showToast("Nouvelle dépense ajoutée !");
-    }
-
-    setShowAddExpenseModal(false);
+    setBusy(true);
+    const res = await fetch("/api/finance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ store: storeSlug, expense: { category: cat, amount: Number(amount), note } }),
+    });
+    const d = await res.json().catch(() => ({}));
+    setBusy(false);
+    if (!res.ok || !d.success) return setError(d.error || "Enregistrement impossible.");
+    setAmount("");
+    setNote("");
+    void load();
   };
 
-  const totalCosts =
-    summary.productCost + summary.adSpend + summary.shippingCost + summary.otherExpenses;
+  const del = async (x: Expense) => {
+    await fetch(`/api/finance?store=${encodeURIComponent(storeSlug)}&id=${x.id}`, { method: "DELETE" });
+    void load();
+  };
+
+  const input = "h-11 px-3 rounded-xl border border-black/10 bg-white text-sm";
+  const profit = summary?.net_profit ?? 0;
+  const margin = summary && summary.revenue > 0 ? Math.round((profit / summary.revenue) * 100) : null;
 
   return (
-    <div className="space-y-8 pb-24">
-      {/* Toast */}
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-[#111111] text-[#FAF8F5] px-4 py-2.5 text-xs font-semibold shadow-2xl flex items-center gap-2">
-          <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-          <span>{toastMessage}</span>
-        </div>
+    <div className="max-w-3xl mx-auto space-y-5 pb-24">
+      <div>
+        <h1 className="text-xl font-extrabold text-[#111111]">Finances</h1>
+        <p className="text-xs text-[#666660] mt-0.5">Calculé uniquement sur les commandes livrées et l'argent réellement encaissé.</p>
+      </div>
+
+      <div className="flex gap-1.5 overflow-x-auto">
+        {PERIODS.map((p) => (
+          <button key={p.id} type="button" onClick={() => setPeriod(p.id)} className={`shrink-0 h-10 px-4 rounded-xl text-xs font-bold cursor-pointer border ${period === p.id ? "bg-[#111111] text-white border-[#111111]" : "bg-white border-black/10"}`}>
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      {error && <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800">{error}</div>}
+
+      {!summary ? (
+        !error && (
+          <div className="py-10 text-center text-sm text-[#7A7A7A] flex items-center justify-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" /> Chargement…
+          </div>
+        )
+      ) : (
+        <>
+          <div className={`rounded-[24px] p-5 border ${profit >= 0 ? "bg-emerald-50 border-emerald-200" : "bg-rose-50 border-rose-200"}`}>
+            <div className="text-xs font-semibold text-[#555550] flex items-center gap-1.5">
+              {profit >= 0 ? <TrendingUp className="w-4 h-4 text-emerald-700" /> : <TrendingDown className="w-4 h-4 text-rose-700" />} Bénéfice net réel
+            </div>
+            <div className={`text-3xl font-black mt-1 ${profit >= 0 ? "text-emerald-800" : "text-rose-800"}`}>{formatFcfa(profit)}</div>
+            <div className="text-xs text-[#666660] mt-1">
+              {summary.delivered_count} livraison{summary.delivered_count > 1 ? "s" : ""} réussie{summary.delivered_count > 1 ? "s" : ""}
+              {margin !== null && ` · marge ${margin} %`}
+            </div>
+          </div>
+
+          <div className="rounded-[20px] border border-black/[0.08] bg-white divide-y divide-black/[0.06] text-sm">
+            <Row label="Argent encaissé (livrées)" value={summary.revenue} bold />
+            <Row label="− Coût d'achat des produits" value={-summary.product_cost} />
+            <Row label="− Frais des livreurs" value={-summary.rider_fees} />
+            <Row label="− Dépenses (pub, loyer, salaires…)" value={-summary.expenses} />
+            <Row label="= Bénéfice net" value={profit} bold />
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <Stat label="Commandes" value={String(summary.orders_count)} />
+            <Stat label="Échecs / retours" value={String(summary.failed_count)} />
+            <Stat label="En cours chez livreurs" value={formatFcfa(summary.cash_in_transit)} />
+          </div>
+          {summary.product_cost === 0 && summary.delivered_count > 0 && (
+            <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3">
+              Le prix d'achat de vos produits est à 0 : renseignez-le dans la fiche produit pour que le bénéfice soit exact.
+            </p>
+          )}
+        </>
       )}
 
-      {/* Navigation Onglets Finances */}
-      <FinancesNavTabs storeSlug={storeSlug} />
-
-      {/* En-tête avec sélecteur de période */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[#666660]">
-              Rentabilité Réelle COD
-            </span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#111111] tracking-tight">
-            Finances & Résultat Net
-          </h1>
-          <p className="text-xs text-[#666660] mt-0.5">
-            Suivi des encaissements en espèces, coûts produits, publicités et bénéfice net en poche.
-          </p>
-        </div>
-
-        {/* Sélecteur de période universel */}
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <DateRangePicker align="right" />
-        </div>
-      </div>
-
-      {/* CARTE PRINCIPALE : RÉSULTAT NET AVEC FORMULE EXPLICITE */}
-      <div className="rounded-[28px] border-2 border-[#111111] bg-[#111111] text-[#FAF8F5] p-6 sm:p-8 shadow-xl relative overflow-hidden">
-        <div className="relative z-10 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                Formule Officielle COD
-              </span>
-              <span className="text-xs text-[#E5DEC9]/80 font-mono">
-                Encaissé − Coûts = Résultat net
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 text-xs text-[#FAF8F5]/70">
-              <span className="font-bold text-emerald-400">{summary.profitMargin}%</span> de marge nette
-            </div>
-          </div>
-
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-[#FAF8F5]/60 block mb-1">
-              Résultat Net Réalisé
-            </span>
-            <div className="text-3xl sm:text-5xl font-black text-white tracking-tight">
-              {formatFcfa(summary.netProfit)}
-            </div>
-          </div>
-
-          <div className="pt-4 border-t border-white/10 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-            <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-              <span className="text-[10px] text-[#FAF8F5]/60 uppercase block">1. Total Encaissé</span>
-              <span className="text-base font-bold text-emerald-400">{formatFcfa(summary.collectedRevenue)}</span>
-              <span className="text-[10px] text-[#FAF8F5]/50 block mt-0.5">Espèces reçues des livreurs</span>
-            </div>
-
-            <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-              <span className="text-[10px] text-[#FAF8F5]/60 uppercase block">2. Total Coûts Réels</span>
-              <span className="text-base font-bold text-rose-400">−{formatFcfa(totalCosts)}</span>
-              <span className="text-[10px] text-[#FAF8F5]/50 block mt-0.5">Produits + Pub + Livraison + Charges</span>
-            </div>
-
-            <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-              <span className="text-[10px] text-[#FAF8F5]/60 uppercase block">3. Bénéfice Net Restant</span>
-              <span className="text-base font-bold text-white">={formatFcfa(summary.netProfit)}</span>
-              <span className="text-[10px] text-[#FAF8F5]/50 block mt-0.5">Disponible pour réinvestissement</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 5 CARTES DE STATS FINANCIÈRES UNIFIÉES */}
-      <StatCardsGrid id="finances-stat-cards-grid">
-        <StatCard
-          id="stat-card-finance-revenue"
-          label="Revenus Encaissés"
-          numericValue={summary.collectedRevenue}
-          currency="FCFA"
-          hint="CA réel encaissé en espèces"
-          icon={Wallet}
-        />
-
-        <StatCard
-          id="stat-card-finance-deliveries"
-          label="Livraisons Faites"
-          numericValue={summary.deliveredCount}
-          unit="colis"
-          hint="Payées à la livraison"
-          icon={Truck}
-        />
-
-        <StatCard
-          id="stat-card-finance-cogs"
-          label="Coût des Produits"
-          numericValue={summary.productCost}
-          currency="FCFA"
-          hint="Revient × livrées"
-          icon={Package}
-        />
-
-        <StatCard
-          id="stat-card-finance-marketing-shipping"
-          label="Frais Pub & Livraison"
-          numericValue={summary.adSpend + summary.shippingCost}
-          currency="FCFA"
-          hint="Ads Meta & courses livreurs"
-          icon={DollarSign}
-        />
-
-        <StatCard
-          id="stat-card-finance-net-profit"
-          label="Bénéfice Net Réel"
-          numericValue={summary.netProfit}
-          currency="FCFA"
-          hint="Résultat réel en poche"
-          icon={TrendingUp}
-        />
-      </StatCardsGrid>
-
-      {/* TABLEAU : DÉTAIL DU CALCUL */}
-      <div className="rounded-[24px] border border-black/[0.08] bg-[#FAF8F5] overflow-hidden shadow-2xs p-5 sm:p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-black text-[#111111] uppercase tracking-wide">
-              Détail du Calcul de Rentabilité
-            </h2>
-            <p className="text-xs text-[#666660]">
-              Décomposition transparente poste par poste pour la période sélectionnée.
-            </p>
-          </div>
-          <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-black/[0.04] text-[#111111]">
-            Période : {period === "last7" ? "7 derniers jours" : period === "last30" ? "30 derniers jours" : "Aujourd'hui"}
-          </span>
-        </div>
-
-        <div className="border border-black/[0.08] rounded-2xl bg-white overflow-hidden divide-y divide-black/[0.06] text-xs">
-          {/* Ligne 1 : Encaissé */}
-          <div className="p-3.5 flex items-center justify-between bg-emerald-50/40">
-            <div className="flex items-center gap-2.5">
-              <span className="h-6 w-6 rounded-lg bg-emerald-100 text-emerald-800 font-black text-xs flex items-center justify-center">
-                +
-              </span>
-              <div>
-                <span className="font-bold text-[#111111] block">Chiffre d'affaires Encaissé (COD)</span>
-                <span className="text-[10px] text-[#666660]">Espèces collectées auprès des clients à la livraison</span>
-              </div>
-            </div>
-            <span className="font-black text-sm text-emerald-700">+{formatFcfa(summary.collectedRevenue)}</span>
-          </div>
-
-          {/* Ligne 2 : Coût produits */}
-          <div className="p-3.5 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <span className="h-6 w-6 rounded-lg bg-rose-100 text-rose-800 font-black text-xs flex items-center justify-center">
-                −
-              </span>
-              <div>
-                <span className="font-bold text-[#111111] block">Coût d'achat des produits livrés</span>
-                <span className="text-[10px] text-[#666660]">Prix de revient × {summary.deliveredCount} commandes livrées</span>
-              </div>
-            </div>
-            <span className="font-bold text-xs text-rose-600">−{formatFcfa(summary.productCost)}</span>
-          </div>
-
-          {/* Ligne 3 : Frais de pub */}
-          <div className="p-3.5 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <span className="h-6 w-6 rounded-lg bg-rose-100 text-rose-800 font-black text-xs flex items-center justify-center">
-                −
-              </span>
-              <div>
-                <span className="font-bold text-[#111111] block">Dépenses publicitaires (Ads)</span>
-                <span className="text-[10px] text-[#666660]">Budgets consommés sur Meta Ads & TikTok Ads</span>
-              </div>
-            </div>
-            <span className="font-bold text-xs text-rose-600">−{formatFcfa(summary.adSpend)}</span>
-          </div>
-
-          {/* Ligne 4 : Frais de livraison */}
-          <div className="p-3.5 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <span className="h-6 w-6 rounded-lg bg-rose-100 text-rose-800 font-black text-xs flex items-center justify-center">
-                −
-              </span>
-              <div>
-                <span className="font-bold text-[#111111] block">Frais de livraison payés</span>
-                <span className="text-[10px] text-[#666660]">Courses versées aux livreurs et agences de transport</span>
-              </div>
-            </div>
-            <span className="font-bold text-xs text-rose-600">−{formatFcfa(summary.shippingCost)}</span>
-          </div>
-
-          {/* Ligne 5 : Autres dépenses */}
-          <div className="p-3.5 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <span className="h-6 w-6 rounded-lg bg-rose-100 text-rose-800 font-black text-xs flex items-center justify-center">
-                −
-              </span>
-              <div>
-                <span className="font-bold text-[#111111] block">Autres charges d'exploitation</span>
-                <span className="text-[10px] text-[#666660]">Pochettes colis kraft, abonnements et primes</span>
-              </div>
-            </div>
-            <span className="font-bold text-xs text-rose-600">−{formatFcfa(summary.otherExpenses)}</span>
-          </div>
-
-          {/* Ligne Totale : Résultat Net */}
-          <div className="p-4 flex items-center justify-between bg-[#111111] text-[#FAF8F5]">
-            <div className="flex items-center gap-2.5">
-              <span className="h-6 w-6 rounded-lg bg-emerald-500 text-black font-black text-xs flex items-center justify-center">
-                =
-              </span>
-              <div>
-                <span className="font-black text-sm uppercase block">RÉSULTAT NET (Bénéfice en poche)</span>
-                <span className="text-[10px] text-[#FAF8F5]/60">Ce montant vous appartient et est déjà encaissé</span>
-              </div>
-            </div>
-            <span className="font-black text-lg text-emerald-400">+{formatFcfa(summary.netProfit)}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* SECTION DÉPENSES (Formulaire d'ajout, modifier, supprimer) */}
-      <div className="rounded-[24px] border border-black/[0.08] bg-[#FAF8F5] p-5 sm:p-6 shadow-2xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-black text-[#111111] uppercase tracking-wide">
-              Gestion des Dépenses Réelles
-            </h2>
-            <p className="text-xs text-[#666660]">
-              Enregistrez vos coûts publicitaires, emballages et charges pour un résultat net exact.
-            </p>
-          </div>
-          <button
-            onClick={handleOpenAddExpense}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black transition-all cursor-pointer shadow-sm self-start sm:self-auto"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Ajouter une dépense</span>
+      <section className="space-y-3">
+        <h2 className="text-sm font-bold">Ajouter une dépense</h2>
+        <form onSubmit={add} className="rounded-[20px] border border-black/[0.08] bg-[#FAF8F5] p-4 grid sm:grid-cols-[1fr_9rem_1fr_auto] gap-2.5">
+          <select className={input} value={cat} onChange={(e) => setCat(e.target.value)}>
+            {Object.entries(CATS).map(([k, v]) => (
+              <option key={k} value={k}>{v}</option>
+            ))}
+          </select>
+          <input className={input} placeholder="Montant" inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))} required />
+          <input className={input} placeholder="Note (facultatif)" value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} />
+          <button type="submit" disabled={busy} className="h-11 px-4 rounded-xl bg-[#111111] text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50">
+            <Plus className="w-4 h-4" /> Ajouter
           </button>
-        </div>
+        </form>
 
-        {/* Modal Ajout / Modification Dépense */}
-        {showAddExpenseModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-            <div className="bg-[#FAF8F5] border border-black/[0.12] rounded-[24px] p-6 max-w-md w-full shadow-2xl space-y-4">
-              <h3 className="text-sm font-black text-[#111111]">
-                {editingExpenseId ? "Modifier la dépense" : "Ajouter une nouvelle dépense"}
-              </h3>
-
-              <form onSubmit={handleSaveExpense} className="space-y-3">
-                <div>
-                  <label className="block text-xs font-semibold text-[#111111] mb-1">
-                    Libellé de la dépense <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={expLabel}
-                    onChange={(e) => setExpLabel(e.target.value)}
-                    placeholder="Ex: Facture Publicité Meta 14 Novembre"
-                    className="w-full p-2.5 text-xs rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
-                  />
+        {expenses.length === 0 ? (
+          <p className="text-xs text-[#7A7A7A]">Aucune dépense sur cette période.</p>
+        ) : (
+          <div className="rounded-[20px] border border-black/[0.08] bg-white divide-y divide-black/[0.06]">
+            {expenses.map((x) => (
+              <div key={x.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold">{CATS[x.category] || x.category}</div>
+                  <div className="text-[11px] text-[#7A7A7A] truncate">{new Date(x.spent_on).toLocaleDateString("fr-FR")}{x.note ? ` · ${x.note}` : ""}</div>
                 </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-[#111111] mb-1">
-                      Montant (FCFA) <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      step="500"
-                      required
-                      value={expAmount || ""}
-                      onChange={(e) => setExpAmount(Number(e.target.value) || 0)}
-                      placeholder="Ex: 50000"
-                      className="w-full p-2.5 text-xs rounded-xl border border-black/[0.08] bg-white text-[#111111] font-bold focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#111111] mb-1">
-                      Date
-                    </label>
-                    <input
-                      type="text"
-                      value={expDate}
-                      onChange={(e) => setExpDate(e.target.value)}
-                      placeholder="JJ/MM/AAAA"
-                      className="w-full p-2.5 text-xs rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
-                    />
-                  </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="font-mono text-sm">{formatFcfa(x.amount)}</span>
+                  <button type="button" aria-label="Supprimer" onClick={() => del(x)} className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"><Trash2 className="w-4 h-4" /></button>
                 </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#111111] mb-1">
-                    Catégorie de charge
-                  </label>
-                  <select
-                    value={expCategory}
-                    onChange={(e: any) => setExpCategory(e.target.value)}
-                    className="w-full p-2.5 text-xs rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
-                  >
-                    <option value="ads">Publicité Meta / TikTok</option>
-                    <option value="packaging">Emballage & Colisage</option>
-                    <option value="software">Logiciels & WhatsApp</option>
-                    <option value="salary">Commissions Closeuses / Équipe</option>
-                    <option value="shipping">Livraison spécifique</option>
-                    <option value="other">Autre charge diverse</option>
-                  </select>
-                </div>
-
-                <div className="pt-3 border-t border-black/[0.08] flex items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddExpenseModal(false)}
-                    className="px-3.5 py-2 rounded-xl border border-black/[0.08] bg-white text-xs font-bold text-[#111111] hover:bg-[#FAF8F5]"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black"
-                  >
-                    {editingExpenseId ? "Mettre à jour" : "Enregistrer la dépense"}
-                  </button>
-                </div>
-              </form>
-            </div>
+              </div>
+            ))}
           </div>
         )}
+      </section>
+    </div>
+  );
+}
 
-        {/* Liste des dépenses */}
-        <div className="border border-black/[0.08] rounded-2xl bg-white overflow-hidden divide-y divide-black/[0.06] text-xs">
-          {expenses.map((item) => (
-            <div
-              key={item.id}
-              className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-black/[0.015] transition-colors"
-            >
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-[#111111]">{item.label}</span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-black/[0.05] text-[#111111]">
-                    {item.categoryLabel}
-                  </span>
-                </div>
-                <div className="text-[10px] text-[#888880] flex items-center gap-2">
-                  <span>Date : {item.date}</span>
-                  {item.notes && <span>• {item.notes}</span>}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between sm:justify-end gap-3">
-                <span className="font-black text-sm text-[#111111]">
-                  {formatFcfa(item.amount)}
-                </span>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => handleOpenEditExpense(item)}
-                    className="p-1.5 rounded-lg border border-black/[0.08] text-[#111111] hover:bg-[#FAF8F5]"
-                    title="Modifier"
-                  >
-                    <Edit2 className="h-3 w-3" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteExpense(item.id)}
-                    className="p-1.5 rounded-lg border border-black/[0.08] text-rose-600 hover:bg-rose-50"
-                    title="Supprimer"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* SECTION FRAIS DE LIVRAISON */}
-      <div className="rounded-[24px] border border-black/[0.08] bg-[#FAF8F5] p-5 sm:p-6 shadow-2xs space-y-4">
-        <div>
-          <h2 className="text-sm font-black text-[#111111] uppercase tracking-wide flex items-center gap-2">
-            <Truck className="h-4 w-4 text-[#111111]" />
-            Frais de Livraison Payés par le Vendeur
-          </h2>
-          <p className="text-xs text-[#666660]">
-            Coûts des tournées et courses payées aux livreurs partenaires par zone géographique.
-          </p>
-        </div>
-
-        <div className="p-6 text-center rounded-2xl bg-white border border-black/[0.06] text-xs text-[#888880] space-y-1">
-          <p className="font-bold text-[#111111]">Aucun frais de livraison forfaitaire enregistré.</p>
-          <p>Configurez vos tarifs de livraison par pays et ville dans le module Livraisons &gt; Tarifs.</p>
-        </div>
-      </div>
-
-      {/* SECTION LIVRE DE COMPTE (ENTRÉES, SORTIES, RETRAITS) */}
-      <div className="rounded-[24px] border border-black/[0.08] bg-[#FAF8F5] p-5 sm:p-6 shadow-2xs space-y-4">
-        <div>
-          <h2 className="text-sm font-black text-[#111111] uppercase tracking-wide flex items-center gap-2">
-            <Wallet className="h-4 w-4 text-[#111111]" />
-            Livre de Compte & Flux de Trésorerie
-          </h2>
-          <p className="text-xs text-[#666660]">
-            Registre chronologique des espèces encaissées, règlements fournisseurs et prélèvements.
-          </p>
-        </div>
-
-        {/* ALERTE CRUCIALE DEMANDÉE DANS LE PROMPT 5.B : LES RETRAITS NE COMPTENT PAS DANS LE RÉSULTAT NET */}
-        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-3">
-          <AlertCircle className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
-          <div className="space-y-0.5">
-            <span className="font-bold text-amber-900 block">
-              Règle comptable COD essentielle :
-            </span>
-            <p className="text-[11px] text-amber-800 leading-relaxed">
-              Les <strong>retraits du propriétaire</strong> (virements vers un compte personnel ou prélèvements de bénéfices) sont des mouvements de trésorerie personnelle. <strong>Ils ne constituent pas une charge d'exploitation et ne diminuent en aucun cas votre résultat net.</strong>
-            </p>
-          </div>
-        </div>
-
-        {/* Tableau du livre de compte */}
-        <div className="border border-black/[0.08] rounded-2xl bg-white overflow-hidden divide-y divide-black/[0.06] text-xs">
-          {cashbook.map((entry) => {
-            const isEntry = entry.type === "entry";
-            const isWithdrawal = entry.type === "withdrawal";
-
-            return (
-              <div
-                key={entry.id}
-                className={cn(
-                  "p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors",
-                  isWithdrawal ? "bg-amber-50/30" : "hover:bg-black/[0.015]"
-                )}
-              >
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2">
-                    {isEntry ? (
-                      <span className="px-2 py-0.5 rounded text-[9px] font-black bg-emerald-100 text-emerald-800 uppercase">
-                        Entrée
-                      </span>
-                    ) : isWithdrawal ? (
-                      <span className="px-2 py-0.5 rounded text-[9px] font-black bg-amber-100 text-amber-900 uppercase">
-                        Retrait Perso
-                      </span>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded text-[9px] font-black bg-rose-100 text-rose-800 uppercase">
-                        Sortie
-                      </span>
-                    )}
-                    <span className="font-bold text-[#111111]">{entry.label}</span>
-                  </div>
-                  <div className="text-[10px] text-[#888880] flex items-center gap-2">
-                    <span>{entry.date}</span>
-                    <span>• {entry.category}</span>
-                    {entry.notes && <span className="italic">({entry.notes})</span>}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between sm:justify-end gap-3">
-                  <span
-                    className={cn(
-                      "font-black text-sm",
-                      isEntry
-                        ? "text-emerald-700"
-                        : isWithdrawal
-                        ? "text-amber-900"
-                        : "text-rose-600"
-                    )}
-                  >
-                    {isEntry ? "+" : "−"}
-                    {formatFcfa(entry.amount)}
-                  </span>
-                  {!entry.impactsNetProfit && (
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
-                      Hors résultat net
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+function Row({ label, value, bold }: { label: string; value: number; bold?: boolean }) {
+  return (
+    <div className={`flex justify-between px-4 py-3 ${bold ? "font-bold" : ""}`}>
+      <span>{label}</span>
+      <span className="font-mono">{formatFcfa(value)}</span>
+    </div>
+  );
+}
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-black/[0.08] bg-white p-3">
+      <div className="text-sm font-bold">{value}</div>
+      <div className="text-[10px] text-[#7A7A7A] mt-0.5">{label}</div>
     </div>
   );
 }
