@@ -165,7 +165,7 @@ export function NovikaProductPage({
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-12 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] sm:pb-12 overflow-x-hidden w-full max-w-full safe-area-top">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-12 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] sm:pb-12 overflow-x-hidden w-full safe-area-top">
       {/* Fil d'ariane minimaliste */}
       <nav className="flex items-center gap-1.5 text-xs text-[#666660]">
         <Link href={`/boutique/${storeSlug}`} className="hover:underline">
