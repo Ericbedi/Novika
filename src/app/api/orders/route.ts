@@ -4,6 +4,7 @@ import { reserveStockForOrder } from "@/lib/stock-settings-store";
 import { getAuthFromRequest } from "@/server/auth/request-auth";
 import { assessOrderIp } from "@/server/robtex/client";
 import { notifyNewOrder } from "@/server/notify/new-order";
+import { isEmail, orderConfirmationEmail, sendShopEmail } from "@/server/email/shop-mail";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +54,7 @@ export async function POST(req: NextRequest) {
       quantity = 1,
       storeSlug,
       items,
+      customerEmail,
     } = body;
 
     if (!orderNumber || !customerName || !customerPhone || !city || !storeSlug) {
@@ -122,6 +124,18 @@ export async function POST(req: NextRequest) {
     // Alerte au propriétaire (Telegram / e-mail si configurés) — jamais bloquante
     try {
       const { data: shopInfo } = await supabase.from("shops").select("name, owner_email").eq("slug", storeSlug).maybeSingle();
+      const { data: brandInfo } = await (supabase as any).rpc("shop_brand_public", { p_slug: storeSlug });
+      // Confirmation au client (si une adresse e-mail a été saisie), depuis le domaine de la boutique si validé
+      if (isEmail(customerEmail)) {
+        const mail = orderConfirmationEmail({
+          shopName: shopInfo?.name || storeSlug,
+          orderNumber: data.order_number || orderNumber,
+          customerName: String(customerName).slice(0, 80),
+          total: Number(data.total_amount) || Number(subtotal) || 0,
+          quantity: orderQty,
+        });
+        await sendShopEmail({ shopName: shopInfo?.name || storeSlug, sender: brandInfo?.brand?.emailSender, to: customerEmail, ...mail });
+      }
       await notifyNewOrder({
         shopName: shopInfo?.name || storeSlug,
         ownerEmail: shopInfo?.owner_email,

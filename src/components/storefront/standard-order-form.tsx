@@ -395,6 +395,7 @@ export function StandardOrderForm({
             deliveryAddress: (result.recalculatedOrder.address + extrasSuffix).slice(0, 480),
             subtotal: result.recalculatedOrder.subtotal,
             storeSlug,
+            customerEmail: email.trim() || extraFields.filter((f) => f.kind === "email").map((f) => (extras[f.id] || "").trim()).find(Boolean) || undefined,
             productId: product.id,
             quantity: activeOffer.quantity || 1,
           }),

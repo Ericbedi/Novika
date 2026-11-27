@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     const supabase = await createClient();
     const { data } = await (supabase as any).rpc("shop_brand_public", { p_slug: store });
     return NextResponse.json(
-      { success: true, name: data?.name || null, brand: data?.brand || {} },
+      { success: true, name: data?.name || null, brand: (({ emailSender: _hidden, ...rest }) => rest)((data?.brand || {}) as Record<string, unknown>) },
       { headers: { "Cache-Control": "public, max-age=60, stale-while-revalidate=300" } }
     );
   } catch {

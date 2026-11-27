@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Check, Copy, Mail, RefreshCw } from "lucide-react";
+import { SendFromDomain } from "./send-from-domain";
 import { zohoRecords, type EmailCheckResult, type ZohoRegion } from "@/lib/email-pro";
 
 interface DomainRow { id: string; domain: string; isPrimary: boolean }
@@ -121,6 +122,7 @@ export function EmailProGuide({ storeSlug }: { storeSlug: string }) {
           </div>
         </>
       )}
+      {domains.length > 0 && <SendFromDomain storeSlug={storeSlug} domains={domains.map((d) => d.domain)} />}
     </section>
   );
 }
