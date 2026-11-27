@@ -647,31 +647,6 @@ export function RichDescriptionEditor({
           <span>Nettoyer</span>
         </button>
 
-        {/* Bouton "Améliorer avec l'IA" (Prompt 17-F, 5) */}
-        <button
-          type="button"
-          id="btn-ai-improve"
-          onClick={handleAiImprove}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-900 text-xs font-bold transition-colors"
-          title="Restructurer la fiche en sections claires avec l'IA (Accroche, Bénéfices, Mode d'emploi)"
-        >
-          <Wand2 className="w-3.5 h-3.5 text-purple-600" />
-          <span>Améliorer avec l'IA</span>
-        </button>
-
-        {/* Bouton Générateur IA complet si branché */}
-        {onOpenAiGenerator && (
-          <button
-            type="button"
-            onClick={onOpenAiGenerator}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#1F3A26] hover:bg-[#162B1C] text-white text-xs font-bold transition-colors"
-            title="Ouvrir l'assistant complet de rédaction IA"
-          >
-            <Sparkles className="w-3 h-3 text-amber-300" />
-            <span>Rédiger avec IA</span>
-          </button>
-        )}
-
         {/* Sélecteur de mode : Visuel / Code HTML / Aperçu Vitrine */}
         <div className="ml-auto flex items-center gap-1 bg-[#EFECE6] p-0.5 rounded-xl text-xs font-bold">
           <button
