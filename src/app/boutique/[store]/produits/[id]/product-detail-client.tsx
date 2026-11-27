@@ -489,8 +489,8 @@ export function ProductCanonicalDetailPageClient({
 
   return (
     <>
-      {/* Bandeau d'aperçu administrateur si produit non publié ou mode preview */}
-      {isPreview && (
+      {/* Bandeau d'aperçu administrateur : uniquement si le produit n'est pas encore publié */}
+      {isPreview && !isProductLive && (
         <>
         <div
           data-testid="admin-preview-banner"
