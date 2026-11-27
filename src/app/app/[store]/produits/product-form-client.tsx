@@ -1,5 +1,6 @@
 "use client";
 
+import { cleanSlug } from "@/lib/slug";
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -238,7 +239,7 @@ export function ProductFormClient({
   const [seoSlug, setSeoSlug] = useState(
     initialProduct?.seo?.slug ||
     initialProduct?.slug ||
-    (name ? name.toLowerCase().replace(/[^a-z0-9]+/g, "-") : "nouveau-produit")
+    (name ? cleanSlug(name) : "nouveau-produit")
   );
   const [isSeoCustomOpen, setIsSeoCustomOpen] = useState(false);
 
@@ -974,8 +975,7 @@ export function ProductFormClient({
     }
 
     const newId = initialProduct?.id || `prod_${Date.now()}`;
-    const productSlug =
-      seoSlug.trim() || cleanName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const productSlug = cleanSlug(seoSlug.trim() || cleanName);
 
     const sanitizeReport = sanitizeProductDescription(description, { productTitle: cleanName });
     const sanitizedDesc = sanitizeReport.cleanedHtml;

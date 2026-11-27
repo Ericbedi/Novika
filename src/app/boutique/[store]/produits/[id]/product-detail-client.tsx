@@ -1,5 +1,6 @@
 "use client";
 
+import { cleanSlug, safeDecode } from "@/lib/slug";
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -49,9 +50,10 @@ export interface ProductDetailClientProps {
 
 export function ProductCanonicalDetailPageClient({
   storeSlug,
-  productId,
+  productId: productIdProp,
   initialRaw,
 }: ProductDetailClientProps) {
+  const productId = safeDecode(productIdProp);
   const router = useRouter();
   const searchParams = useSearchParams();
   const [publishState, setPublishState] = useState<"idle" | "loading" | "error">("idle");
@@ -96,7 +98,7 @@ export function ProductCanonicalDetailPageClient({
       setIsLoaded(true);
     } else {
       // Tentative de récupération distante via l'API Supabase avant de déclarer 404
-      fetch(`/api/products?store=${encodeURIComponent(storeSlug)}&id=${encodeURIComponent(productId)}`)
+      fetch(`/api/products?store=${encodeURIComponent(storeSlug)}&id=${encodeURIComponent(/^[A-Za-z0-9_-]+$/.test(productId) ? productId : cleanSlug(productId, productId))}`)
         .then((res) => res.json())
         .then((data) => {
           if (data?.products && data.products.length > 0) {

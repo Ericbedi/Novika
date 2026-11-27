@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cleanSlug } from "@/lib/slug";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthFromRequest } from "@/server/auth/request-auth";
 import { logAuthAudit } from "@/lib/audit-auth";
@@ -67,7 +68,8 @@ export async function POST(req: NextRequest) {
         if (!ok) skippedLocalImages += 1;
         return ok;
       });
-      return { ...p, images: kept };
+      const slug = typeof p.slug === "string" && p.slug ? cleanSlug(p.slug) : p.slug;
+      return { ...p, slug, images: kept };
     });
 
     const { data, error } = await (supabase as any).rpc("sync_products_server", {

@@ -1,4 +1,5 @@
 import React from "react";
+import { safeDecode } from "@/lib/slug";
 import { Metadata } from "next";
 import { resolveStorefrontDataAsync } from "@/lib/storefront-resolver-server";
 import { findProductInShopRaw } from "@/lib/products-store";
@@ -9,7 +10,8 @@ interface ProductPageProps {
 }
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
-  const { store: storeSlug, id: productId } = await params;
+  const { store: storeSlug, id: rawId } = await params;
+  const productId = safeDecode(rawId);
   await resolveStorefrontDataAsync(storeSlug);
   const raw = findProductInShopRaw(storeSlug, productId);
   const productName = raw.product?.title || raw.product?.name || "Produit";
@@ -21,7 +23,8 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 }
 
 export default async function ProductCanonicalDetailPage({ params }: ProductPageProps) {
-  const { store: storeSlug, id: productId } = await params;
+  const { store: storeSlug, id: rawId } = await params;
+  const productId = safeDecode(rawId);
   await resolveStorefrontDataAsync(storeSlug);
   const initialRaw = findProductInShopRaw(storeSlug, productId);
 
