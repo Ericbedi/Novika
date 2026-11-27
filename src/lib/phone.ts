@@ -1,3 +1,4 @@
+import { AFRICAN_COUNTRIES } from "@/lib/countries";
 import { parsePhoneNumberFromString, type CountryCode } from "libphonenumber-js/max";
 
 /**
@@ -5,22 +6,19 @@ import { parsePhoneNumberFromString, type CountryCode } from "libphonenumber-js/
  * Pays ouverts au lancement. Le Bénin est passé à 10 chiffres fin 2024
  * (préfixe 01) : les anciens numéros à 8 chiffres sont refusés.
  */
-export const SUPPORTED_COUNTRIES = ["TG", "CI", "SN", "BJ"] as const;
-export type SupportedCountry = (typeof SUPPORTED_COUNTRIES)[number];
+export const SUPPORTED_COUNTRIES = Object.keys(AFRICAN_COUNTRIES);
+export type SupportedCountry = string;
 
-export const DIAL_CODES: Record<SupportedCountry, string> = {
-  TG: "+228",
-  CI: "+225",
-  SN: "+221",
-  BJ: "+229",
-};
+export const DIAL_CODES: Record<string, string> = Object.fromEntries(
+  Object.values(AFRICAN_COUNTRIES).map((c) => [c.code, c.phoneDialCode]),
+);
 
 export type PhoneResult =
   | { ok: true; e164: string; national: string; country: SupportedCountry }
   | { ok: false; reason: "empty" | "invalid" | "not_mobile" | "wrong_country" };
 
 export function isSupportedCountry(value: string): value is SupportedCountry {
-  return (SUPPORTED_COUNTRIES as readonly string[]).includes(value);
+  return SUPPORTED_COUNTRIES.includes(value);
 }
 
 /**

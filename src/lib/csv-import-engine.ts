@@ -12,6 +12,7 @@
  * - Rapport d'exactitude chiffré comparé au fichier source
  */
 
+import { AFRICAN_COUNTRIES } from "@/lib/countries";
 import {
   DryRunSummary,
   ImportBatch,
@@ -537,7 +538,7 @@ export async function executeAutoCsvImport(params: {
       mode: "create_and_update",
       newProductsStatus: "draft",
       stockMode: "set",
-      allowedCountries: ["TG", "CI", "SN", "BJ"],
+      allowedCountries: Object.keys(AFRICAN_COUNTRIES),
       currency,
     });
 
@@ -728,7 +729,7 @@ export async function executeAutoCsvImport(params: {
     stockMode: "set",
     autoCreateCollections: true,
     autoCreateSuppliers: true,
-    targetCountries: ["TG", "CI", "SN", "BJ"],
+    targetCountries: Object.keys(AFRICAN_COUNTRIES),
     totalRows: parsed.rows.length,
     createdCount: verifiedCount,
     updatedCount: duplicateStrategy === "update" ? verifiedCount : 0,

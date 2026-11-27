@@ -1,5 +1,6 @@
 "use client";
 
+import { AFRICAN_COUNTRIES } from "@/lib/countries";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -308,7 +309,7 @@ export function CsvImportModal({
       mode: importMode,
       newProductsStatus,
       stockMode,
-      allowedCountries: ["TG", "CI", "SN", "BJ"],
+      allowedCountries: Object.keys(AFRICAN_COUNTRIES),
     });
     setDryRunResult(summary);
     setCurrentStep(4);

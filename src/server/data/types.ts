@@ -83,7 +83,7 @@ export interface Order {
   orderNumber: string;
   customerName: string;
   customerPhone: string;
-  country: "BJ" | "CI" | "SN" | "TG";
+  country: string;
   city: string;
   district?: string;
   deliveryAddress: string;
@@ -462,7 +462,7 @@ export interface DeliveryAgency {
   contactName: string;
   phone: string;
   email: string;
-  country: "BJ" | "CI" | "SN" | "TG";
+  country: string;
   city: string;
   zonesCovered: string[];
   ridersCount: number;
@@ -477,7 +477,7 @@ export interface DeliveryAgency {
 
 export interface DeliveryRate {
   id: string;
-  country: "BJ" | "CI" | "SN" | "TG";
+  country: string;
   city: string;
   zone: string;
   entityType: "agency" | "rider";
@@ -500,7 +500,7 @@ export interface Remittance {
   entityName: string;
   phone: string;
   city: string;
-  country: "BJ" | "CI" | "SN" | "TG";
+  country: string;
   ordersCount: number;
   collectedAmount: number; // Encaissé (FCFA)
   deliveryFees: number; // Frais de livraison déduits (FCFA)
@@ -533,7 +533,7 @@ export interface Delivery {
   customerPhone: string;
   deliveryAddress: string;
   city: string;
-  country: "BJ" | "CI" | "SN" | "TG";
+  country: string;
   itemsSummary: string;
   amountToCollect: number; // Espèces à encaisser en FCFA
   status: DeliveryStatus;
@@ -550,7 +550,7 @@ export interface Rider {
   name: string;
   phone: string;
   city: string;
-  country: "BJ" | "CI" | "SN" | "TG";
+  country: string;
   zonesCovered: string[];
   defaultFee: number; // Frais par course en FCFA
   activeDeliveriesCount: number;
@@ -584,7 +584,7 @@ export interface AbandonedCart {
   variant?: string;
   estimatedAmount: number;
   city: string;
-  country: "BJ" | "CI" | "SN" | "TG";
+  country: string;
   startedAt: string;
   timeAgo: string;
   recovered: boolean;
@@ -595,7 +595,7 @@ export interface Customer {
   name: string;
   phone: string;
   email?: string;
-  country: "BJ" | "CI" | "SN" | "TG";
+  country: string;
   city: string;
   address: string;
   ordersCount: number;
