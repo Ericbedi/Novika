@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
@@ -37,66 +37,125 @@ import { TopProductsCard } from "@/components/dashboard/top-products-card";
 import { ProfitDeliveryChart } from "@/components/dashboard/profit-delivery-chart";
 import { RecentOrdersTable } from "@/components/dashboard/recent-orders-table";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
-import {
-  MOCK_CHART_DAYS,
-  MOCK_KPIS_BY_PERIOD,
-  MOCK_STATUS_DISTRIBUTION,
-  MOCK_TOP_PRODUCTS,
-  PeriodType,
-} from "@/mock-data/dashboard";
-import { MOCK_ORDERS } from "@/mock-data/orders";
+import type { PeriodType } from "@/mock-data/dashboard";
+import { mapApiOrder } from "@/lib/orders-api";
 import { useApp } from "@/components/layout/app-shell";
 import { OnboardingCard } from "@/components/dashboard/onboarding-card";
 import { InitialSetupWizard } from "@/components/dashboard/initial-setup-wizard";
 import { RevenueGoalCard } from "@/components/finance/revenue-goal-card";
 import { MOCK_GOALS } from "@/mock-data/goals";
-import { ChartDayData, DashboardKpi, Order, StatusDistributionItem } from "@/server/data/types";
+import { ChartDayData, DashboardKpi, Order, StatusDistributionItem, TopProduct } from "@/server/data/types";
 
 export function DashboardClient({ storeSlug }: { storeSlug: string }) {
   const { activeStore } = useApp();
   const [period, setPeriod] = useState<PeriodType>("last7");
   const [isWizardOpen, setIsWizardOpen] = useState(false);
 
-  const emptyKpis: DashboardKpi = {
-    visitors: { value: 0, delta: 0, isUpGood: true },
-    totalSales: { value: 0, delta: 0, isUpGood: true },
-    deliveredSales: { value: 0, delta: 0, isUpGood: true },
-    ordersCount: { value: 0, delta: 0, isUpGood: true },
-    conversionRate: { value: 0, delta: 0, isUpGood: true },
-    pendingOrdersCount: 0,
-    todayDeliveriesCount: 0,
+  // Chiffres réels de la boutique (base de données) sur la période choisie
+  const range = useMemo(() => {
+    const iso = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    const now = new Date();
+    const day = 86400000;
+    switch (period) {
+      case "today": return { from: iso(now), to: iso(now) };
+      case "yesterday": return { from: iso(new Date(now.getTime() - day)), to: iso(new Date(now.getTime() - day)) };
+      case "last30": return { from: iso(new Date(now.getTime() - 29 * day)), to: iso(now) };
+      case "thisMonth": return { from: iso(new Date(now.getFullYear(), now.getMonth(), 1)), to: iso(now) };
+      default: return { from: iso(new Date(now.getTime() - 6 * day)), to: iso(now) };
+    }
+  }, [period]);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [stats, setStats] = useState<{ current: any; previous: any } | null>(null);
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  useEffect(() => {
+    let alive = true;
+    const load = () =>
+      fetch(`/api/dashboard?store=${encodeURIComponent(storeSlug)}&from=${range.from}&to=${range.to}`)
+        .then((r) => r.json())
+        .then((d) => alive && d?.success && setStats({ current: d.current, previous: d.previous }))
+        .catch(() => {});
+    void load();
+    const t = setInterval(load, 60000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, [storeSlug, range]);
+
+  useEffect(() => {
+    fetch(`/api/orders?store=${encodeURIComponent(storeSlug)}`)
+      .then((r) => r.json())
+      .then((d) => d?.success && Array.isArray(d.orders) && setOrders(d.orders.map(mapApiOrder)))
+      .catch(() => {});
+  }, [storeSlug]);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sum = (days: any[] | undefined, k: string) => (days || []).reduce((acc, d) => acc + (Number(d[k]) || 0), 0);
+  const delta = (cur: number, prev: number | null) => (prev === null || prev === 0 ? 0 : Math.round(((cur - prev) / prev) * 100));
+  const kpi = (k: string): { value: number; delta: number; isUpGood: boolean } => {
+    const cur = sum(stats?.current?.days, k);
+    return { value: cur, delta: delta(cur, stats?.previous ? sum(stats.previous.days, k) : null), isUpGood: true };
   };
 
-  const kpis = emptyKpis;
+  const kpis: DashboardKpi = {
+    visitors: { value: 0, delta: 0, isUpGood: true },
+    totalSales: kpi("total_sales"),
+    deliveredSales: kpi("delivered_sales"),
+    ordersCount: kpi("orders"),
+    conversionRate: { value: 0, delta: 0, isUpGood: true },
+    pendingOrdersCount: Number(stats?.current?.pending_count) || 0,
+    todayDeliveriesCount: Number(stats?.current?.today_deliveries) || 0,
+  };
 
-  const [orders] = useState<Order[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem(`novika_store_orders_${storeSlug}`);
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch {}
-      }
-    }
-    return [];
+  const STATUS_META: [string, string, string][] = [
+    ["delivered", "Livrées", "#10B981"],
+    ["pending", "À confirmer", "#3B82F6"],
+    ["scheduled", "Programmées", "#F59E0B"],
+    ["cancelled", "Annulées", "#EF4444"],
+    ["rejected", "Rejetées", "#8B5CF6"],
+  ];
+  const statusCounts: Record<string, number> = stats?.current?.statuses || {};
+  const statusTotal = STATUS_META.reduce((a, [k]) => a + (Number(statusCounts[k]) || 0), 0);
+  const emptyStatusDistribution: StatusDistributionItem[] = STATUS_META.map(([status, label, color]) => {
+    const count = Number(statusCounts[status]) || 0;
+    return { status: status as StatusDistributionItem["status"], label, count, percentage: statusTotal ? Math.round((count / statusTotal) * 100) : 0, color };
   });
 
-  const emptyStatusDistribution: StatusDistributionItem[] = [
-    { status: "delivered", label: "Livrées", count: 0, percentage: 0, color: "#10B981" },
-    { status: "pending", label: "À confirmer", count: 0, percentage: 0, color: "#3B82F6" },
-    { status: "scheduled", label: "Programmées", count: 0, percentage: 0, color: "#F59E0B" },
-    { status: "cancelled", label: "Annulées", count: 0, percentage: 0, color: "#EF4444" },
-    { status: "rejected", label: "Rejetées", count: 0, percentage: 0, color: "#8B5CF6" },
-  ];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const emptyChartDays: ChartDayData[] = ((stats?.current?.days as any[]) || []).map((d) => {
+    const productCost = Number(d.product_cost) || 0;
+    const shippingCost = Number(d.rider_fees) || 0;
+    const adSpend = Number(d.ad_spend) || 0;
+    const delivered = Number(d.delivered_count) || 0;
+    const deliveredSales = Number(d.delivered_sales) || 0;
+    return {
+      date: d.date,
+      dayLabel: new Date(d.date + "T00:00:00").toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }),
+      visitors: 0,
+      totalSales: Number(d.total_sales) || 0,
+      deliveredSales,
+      orders: Number(d.orders) || 0,
+      deliveredCount: delivered,
+      adSpend,
+      productCost,
+      shippingCost,
+      netProfit: deliveredSales - productCost - shippingCost - adSpend - (Number(d.other_expenses) || 0),
+      realCpa: delivered > 0 ? Math.round(adSpend / delivered) : 0,
+    };
+  });
 
-  const emptyChartDays: ChartDayData[] = MOCK_CHART_DAYS.map((d) => ({
-    ...d,
-    visitors: 0,
-    sales: 0,
-    orders: 0,
-    delivered: 0,
-    profit: 0,
-    expenses: 0,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const topProducts: TopProduct[] = ((stats?.current?.top_products as any[]) || []).map((t) => ({
+    id: String(t.id),
+    name: t.name,
+    category: "",
+    image: "",
+    unitsSold: Number(t.units) || 0,
+    revenue: Number(t.revenue) || 0,
+    stock: 0,
+    changePercent: 0,
   }));
 
   const periodLabels: Record<PeriodType, string> = {
@@ -308,7 +367,7 @@ export function DashboardClient({ storeSlug }: { storeSlug: string }) {
 
           <div className="lg:col-span-7">
             <TopProductsCard
-              products={[]}
+              products={topProducts}
               storeSlug={storeSlug}
               className="h-full"
             />

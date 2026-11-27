@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   BarChart3,
   TrendingUp,
@@ -21,12 +21,9 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { StatCard, StatCardsGrid } from "@/components/app/stat-card";
-import {
-  MOCK_SALES_OVERVIEW,
-  MOCK_CLOSING_STATS,
-  MOCK_UTM_CAMPAIGNS,
-  MOCK_LIVE_STATS,
-} from "@/mock-data/stats";
+import { MOCK_LIVE_STATS, type SalesOverview } from "@/mock-data/stats";
+import { mapApiOrder } from "@/lib/orders-api";
+import type { CloserClosingStats, Order, UtmCampaignStats } from "@/server/data/types";
 import { formatFcfa } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +33,107 @@ interface StatsClientProps {
 
 export function StatsClient({ storeSlug }: StatsClientProps) {
   const [activeTab, setActiveTab] = useState<"sales" | "closing" | "live">("sales");
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  useEffect(() => {
+    fetch(`/api/orders?store=${encodeURIComponent(storeSlug)}`)
+      .then((r) => r.json())
+      .then((d) => d?.success && Array.isArray(d.orders) && setOrders(d.orders.map(mapApiOrder)))
+      .catch(() => {});
+  }, [storeSlug]);
+
+  // Toutes les statistiques sont calculées à partir des vraies commandes
+  const { MOCK_SALES_OVERVIEW, MOCK_CLOSING_STATS, MOCK_UTM_CAMPAIGNS } = useMemo(() => {
+    const delivered = orders.filter((o) => o.status === "delivered");
+    const returned = orders.filter((o) => ["rejected", "rejected_invalid_number"].includes(o.status as string));
+    const gross = orders.reduce((a, o) => a + o.totalAmount, 0);
+    const returns = returned.reduce((a, o) => a + o.totalAmount, 0);
+    const netSales = delivered.reduce((a, o) => a + o.totalAmount, 0);
+
+    const byProduct = new Map<string, { revenue: number; orders: number }>();
+    delivered.forEach((o) =>
+      o.items.forEach((it) => {
+        const e = byProduct.get(it.productName) || { revenue: 0, orders: 0 };
+        e.revenue += it.totalPrice;
+        e.orders += 1;
+        byProduct.set(it.productName, e);
+      })
+    );
+    const prodTotal = Array.from(byProduct.values()).reduce((a, v) => a + v.revenue, 0);
+    const salesByCategory = Array.from(byProduct.entries())
+      .map(([category, v]) => ({ category, revenue: v.revenue, orders: v.orders, percentage: prodTotal ? Math.round((v.revenue / prodTotal) * 100) : 0 }))
+      .sort((a, b) => b.revenue - a.revenue);
+
+    const COUNTRY: Record<string, { name: string; flag: string }> = {
+      TG: { name: "Togo", flag: "🇹🇬" }, BJ: { name: "Bénin", flag: "🇧🇯" },
+      CI: { name: "Côte d'Ivoire", flag: "🇨🇮" }, SN: { name: "Sénégal", flag: "🇸🇳" },
+    };
+    const byCountry = new Map<string, Order[]>();
+    orders.forEach((o) => byCountry.set(o.country, [...(byCountry.get(o.country) || []), o]));
+    const salesByCountry = Array.from(byCountry.entries()).map(([country, list]) => {
+      const del = list.filter((o) => o.status === "delivered");
+      return {
+        country,
+        countryName: COUNTRY[country]?.name || country,
+        flag: COUNTRY[country]?.flag || "🌍",
+        orders: list.length,
+        deliveredRate: list.length ? Math.round((del.length / list.length) * 100) : 0,
+        revenue: del.reduce((a, o) => a + o.totalAmount, 0),
+      };
+    });
+
+    const overview: SalesOverview = {
+      grossSales: gross,
+      discounts: 0,
+      returns,
+      netSales,
+      averageOrderValue: delivered.length ? Math.round(netSales / delivered.length) : 0,
+      deliveredOrders: delivered.length,
+      totalOrders: orders.length,
+      salesByCategory,
+      salesByCountry,
+      salesByCity: [],
+    };
+
+    const byCloser = new Map<string, { name: string; list: Order[] }>();
+    orders.forEach((o) => {
+      if (!o.assignedCloser) return;
+      const e = byCloser.get(o.assignedCloser.id) || { name: o.assignedCloser.name, list: [] };
+      e.list.push(o);
+      byCloser.set(o.assignedCloser.id, e);
+    });
+    const closing: CloserClosingStats[] = Array.from(byCloser.entries()).map(([closerId, v]) => {
+      const confirmed = v.list.filter((o) => !["pending", "unreachable", "rejected", "rejected_invalid_number", "lost_unreachable", "cancelled"].includes(o.status as string));
+      const del = v.list.filter((o) => o.status === "delivered");
+      return {
+        closerId,
+        closerName: v.name,
+        assignedOrders: v.list.length,
+        confirmedOrders: confirmed.length,
+        confirmationRate: v.list.length ? Math.round((confirmed.length / v.list.length) * 100) : 0,
+        deliveredOrders: del.length,
+        deliveryRate: v.list.length ? Math.round((del.length / v.list.length) * 100) : 0,
+        deliveredRevenue: del.reduce((a, o) => a + o.totalAmount, 0),
+      };
+    });
+
+    const byCamp = new Map<string, Order[]>();
+    orders.forEach((o) => {
+      if (!o.utm?.campaign && !o.utm?.source) return;
+      const key = `${o.utm?.campaign || "(sans campagne)"}||${o.utm?.source || "direct"}`;
+      byCamp.set(key, [...(byCamp.get(key) || []), o]);
+    });
+    const utm: UtmCampaignStats[] = Array.from(byCamp.entries()).map(([key, list]) => {
+      const [campaign, source] = key.split("||");
+      return {
+        campaign, source, visitors: 0, orders: list.length, conversionRate: 0,
+        revenue: list.filter((o) => o.status === "delivered").reduce((a, o) => a + o.totalAmount, 0),
+        adSpend: 0, roas: 0,
+      };
+    });
+
+    return { MOCK_SALES_OVERVIEW: overview, MOCK_CLOSING_STATS: closing, MOCK_UTM_CAMPAIGNS: utm };
+  }, [orders]);
 
   return (
     <div className="space-y-6 pb-24">
