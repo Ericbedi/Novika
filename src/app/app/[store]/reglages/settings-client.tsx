@@ -60,6 +60,7 @@ import { MOCK_TEAM } from "@/mock-data/team";
 import { TeamMember, UserRole, USER_ROLE_LABELS } from "@/server/data/types";
 import { CountryChip } from "@/components/app/bits";
 import { cn } from "@/lib/utils";
+import { ALL_AFRICAN_COUNTRIES } from "@/lib/countries";
 import { testOrderSound, notificationSound } from "@/lib/notification-sound";
 
 interface SettingsClientProps {
@@ -182,7 +183,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [newMemberPhone, setNewMemberPhone] = useState("");
   const [newMemberRole, setNewMemberRole] = useState<UserRole>("closer");
-  const [newMemberCountry, setNewMemberCountry] = useState<"BJ" | "CI" | "SN" | "TG">("TG");
+  const [newMemberCountry, setNewMemberCountry] = useState<string>("TG");
   const [newMemberAgency, setNewMemberAgency] = useState("");
 
   // Synchronisation stricte de l'équipe du marchand connecté (AUCUNE donnée du fondateur démo)
@@ -2282,11 +2283,12 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
                           onChange={(e: any) => setNewMemberCountry(e.target.value)}
                           className="w-full p-2.5 rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
                         >
-                          <option value="TG">🇹🇬 Togo</option>
-                          <option value="CI">🇨🇮 Côte d'Ivoire</option>
-                          <option value="SN">🇸🇳 Sénégal</option>
-                          <option value="BJ">🇧🇯 Bénin</option>
-                        </select>
+                          {ALL_AFRICAN_COUNTRIES.map((c) => (
+                            <option key={c.code} value={c.code}>
+                              {c.flagEmoji} {c.name}
+                            </option>
+                          ))}
+                          </select>
                       </div>
                       <div>
                         <label className="block font-semibold text-[#111111] mb-1">
@@ -2298,7 +2300,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
                           className="w-full p-2.5 rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
                         >
                           <option value="owner">Admin</option>
-                          <option value="closer">Closeur WhatsApp</option>
+                          <option value="closer">Closer simple</option>
                           <option value="rider">Livreur de tournées</option>
                           <option value="agency">Agence de livraison partenaire</option>
                         </select>

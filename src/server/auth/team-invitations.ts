@@ -19,7 +19,7 @@ export interface TeamInvitation {
   email: string;
   role: AllowedRole;
   storeSlugs: string[];
-  country?: "BJ" | "CI" | "SN" | "TG";
+  country?: string;
   invitedBy: string;
   token: string;
   status: "pending" | "accepted" | "canceled" | "expired";
@@ -35,7 +35,7 @@ export interface AllowedMember {
   phone?: string;
   role: AllowedRole;
   storeSlugs: string[];
-  country?: "BJ" | "CI" | "SN" | "TG";
+  country?: string;
   status: "active" | "suspended";
   isOwner: boolean;
   twoFactorRequired: boolean;
@@ -86,7 +86,7 @@ export function createInvitation(params: {
   email: string;
   role: AllowedRole;
   storeSlugs?: string[];
-  country?: "BJ" | "CI" | "SN" | "TG";
+  country?: string;
   invitedBy: string;
 }): { success: boolean; invitation?: TeamInvitation; error?: string } {
   ensureOwnerInitialized();

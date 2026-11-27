@@ -448,7 +448,7 @@ export interface TeamMember {
   email: string;
   phone: string;
   role: UserRole;
-  country?: "BJ" | "CI" | "SN" | "TG";
+  country?: string;
   agencyId?: string;
   agencyName?: string;
   active: boolean;
