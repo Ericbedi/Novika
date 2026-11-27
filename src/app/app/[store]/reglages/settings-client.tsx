@@ -2133,6 +2133,12 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
 
               <div className="flex items-center gap-2">
                 <Link
+                  href={`/app/${storeSlug}/reglages/equipe/closeuses`}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-black/[0.1] text-[#111111] text-xs font-bold hover:bg-black/[0.04] transition-all shadow-2xs"
+                >
+                  <span>Closeuses & commissions</span>
+                </Link>
+                <Link
                   href={`/app/${storeSlug}/reglages/equipe/horaires`}
                   id="link-to-team-schedules"
                   className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-black/[0.1] text-[#111111] text-xs font-bold hover:bg-black/[0.04] transition-all shadow-2xs"

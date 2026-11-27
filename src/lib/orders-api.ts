@@ -33,6 +33,7 @@ export function mapApiOrder(o: any): Order {
     notes: o.notes || undefined,
     statusReason: o.failure_reason || o.status_reason || null,
     assignedRider: o.rider_id ? { id: o.rider_id, name: o.rider_name || "", phone: o.rider_phone || "" } : undefined,
+    assignedCloser: o.closer_id ? { id: o.closer_id, name: o.closer_name || "" } : undefined,
     riderFee: Number(o.rider_fee) || 0,
     utm: o.source_channel
       ? { source: ORDER_SOURCE_OPTIONS.find((x) => x.value === o.source_channel)?.label || o.source_channel }
@@ -87,4 +88,33 @@ export interface RiderRow {
   active_count: number;
   delivered_count: number;
   failed_count: number;
+}
+
+/** Affecte une closeuse (ou retire-la avec null). Renvoie null si OK, sinon le message d'erreur. */
+export async function assignOrderCloser(storeSlug: string, orderNumber: string, closerId: string | null): Promise<string | null> {
+  try {
+    const res = await fetch("/api/orders/assign-closer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ store: storeSlug, orderNumber, closerId }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data?.success) return data?.error || "Affectation impossible.";
+    return null;
+  } catch {
+    return "Connexion impossible : la closeuse n'a pas été enregistrée.";
+  }
+}
+
+export interface CloserRow {
+  id: string;
+  name: string;
+  phone: string | null;
+  country: string | null;
+  commission: number;
+  active: boolean;
+  assigned: number;
+  delivered: number;
+  failed: number;
+  revenue: number;
 }

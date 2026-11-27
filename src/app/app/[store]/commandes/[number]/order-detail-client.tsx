@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -34,7 +34,6 @@ import {
 } from "lucide-react";
 import { Order, OrderStatus, ORDER_STATUSES, ORDER_STATUS_LABELS, StatusHistoryEntry } from "@/server/data/types";
 import { MOCK_ORDERS } from "@/mock-data/orders";
-import { MOCK_RIDERS } from "@/mock-data/deliveries";
 import { MOCK_TRACKING_TOKENS, MOCK_MESSAGE_TEMPLATES } from "@/mock-data/vague1-data";
 import { MOCK_RECEIPTS_DATA } from "@/mock-data/receipts";
 import {
@@ -58,7 +57,7 @@ import {
   generatePendingStockWhatsAppUrl,
 } from "@/lib/stock-settings-store";
 import { notificationSound } from "@/lib/notification-sound";
-import { persistOrderStatus } from "@/lib/orders-api";
+import { assignOrderCloser, assignOrderRider, persistOrderStatus, type CloserRow, type RiderRow } from "@/lib/orders-api";
 
 interface OrderDetailClientProps {
   storeSlug: string;
@@ -319,20 +318,27 @@ export function OrderDetailClient({ storeSlug, orderNumber, initialOrder: provid
     showToast(`Statut mis à jour : ${ORDER_STATUS_LABELS[selectedNewStatus]}`);
   };
 
-  const handleAssignCloser = (closerId: string, closerName: string) => {
-    setOrder((prev) => ({
-      ...prev,
-      assignedCloser: { id: closerId, name: closerName },
-    }));
-    showToast(`Closeuse assignée : ${closerName}`);
+  // Closeuses et livreurs réels de la boutique (réservés à la direction)
+  const [teamClosers, setTeamClosers] = useState<CloserRow[]>([]);
+  const [teamRiders, setTeamRiders] = useState<RiderRow[]>([]);
+  useEffect(() => {
+    if (activeRole === "closer" || activeRole === "rider" || activeRole === "agency") return;
+    fetch(`/api/closers?store=${encodeURIComponent(storeSlug)}`).then((r) => r.json()).then((d) => d?.success && setTeamClosers(d.closers)).catch(() => {});
+    fetch(`/api/riders?store=${encodeURIComponent(storeSlug)}`).then((r) => r.json()).then((d) => d?.success && setTeamRiders(d.riders)).catch(() => {});
+  }, [storeSlug, activeRole]);
+
+  const handleAssignCloser = async (closerId: string, closerName: string) => {
+    const err = await assignOrderCloser(storeSlug, order.orderNumber, closerId || null);
+    if (err) return showToast(err);
+    setOrder((prev) => ({ ...prev, assignedCloser: closerId ? { id: closerId, name: closerName } : undefined }));
+    showToast(closerId ? `Closeuse assignée : ${closerName}` : "Closeuse retirée");
   };
 
-  const handleAssignRider = (riderId: string, riderName: string, riderPhone: string) => {
-    setOrder((prev) => ({
-      ...prev,
-      assignedRider: { id: riderId, name: riderName, phone: riderPhone },
-    }));
-    showToast(`Livreur assigné : ${riderName}`);
+  const handleAssignRider = async (riderId: string, riderName: string, riderPhone: string) => {
+    const err = await assignOrderRider(storeSlug, order.orderNumber, riderId || null);
+    if (err) return showToast(err);
+    setOrder((prev) => ({ ...prev, assignedRider: riderId ? { id: riderId, name: riderName, phone: riderPhone } : undefined }));
+    showToast(riderId ? `Livreur assigné : ${riderName}` : "Livreur retiré");
   };
 
   const handleDeleteOrder = () => {
@@ -647,9 +653,9 @@ export function OrderDetailClient({ storeSlug, orderNumber, initialOrder: provid
                   className="w-full p-2.5 text-xs rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
                 >
                   <option value="">Sélectionner une closeuse</option>
-                  <option value="cls_01">Aïcha Diallo</option>
-                  <option value="cls_02">Esther Lawson</option>
-                  <option value="cls_03">Mariam Coulibaly</option>
+                  {teamClosers.filter((c) => c.active).map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
                 </select>
               )}
             </div>
@@ -668,21 +674,15 @@ export function OrderDetailClient({ storeSlug, orderNumber, initialOrder: provid
                 <select
                   value={order.assignedRider?.id || ""}
                   onChange={(e) => {
-                    const name = e.target.options[e.target.selectedIndex].text;
-                    handleAssignRider(e.target.value, name, "+22890556677");
+                    const r = teamRiders.find((x) => x.id === e.target.value);
+                    handleAssignRider(e.target.value, r?.name || "", r?.phone || "");
                   }}
                   className="w-full p-2.5 text-xs rounded-xl border border-black/[0.08] bg-white text-[#111111] focus:outline-none"
                 >
                   <option value="">Sélectionner un livreur</option>
-                  {MOCK_RIDERS.length > 0 ? (
-                    MOCK_RIDERS.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.name} ({r.city})
-                      </option>
-                    ))
-                  ) : (
-                    <option value="" disabled>Aucun livreur disponible</option>
-                  )}
+                  {teamRiders.filter((r) => r.active).map((r) => (
+                    <option key={r.id} value={r.id}>{r.name}{r.city ? ` (${r.city})` : ""}</option>
+                  ))}
                 </select>
               )}
             </div>
