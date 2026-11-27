@@ -236,6 +236,7 @@ export function ProductFormClient({
     initialProduct?.seo?.description ||
     "Commandez au meilleur prix avec livraison express et paiement sécurisé à la réception."
   );
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [seoSlug, setSeoSlug] = useState(
     initialProduct?.seo?.slug ||
     initialProduct?.slug ||
@@ -1543,6 +1544,8 @@ export function ProductFormClient({
             </div>
           </div>
 
+{showAdvanced && (
+<>
           {/* 5) APERÇU SUR LES MOTEURS DE RECHERCHE */}
           <div className="rounded-3xl border border-[#E6E0D4] bg-white p-6 shadow-2xs space-y-4">
             <div className="flex items-center justify-between">
@@ -1632,6 +1635,8 @@ export function ProductFormClient({
               </div>
             )}
           </div>
+</>
+)}
 
           {/* ======================================================== */}
           {/* 6) CARTE PRIX (Phase 17-C, 1) */}
@@ -1780,6 +1785,8 @@ export function ProductFormClient({
             )}
           </div>
 
+{showAdvanced && (
+<>
           {/* ======================================================== */}
           {/* NOUVEAU BLOC : BÉNÉFICES DU PRODUIT (Prompt 17-L) */}
           {/* ======================================================== */}
@@ -2016,6 +2023,8 @@ export function ProductFormClient({
               </div>
             )}
           </div>
+</>
+)}
 
           {/* ======================================================== */}
           {/* 7) OFFRES PAR PRODUIT (FORMULES DE QUANTITÉ COD) (Phase 17-C, 5 & Prompt 17-L) */}
@@ -2310,6 +2319,8 @@ export function ProductFormClient({
             )}
           </div>
 
+{showAdvanced && (
+<>
           {/* ======================================================== */}
           {/* 9) CARTE EXPÉDITION (Phase 17-C, 3) */}
           {/* ======================================================== */}
@@ -2388,6 +2399,8 @@ export function ProductFormClient({
               </div>
             )}
           </div>
+</>
+)}
 
           {/* ======================================================== */}
           {/* 10) CARTE VARIANTES (Phase 17-C, 4) */}
@@ -2612,6 +2625,8 @@ export function ProductFormClient({
             )}
           </div>
 
+{showAdvanced && (
+<>
           {/* ======================================================== */}
           {/* 11) CARTE CHAMPS PERSONNALISÉS (Phase 17-D, 1) */}
           {/* ======================================================== */}
@@ -2784,6 +2799,16 @@ export function ProductFormClient({
               )}
             </div>
           </div>
+</>
+)}
+          <button
+            type="button"
+            id="btn-toggle-advanced"
+            onClick={() => setShowAdvanced((v) => !v)}
+            className="w-full rounded-3xl border border-dashed border-[#E6E0D4] bg-white px-6 py-4 text-sm font-bold text-[#111111] hover:bg-stone-50"
+          >
+            {showAdvanced ? "Masquer les options avancées" : "Options avancées (SEO, bénéfices, expédition, champs personnalisés, pixels…)"}
+          </button>
         </div>
 
         {/* ======================================================== */}
@@ -3037,6 +3062,8 @@ export function ProductFormClient({
             </div>
           </div>
 
+{showAdvanced && (
+<>
           {/* 4) MODÈLE DE THÈME */}
           <div className="rounded-3xl border border-[#E6E0D4] bg-white p-6 shadow-2xs space-y-3">
             <h3 className="text-sm font-bold text-[#111111]">Modèle de thème</h3>
@@ -3099,6 +3126,8 @@ export function ProductFormClient({
               )}
             </div>
           </div>
+</>
+)}
         </div>
       </div>
 
