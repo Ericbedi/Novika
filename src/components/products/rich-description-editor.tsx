@@ -26,6 +26,10 @@ import {
   CheckCircle,
   AlertTriangle,
   Wand2,
+  Undo2,
+  Redo2,
+  Crop,
+  Trash2,
 } from "lucide-react";
 import {
   sanitizeProductDescription,
@@ -62,6 +66,11 @@ export function RichDescriptionEditor({
   const [selectedImg, setSelectedImg] = useState<HTMLImageElement | null>(null);
   const [, setImgTick] = useState(0);
   const isInternalUpdateRef = useRef(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const histRef = useRef<string[]>([]);
+  const histIdxRef = useRef(-1);
+  const lastPushRef = useRef(0);
+  const [cropOpen, setCropOpen] = useState(false);
 
   // Synchronisation du contenu dans l'éditeur visuel UNIQUEMENT lors des changements externes (Prompt 17-J)
   // Ne JAMAIS réécraser innerHTML pendant que l'utilisateur est en train de taper !
@@ -73,6 +82,18 @@ export function RichDescriptionEditor({
       }
       if (editorRef.current.innerHTML !== (value || "")) {
         editorRef.current.innerHTML = value || "";
+        if (histRef.current.length === 0) {
+          histRef.current = [value || ""];
+          histIdxRef.current = 0;
+        } else {
+          // Changement venu de l'extérieur (trame, import) : reste annulable
+          histRef.current.length = histIdxRef.current + 1;
+          histRef.current.push(value || "");
+          histIdxRef.current = histRef.current.length - 1;
+        }
+      } else if (histRef.current.length === 0) {
+        histRef.current = [value || ""];
+        histIdxRef.current = 0;
       }
     }
   }, [value, mode]);
@@ -101,7 +122,7 @@ export function RichDescriptionEditor({
     img.style.objectPosition = pos === "top" ? "top" : pos === "bottom" ? "bottom" : "center";
     img.style.maxWidth = size === "small" ? "260px" : size === "medium" ? "420px" : "100%";
     img.style.height = "auto";
-    handleInput();
+    handleInput(true);
     setImgTick((n) => n + 1);
   };
 
@@ -110,12 +131,14 @@ export function RichDescriptionEditor({
     const figure = selectedImg.closest("figure");
     (figure || selectedImg).remove();
     setSelectedImg(null);
-    handleInput();
+    setCropOpen(false);
+    handleInput(true);
   };
 
   const handleEditorClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
     if (selectedImg) selectedImg.style.outline = "";
+    setCropOpen(false);
     if (target.tagName === "IMG") {
       const img = target as HTMLImageElement;
       img.style.outline = "3px solid #C2410C";
@@ -126,14 +149,43 @@ export function RichDescriptionEditor({
     }
   };
 
-  const handleInput = () => {
+  const handleInput = (force = false) => {
     if (editorRef.current) {
       const html = editorRef.current.innerHTML.replace(/outline:\s*[^;"]*;?\s*outline-offset:\s*[^;"]*;?/g, "");
       isInternalUpdateRef.current = true;
+      // Historique « annuler / rétablir » : la frappe rapprochée est regroupée, les actions (image, suppression) forment une étape
+      const h = histRef.current;
+      if (h[histIdxRef.current] !== html) {
+        const now = Date.now();
+        const merge = !force && now - lastPushRef.current < 800 && histIdxRef.current === h.length - 1 && h.length > 1;
+        h.length = histIdxRef.current + 1;
+        if (merge) h[h.length - 1] = html;
+        else h.push(html);
+        if (h.length > 60) h.shift();
+        histIdxRef.current = h.length - 1;
+        lastPushRef.current = now;
+        setImgTick((n) => n + 1);
+      }
       // Nettoyage HTML : UNIQUEMENT à l'enregistrement et à l'affichage, JAMAIS à chaque frappe ! (Prompt 17-J)
       onChange(html);
     }
   };
+
+  const restoreHistory = (idx: number) => {
+    const h = histRef.current;
+    if (!editorRef.current || idx < 0 || idx >= h.length) return;
+    histIdxRef.current = idx;
+    editorRef.current.innerHTML = h[idx];
+    isInternalUpdateRef.current = true;
+    setSelectedImg(null);
+    setCropOpen(false);
+    onChange(h[idx]);
+    setImgTick((n) => n + 1);
+  };
+  const undo = () => restoreHistory(histIdxRef.current - 1);
+  const redo = () => restoreHistory(histIdxRef.current + 1);
+  const canUndo = histIdxRef.current > 0;
+  const canRedo = histIdxRef.current < histRef.current.length - 1;
 
   const execCmd = (command: string, arg: string | undefined = undefined) => {
     if (mode !== "visual") return;
@@ -159,10 +211,10 @@ export function RichDescriptionEditor({
         execCmd("underline");
       } else if (key === "z" && !e.shiftKey) {
         e.preventDefault();
-        execCmd("undo");
+        undo();
       } else if (key === "y" || (key === "z" && e.shiftKey)) {
         e.preventDefault();
-        execCmd("redo");
+        redo();
       } else if (key === "k") {
         e.preventDefault();
         handleInsertLink();
@@ -428,7 +480,7 @@ export function RichDescriptionEditor({
   };
 
   return (
-    <div className="border border-[#E6E0D4] rounded-2xl overflow-hidden bg-white shadow-2xs">
+    <div ref={rootRef} className="relative border border-[#E6E0D4] rounded-2xl overflow-hidden bg-white shadow-2xs">
       {/* Barre de notification / Feedback rapide */}
       {cleanFeedback && (
         <div className="px-3.5 py-1.5 bg-emerald-50 border-b border-emerald-200 text-xs font-bold text-emerald-800 flex items-center gap-2 animate-in fade-in duration-150">
@@ -439,6 +491,33 @@ export function RichDescriptionEditor({
 
       {/* Barre d'outils complète */}
       <div className="flex flex-wrap items-center gap-1 p-2 bg-[#FAF8F5] border-b border-[#E6E0D4] text-xs">
+        {/* Annuler / Rétablir */}
+        <div className="flex items-center gap-0.5 border-r border-[#E6E0D4] pr-1.5 mr-1">
+          <button
+            type="button"
+            id="btn-editor-undo"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={undo}
+            disabled={!canUndo}
+            title="Annuler la dernière action (Ctrl+Z)"
+            className="inline-flex items-center gap-1 px-2 py-1.5 rounded-xl text-xs font-bold text-[#111111] hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <Undo2 className="w-4 h-4" />
+            <span className="hidden sm:inline">Annuler</span>
+          </button>
+          <button
+            type="button"
+            id="btn-editor-redo"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={redo}
+            disabled={!canRedo}
+            title="Rétablir (Ctrl+Y)"
+            className="inline-flex items-center gap-1 px-2 py-1.5 rounded-xl text-xs font-bold text-[#111111] hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <Redo2 className="w-4 h-4" />
+          </button>
+        </div>
+
         {/* Titres et Paragraphes (H1 interdit pour le SEO, seul le titre du produit est H1) */}
         <div className="flex items-center gap-0.5 border-r border-[#E6E0D4] pr-1.5 mr-1">
           <button
@@ -687,14 +766,61 @@ export function RichDescriptionEditor({
       </div>
 
 
+      {mode === "visual" && selectedImg && editorRef.current && rootRef.current && (() => {
+        const r = selectedImg.getBoundingClientRect();
+        const root = rootRef.current.getBoundingClientRect();
+        const ed = editorRef.current.getBoundingClientRect();
+        if (r.bottom < ed.top + 20 || r.top > ed.bottom - 20) return null;
+        const top = Math.max(r.top, ed.top) - root.top + 8;
+        const left = Math.max(r.left, ed.left) - root.left + 8;
+        const cur = (a: string) => selectedImg.getAttribute(a) || null;
+        const chip = (active: boolean) =>
+          cn("px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer", active ? "bg-white text-black" : "bg-white/10 text-white hover:bg-white/20");
+        return (
+          <div data-testid="image-floating-bar" style={{ top, left }} className="absolute z-20 max-w-[calc(100%-1rem)] space-y-1.5" onMouseDown={(e) => e.preventDefault()}>
+            <div className="inline-flex items-center gap-1 rounded-xl bg-black/85 p-1 shadow-lg text-white">
+              <button type="button" onClick={() => setCropOpen((v) => !v)} className={cn("inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold hover:bg-white/15", cropOpen && "bg-white/15")}>
+                <Crop className="w-3.5 h-3.5" /> Rogner
+              </button>
+              <button type="button" onClick={removeSelectedImage} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold hover:bg-red-500/80">
+                <Trash2 className="w-3.5 h-3.5" /> Supprimer
+              </button>
+              <span className="px-2 text-[10px] text-white/70">{Math.round(r.width)} × {Math.round(r.height)}</span>
+            </div>
+            {cropOpen && (
+              <div className="rounded-xl bg-black/85 p-2 shadow-lg space-y-2">
+                <div className="flex flex-wrap gap-1">
+                  {([["Original", null], ["Carré", "1-1"], ["4:3", "4-3"], ["3:4", "3-4"], ["16:9", "16-9"]] as const).map(([l, v]) => (
+                    <button key={l} type="button" onClick={() => applyImgProps({ ratio: v })} className={chip(cur("data-ratio") === v)}>{l}</button>
+                  ))}
+                </div>
+                {cur("data-ratio") && (
+                  <div className="flex flex-wrap gap-1">
+                    {([["Haut", "top"], ["Centre", null], ["Bas", "bottom"]] as const).map(([l, v]) => (
+                      <button key={l} type="button" onClick={() => applyImgProps({ pos: v })} className={chip(cur("data-pos") === v)}>{l}</button>
+                    ))}
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-1">
+                  {([["Petite", "small"], ["Moyenne", "medium"], ["Pleine", null]] as const).map(([l, v]) => (
+                    <button key={l} type="button" onClick={() => applyImgProps({ size: v })} className={chip(cur("data-size") === v)}>{l}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {/* Zone de contenu selon le mode */}
       {mode === "visual" && (
         <div
           ref={editorRef}
           contentEditable
-          onInput={handleInput}
+          onInput={() => handleInput()}
+          onScroll={() => setImgTick((n) => n + 1)}
           onClick={handleEditorClick}
-          onBlur={handleInput}
+          onBlur={() => handleInput()}
           onKeyDown={handleKeyDown}
           onPaste={handleEditorPaste}
           onDrop={handleEditorDrop}

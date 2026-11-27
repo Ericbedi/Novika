@@ -3384,9 +3384,10 @@ export function ProductFormClient({
             <button
               type="button"
               onClick={handleCancel}
+              title="Quitter sans rien enregistrer ni publier"
               className="px-3.5 py-1.5 rounded-xl border border-white/20 hover:bg-white/10 text-xs font-semibold transition-colors"
             >
-              Annuler
+              Abandonner les modifications
             </button>
             <button
               type="button"
