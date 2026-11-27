@@ -60,6 +60,19 @@ export async function PUT(req: NextRequest) {
       p_products: products,
     });
     if (error || !data?.success) return NextResponse.json({ success: false, error: "Enregistrement impossible." }, { status: 500 });
+
+    // Répercute les modifications sur les produits déjà publiés sur la vitrine (prix, texte, statut, images)
+    // Une suppression retire aussi le produit de la vitrine (archivé, non publié)
+    const live = (products as Array<Record<string, unknown>>)
+      .filter(Boolean)
+      .map((p) => (p.__deleted ? { id: p.id, productStatus: "archived", deletedAt: new Date().toISOString() } : p));
+    if (live.length) {
+      try {
+        await supabase.rpc("sync_products_update_server", { p_secret: secret, p_shop_slug: storeSlug, p_products: live });
+      } catch {
+        /* best-effort */
+      }
+    }
     return NextResponse.json({ success: true, count: data.count });
   } catch {
     return NextResponse.json({ success: false, error: "Erreur serveur." }, { status: 500 });

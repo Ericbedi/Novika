@@ -80,6 +80,7 @@ import {
   validateProductImageFile,
   stripExifAndProcessImage,
 } from "@/lib/image-utils";
+import { uploadDataImage, ensureProductImagesRemote } from "@/lib/upload-data-images";
 import { ProductReceiptContent } from "@/server/data/receipt-types";
 import { DEFAULT_RECEIPT_CONTENT } from "@/lib/receipts-engine";
 import { MOCK_PRODUCTS } from "@/mock-data/products";
@@ -812,7 +813,10 @@ export function ProductFormClient({
       }
 
       try {
-        const cleanDataUrl = await stripExifAndProcessImage(file);
+        const processedDataUrl = await stripExifAndProcessImage(file);
+        // Envoi immédiat vers le stockage réel (adresse publique) ; à défaut, on garde l'image locale
+        const cleanDataUrl =
+          (await uploadDataImage(storeSlug, processedDataUrl, name.trim() || "Produit")) || processedDataUrl;
         setMediaItems((prev) => [
           ...prev,
           {
@@ -981,7 +985,7 @@ export function ProductFormClient({
         ? mediaItems.map((m) => m.url)
         : ["/products/mushroom-coffee.png"];
 
-    const finalProduct: Product = {
+    const draftProduct: Product = {
       id: newId,
       name: cleanName,
       title: cleanName,
@@ -1069,6 +1073,9 @@ export function ProductFormClient({
       createdAt: initialProduct?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+
+    // Images encore en base64 (ajoutées avant ce correctif) : envoi vers le stockage réel avant l'enregistrement
+    const { product: finalProduct } = await ensureProductImagesRemote(storeSlug, draftProduct);
 
     const allProducts = getShopProductsRaw(storeSlug);
     let updatedList: Product[];

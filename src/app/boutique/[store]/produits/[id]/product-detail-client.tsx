@@ -32,6 +32,7 @@ import { ProductImage } from "@/components/ui/ProductImage";
 import { formatFcfa } from "@/lib/money";
 import { verifyPreviewToken } from "@/lib/storefront-urls";
 import { getShopProductsRaw, saveShopProductsList } from "@/lib/products-store";
+import { ensureProductImagesRemote } from "@/lib/upload-data-images";
 
 export interface ProductDetailClientProps {
   storeSlug: string;
@@ -513,13 +514,14 @@ export function ProductCanonicalDetailPageClient({
                 setPublishState("loading");
                 setPublishMessage("");
                 try {
-                  const live = {
+                  const base = {
                     ...product,
                     status: "active",
                     productStatus: "active",
                     hiddenFromCatalog: false,
                     published_to_storefront: true,
                   } as unknown as Product;
+                  const live = (await ensureProductImagesRemote(storeSlug, base)).product;
                   const res = await fetch("/api/products/sync", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },

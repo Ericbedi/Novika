@@ -1,5 +1,6 @@
 import type { Product } from "@/server/data/types";
 import { getShopProductsRaw, saveShopProductsList } from "@/lib/products-store";
+import { ensureListImagesRemote } from "@/lib/upload-data-images";
 
 /**
  * Synchronisation du catalogue admin entre appareils (mobile / navigateur).
@@ -114,6 +115,14 @@ export async function pullAndMergeProducts(shopSlug: string): Promise<boolean> {
 
   if (changed) {
     saveShopProductsList(shopSlug, Array.from(byId.values()), { fromRemote: true });
+  }
+
+  // Images encore en base64 (appareil qui a créé le produit avant le correctif) : envoi vers le stockage réel
+  const rescue = await ensureListImagesRemote(shopSlug, Array.from(byId.values()), 3);
+  if (rescue.changed) {
+    for (const p of rescue.products) byId.set(p.id, p);
+    saveShopProductsList(shopSlug, Array.from(byId.values()));
+    changed = true;
   }
 
   // Produits présents seulement ici (ou plus récents ici) : envoyés au partage

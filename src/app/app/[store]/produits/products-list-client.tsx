@@ -65,6 +65,7 @@ import { Product, Order, ProductStatus } from "@/server/data/types";
 import { formatFcfa } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/components/layout/app-shell";
+import { ensureListImagesRemote } from "@/lib/upload-data-images";
 import { ProductsNavTabs } from "@/components/products/products-nav-tabs";
 import { CsvImportModal } from "@/components/products/csv-import-modal";
 import { sanitizeCellForCsv, rollbackImportBatch } from "@/lib/csv-import-engine";
@@ -283,7 +284,9 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
   const handleSyncToSupabase = async () => {
     try {
       setIsSyncing(true);
-      const localProducts = getShopProductsRaw(storeSlug);
+      const rescued = await ensureListImagesRemote(storeSlug, getShopProductsRaw(storeSlug));
+      if (rescued.changed) saveShopProductsList(storeSlug, rescued.products);
+      const localProducts = rescued.products;
       const res = await fetch("/api/products/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -332,7 +335,8 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
           ? ({ ...p, status: "active", productStatus: "active", hiddenFromCatalog: false, published_to_storefront: true } as Product)
           : p
       );
-      const toSend = updated.filter((p) => draftIds.has(p.id));
+      const rescuedAll = await ensureListImagesRemote(storeSlug, updated);
+      const toSend = rescuedAll.products.filter((p) => draftIds.has(p.id));
       const res = await fetch("/api/products/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -343,7 +347,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
         showToast(data.error || "Publication impossible. Reconnectez-vous puis réessayez.");
         return;
       }
-      saveShopProductsList(storeSlug, updated);
+      saveShopProductsList(storeSlug, rescuedAll.products);
       setProducts(getShopProductsRaw(storeSlug));
       showToast(`${data.report?.synced_count ?? toSend.length} produit(s) publié(s) sur la vitrine !`);
     } catch {
