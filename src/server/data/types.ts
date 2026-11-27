@@ -601,7 +601,7 @@ export interface Customer {
   ordersCount: number;
   totalSpent: number; // en FCFA
   lastOrderDate: string;
-  status: "vip" | "regular" | "new";
+  status: "vip" | "regular" | "new" | "risk";
   notes?: string;
 }
 
