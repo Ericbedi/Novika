@@ -1,5 +1,6 @@
 "use client";
 
+import { productSheetTemplateHtml } from "@/lib/product-sheet-template";
 import { cleanSlug } from "@/lib/slug";
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
@@ -1216,11 +1217,11 @@ export function ProductFormClient({
       {/* ======================================================== */}
       {/* DISPOSITION 2 COLONNES (STYLE SHOPIFY / NOVIKA) */}
       {/* ======================================================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="mx-auto grid w-full max-w-3xl grid-cols-1 gap-6">
         {/* ======================================================== */}
         {/* COLONNE PRINCIPALE (lg:col-span-2) */}
         {/* ======================================================== */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6">
           {/* 1) TITRE DU PRODUIT */}
           <div className="rounded-3xl border border-[#E6E0D4] bg-white p-6 shadow-2xs space-y-3">
             <div className="flex items-center justify-between">
@@ -1270,6 +1271,20 @@ export function ProductFormClient({
                   Bénéfices du produit, conseils d'utilisation et réassurance pour le paiement à la livraison.
                 </p>
               </div>
+
+              <button
+                type="button"
+                id="btn-insert-sheet-template"
+                onClick={() => {
+                  const plain = description.replace(/<[^>]*>/g, "").trim();
+                  if (plain && !confirm("Ajouter la trame en 13 blocs à la fin de votre description ?")) return;
+                  setDescription((d) => (d || "") + productSheetTemplateHtml());
+                  setIsDirty(true);
+                }}
+                className="px-3 py-1.5 rounded-xl border border-[#E6E0D4] hover:bg-[#FAF8F5] text-xs font-bold text-[#111111] transition-colors"
+              >
+                Trame fiche (13 blocs)
+              </button>
 
               {Boolean(initialProduct?.originalRawDescription || initialProduct?.sanitizationReport) && (
                 <button
