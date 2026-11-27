@@ -1,7 +1,7 @@
 "use client";
 
 import { productSheetTemplateHtml } from "@/lib/product-sheet-template";
-import { cleanSlug } from "@/lib/slug";
+import { cleanSlug, shortSlug } from "@/lib/slug";
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -241,7 +241,7 @@ export function ProductFormClient({
   const [seoSlug, setSeoSlug] = useState(
     initialProduct?.seo?.slug ||
     initialProduct?.slug ||
-    (name ? cleanSlug(name) : "nouveau-produit")
+    (name ? shortSlug(name) : "nouveau-produit")
   );
   const [isSeoCustomOpen, setIsSeoCustomOpen] = useState(false);
 
@@ -977,7 +977,7 @@ export function ProductFormClient({
     }
 
     const newId = initialProduct?.id || `prod_${Date.now()}`;
-    const productSlug = cleanSlug(seoSlug.trim() || cleanName);
+    const productSlug = seoSlug.trim() ? cleanSlug(seoSlug.trim()) : shortSlug(cleanName);
 
     const sanitizeReport = sanitizeProductDescription(description, { productTitle: cleanName });
     const sanitizedDesc = sanitizeReport.cleanedHtml;
@@ -1243,7 +1243,7 @@ export function ProductFormClient({
                 if (titleError) setTitleError(null);
                 if (!isEditing && !seoTitle) {
                   setSeoTitle(`${e.target.value} - Meilleur Prix`);
-                  setSeoSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-"));
+                  setSeoSlug(shortSlug(e.target.value, ""));
                 }
               }}
               placeholder="Ex: Sérum Éclat Vitamine C & Niacinamide"

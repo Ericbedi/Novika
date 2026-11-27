@@ -25,3 +25,12 @@ export function safeDecode(v: string): string {
   }
   return out;
 }
+
+/** Slug court pour une URL partageable : 4 à 5 mots, 40 caractères max, coupé entre deux mots. */
+export function shortSlug(input: string, fallback = "produit"): string {
+  const full = cleanSlug(input, fallback);
+  if (full.length <= 40) return full;
+  const cut = full.slice(0, 40);
+  const i = cut.lastIndexOf("-");
+  return (i > 8 ? cut.slice(0, i) : cut).replace(/-+$/g, "");
+}

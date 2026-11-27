@@ -15,3 +15,13 @@ describe("safeDecode", () => {
     expect(safeDecode("100%")).toBe("100%");
   });
 });
+
+import { shortSlug } from "./slug";
+describe("shortSlug", () => {
+  it("raccourcit sans couper un mot", () => {
+    const s = shortSlug("CrystalRestore™ – Restaure la brillance et la couleur d'origine de vos plastiques auto");
+    expect(s).toBe("crystalrestore-restaure-la-brillance-et");
+    expect(s.length).toBeLessThanOrEqual(40);
+  });
+  it("garde un slug court tel quel", () => expect(shortSlug("Rénovateur")).toBe("renovateur"));
+});
