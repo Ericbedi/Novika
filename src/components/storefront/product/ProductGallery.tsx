@@ -140,19 +140,6 @@ export function ProductGallery({
     }
   }, [activeVariantImage, selectedVariantId, normalizedMedia, onImageChange]);
 
-  // Défilement automatique de la miniature active dans la vue
-  useEffect(() => {
-    if (thumbnailsRef.current) {
-      const activeThumb = thumbnailsRef.current.children[selectedIndex] as HTMLElement;
-      if (activeThumb) {
-        activeThumb.scrollIntoView({
-          behavior: "smooth",
-          block: "nearest",
-          inline: "center",
-        });
-      }
-    }
-  }, [selectedIndex]);
 
   // Changement d'index avec notification
   const handleSelectIndex = useCallback(
@@ -524,7 +511,7 @@ export function ProductGallery({
           ref={thumbnailsRef}
           role="tablist"
           aria-label="Miniatures des images du produit"
-          className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full no-scrollbar focus:outline-none"
+          className="grid grid-cols-5 gap-2 w-full focus:outline-none"
         >
           {normalizedMedia.map((item, idx) => {
             const isItemVideo = item.type === "video";
@@ -539,9 +526,9 @@ export function ProductGallery({
                 type="button"
                 onClick={() => handleSelectIndex(idx)}
                 className={cn(
-                  "relative shrink-0 w-14 h-14 sm:w-18 sm:h-18 rounded-xl sm:rounded-2xl overflow-hidden border-2 transition-all cursor-pointer bg-[#F7F5F0]",
+                  "relative w-full aspect-square rounded-xl overflow-hidden border-2 transition-all cursor-pointer bg-[#F7F5F0]",
                   isSelected
-                    ? "border-[#111111] ring-1 ring-[#111111] scale-[1.02] shadow-xs"
+                    ? "border-[#111111] ring-1 ring-[#111111] shadow-xs"
                     : "border-black/[0.08] opacity-70 hover:opacity-100"
                 )}
               >
