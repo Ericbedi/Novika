@@ -1,0 +1,2 @@
+-- Appliquée via MCP (shop_domains) : table shop_domains (domaine unique, statut, enregistrements DNS),
+-- RPC serveur (list/add/update/remove, protégées par PRODUCT_SYNC_SECRET) et shop_domain_resolve(p_host) pour le routage par domaine.

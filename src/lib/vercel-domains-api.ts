@@ -83,7 +83,8 @@ export async function verifyDomainOnVercel(domain: string): Promise<{ isVerified
   const { token, projectId, teamId } = getVercelConfig();
 
   if (!token || !projectId) {
-    return simulateVercelVerifyDomain(domain);
+    // Sans jeton Vercel, on ne peut pas confirmer le rattachement : jamais de faux succès
+    return { isVerified: false, dnsRecords: [], statusReason: "Rattachement Vercel non configuré." };
   }
 
   try {
@@ -174,20 +175,6 @@ function simulateVercelAddDomain(domain: string): { success: boolean; dnsRecords
       ];
 
   return { success: true, dnsRecords };
-}
-
-function simulateVercelVerifyDomain(domain: string): { isVerified: boolean; dnsRecords: DnsRecordInstruction[]; statusReason: string } {
-  // En mode simulation, le domaine est validé
-  const isSub = isSubdomain(domain);
-  const dnsRecords: DnsRecordInstruction[] = isSub
-    ? [{ type: "CNAME", name: domain.split(".")[0], value: VERCEL_CNAME_TARGET, status: "valid" }]
-    : [{ type: "A", name: "@", value: VERCEL_APEX_IP, status: "valid" }];
-
-  return {
-    isVerified: true,
-    dnsRecords,
-    statusReason: "Certificat HTTPS actif et DNS vérifié avec succès.",
-  };
 }
 
 function extractDnsRecordsFromVercel(domain: string, data: VercelDomainApiResponse): DnsRecordInstruction[] {

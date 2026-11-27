@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDefaultSpaceForRole } from "@/config/spaces";
 import { ROUTES } from "@/config/routes";
-import { findStoreByHost } from "@/lib/custom-domains";
+import { resolveHostToShop } from "@/lib/domain-resolver";
 
 export const config = {
   matcher: [
@@ -41,7 +41,7 @@ export async function middleware(request: NextRequest) {
   // 0. ROUTAGE PAR NOM DE DOMAINE PERSONNALISÉ (Prompt 19)
   // ==========================================================================
   if (!isPlatformHost(host)) {
-    const storeMatch = findStoreByHost(host);
+    const storeMatch = await resolveHostToShop(host);
     if (!storeMatch) {
       // Domaine inconnu : page 404 neutre Kelio (jamais de fuite d'informations)
       return new NextResponse(
