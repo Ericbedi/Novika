@@ -62,7 +62,9 @@ export async function middleware(request: NextRequest) {
         !pathname.startsWith("/api/public") &&
         !pathname.startsWith("/api/orders/public") &&
         !pathname.startsWith("/api/reviews") &&
-        !pathname.startsWith("/api/tracking"));
+        !pathname.startsWith("/api/tracking") &&
+        !pathname.startsWith("/api/shop-brand") &&
+        !(pathname.startsWith("/api/carts") && request.method === "POST"));
 
     if (isAdminRoute) {
       return new NextResponse(

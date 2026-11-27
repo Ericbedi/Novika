@@ -227,6 +227,22 @@ export function StandardOrderForm({
 
   const fullPhoneE164 = `${phonePrefix}${phoneLocal.replace(/\D/g, "")}`;
 
+  // Panier abandonné : le numéro saisi est mémorisé (sans bloquer le client) pour relance WhatsApp
+  useEffect(() => {
+    const digits = phoneLocal.replace(/\D/g, "");
+    if (digits.length < 8 || successOrder || honeypot) return;
+    const t = setTimeout(() => {
+      fetch("/api/carts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ store: storeSlug, phone: fullPhoneE164, name: customerName, city, productId: product.id, productName: product.name }),
+        keepalive: true,
+      }).catch(() => {});
+    }, 2000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phoneLocal, customerName, city]);
+
   // Notification d'engagement formulaire pour Meta Pixel (InitiateCheckout)
   const [hasTriggeredInitiateCheckout, setHasTriggeredInitiateCheckout] = useState(false);
   const notifyInitiateCheckout = () => {
