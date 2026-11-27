@@ -1229,7 +1229,7 @@ export function ProductFormClient({
       {/* ======================================================== */}
       {/* DISPOSITION 2 COLONNES (STYLE SHOPIFY / NOVIKA) */}
       {/* ======================================================== */}
-      <div className="mx-auto grid w-full max-w-3xl grid-cols-1 gap-6">
+      <div className="mx-auto grid w-full max-w-5xl grid-cols-1 gap-6">
         {/* ======================================================== */}
         {/* COLONNE PRINCIPALE (lg:col-span-2) */}
         {/* ======================================================== */}
