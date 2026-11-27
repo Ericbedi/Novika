@@ -52,7 +52,7 @@ export function BetaInfoModal({
             <div>
               <div className="flex items-center gap-2">
                 <h3 id="beta-modal-title" className="text-base font-black tracking-tight">
-                  Novika Bêta
+                  Kelio Bêta
                 </h3>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-orange-100 text-[#C2410C] border border-orange-200">
                   v0.9.4

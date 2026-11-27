@@ -136,7 +136,7 @@ export function RemittancesClient({ storeSlug }: { storeSlug: string }) {
   return (
     <div className="space-y-6 pb-24">
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-[#111111] text-[#FAF8F5] px-4 py-2.5 text-xs font-semibold shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-3">
+        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-[#1F3A26] text-[#FAF8F5] px-4 py-2.5 text-xs font-semibold shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-3">
           <Check className="h-4 w-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
@@ -168,7 +168,7 @@ export function RemittancesClient({ storeSlug }: { storeSlug: string }) {
           </Link>
           <Link
             href={`/app/${storeSlug}/livraisons`}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#111111] text-xs font-bold text-[#FAF8F5] hover:bg-black"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#1F3A26] text-xs font-bold text-[#FAF8F5] hover:bg-[#162B1C]"
           >
             <Bike className="h-4 w-4" />
             <span>Tournées de livraison</span>
@@ -236,7 +236,7 @@ export function RemittancesClient({ storeSlug }: { storeSlug: string }) {
               onClick={() => setActiveTab("all")}
               className={cn(
                 "px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
-                activeTab === "all" ? "bg-[#111111] text-[#FAF8F5]" : "bg-white text-[#666660] border border-black/[0.06]"
+                activeTab === "all" ? "bg-[#1F3A26] text-[#FAF8F5]" : "bg-white text-[#666660] border border-black/[0.06]"
               )}
             >
               Tous ({remittances.length})
@@ -373,7 +373,7 @@ export function RemittancesClient({ storeSlug }: { storeSlug: string }) {
                         <button
                           type="button"
                           onClick={() => handleOpenConfirm(rem)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black transition-all shadow-2xs cursor-pointer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold hover:bg-[#162B1C] transition-all shadow-2xs cursor-pointer"
                         >
                           <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
                           <span>Confirmer réception</span>
@@ -483,7 +483,7 @@ export function RemittancesClient({ storeSlug }: { storeSlug: string }) {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black"
+                  className="px-4 py-2 rounded-xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold hover:bg-[#162B1C]"
                 >
                   Valider l'encaissement
                 </button>

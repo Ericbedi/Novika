@@ -105,7 +105,7 @@ export function BetaFeedbackModal({
                     className={cn(
                       "py-2 px-2 rounded-xl font-bold transition-all border text-center cursor-pointer",
                       category === c.id
-                        ? "bg-[#111111] text-[#FAF8F5] border-[#111111] shadow-2xs"
+                        ? "bg-[#1F3A26] text-[#FAF8F5] border-[#111111] shadow-2xs"
                         : "bg-white text-[#555550] border-black/[0.08] hover:border-black/20"
                     )}
                   >

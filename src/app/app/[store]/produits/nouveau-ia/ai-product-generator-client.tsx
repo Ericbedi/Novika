@@ -478,7 +478,7 @@ export function AiProductGeneratorClient({ storeSlug }: AiProductGeneratorClient
                 <Sparkles className="w-3 h-3" />
                 Prompt 07 • IA Gemini
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-[#111111]/[0.05] text-[#111111]">
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-[#1F3A26]/[0.05] text-[#111111]">
                 Quota : {remainingQuota} / 50 restantes ce mois-ci
               </span>
             </div>
@@ -490,19 +490,19 @@ export function AiProductGeneratorClient({ storeSlug }: AiProductGeneratorClient
 
         {/* Indicateur d'étape */}
         <div className="flex items-center gap-1 text-xs font-bold text-[#666660]">
-          <span className={cn("px-2.5 py-1 rounded-lg", currentStep === 1 ? "bg-[#111111] text-white" : "bg-black/5")}>
+          <span className={cn("px-2.5 py-1 rounded-lg", currentStep === 1 ? "bg-[#1F3A26] text-white" : "bg-black/5")}>
             1. Images
           </span>
           <ChevronRight className="w-3 h-3 text-[#999990]" />
-          <span className={cn("px-2.5 py-1 rounded-lg", currentStep === 2 ? "bg-[#111111] text-white" : "bg-black/5")}>
+          <span className={cn("px-2.5 py-1 rounded-lg", currentStep === 2 ? "bg-[#1F3A26] text-white" : "bg-black/5")}>
             2. Détection
           </span>
           <ChevronRight className="w-3 h-3 text-[#999990]" />
-          <span className={cn("px-2.5 py-1 rounded-lg", currentStep === 3 ? "bg-[#111111] text-white" : "bg-black/5")}>
+          <span className={cn("px-2.5 py-1 rounded-lg", currentStep === 3 ? "bg-[#1F3A26] text-white" : "bg-black/5")}>
             3. Fiche
           </span>
           <ChevronRight className="w-3 h-3 text-[#999990]" />
-          <span className={cn("px-2.5 py-1 rounded-lg", currentStep === 4 ? "bg-[#111111] text-white" : "bg-black/5")}>
+          <span className={cn("px-2.5 py-1 rounded-lg", currentStep === 4 ? "bg-[#1F3A26] text-white" : "bg-black/5")}>
             4. Relecture
           </span>
         </div>
@@ -510,7 +510,7 @@ export function AiProductGeneratorClient({ storeSlug }: AiProductGeneratorClient
 
       {/* Toast de confirmation */}
       {toastMessage && (
-        <div className="fixed top-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl bg-[#111111] text-white text-xs font-bold shadow-xl animate-in fade-in">
+        <div className="fixed top-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl bg-[#1F3A26] text-white text-xs font-bold shadow-xl animate-in fade-in">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
@@ -566,7 +566,7 @@ export function AiProductGeneratorClient({ storeSlug }: AiProductGeneratorClient
                     <button
                       type="button"
                       onClick={() => handleRemoveImage(idx)}
-                      className="absolute top-1 right-1 p-1 rounded-lg bg-black/70 text-white hover:bg-black transition-colors"
+                      className="absolute top-1 right-1 p-1 rounded-lg bg-black/70 text-white hover:bg-[#162B1C] transition-colors"
                       title="Supprimer cette image"
                     >
                       <RotateCcw className="w-3 h-3" />
@@ -650,7 +650,7 @@ export function AiProductGeneratorClient({ storeSlug }: AiProductGeneratorClient
                 id="btn-analyze-ai"
                 onClick={handleAnalyzeImages}
                 disabled={isAnalyzing || images.length === 0 || !confirmedRights}
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-all shadow-sm disabled:opacity-50 cursor-pointer"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm disabled:opacity-50 cursor-pointer"
               >
                 {isAnalyzing ? (
                   <>
@@ -765,7 +765,7 @@ export function AiProductGeneratorClient({ storeSlug }: AiProductGeneratorClient
                 type="button"
                 id="btn-confirm-detection"
                 onClick={() => setCurrentStep(3)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-all shadow-sm cursor-pointer"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm cursor-pointer"
               >
                 <span>Valider et compléter la fiche</span>
                 <ChevronRight className="w-4 h-4" />
@@ -1041,7 +1041,7 @@ export function AiProductGeneratorClient({ storeSlug }: AiProductGeneratorClient
                 id="btn-generate-full-sheet"
                 onClick={handleGenerateSheet}
                 disabled={isGenerating}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm cursor-pointer disabled:opacity-50"
               >
                 {isGenerating ? (
                   <>
@@ -1272,7 +1272,7 @@ export function AiProductGeneratorClient({ storeSlug }: AiProductGeneratorClient
                 onClick={() => handleSaveDraft(true)}
                 disabled={!canPublish}
                 title={!canPublish ? "Publication bloquée tant qu'il reste un repère [à préciser]" : "Publier directement"}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-all shadow-sm disabled:opacity-40 cursor-pointer"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm disabled:opacity-40 cursor-pointer"
               >
                 <Check className="w-4 h-4 text-emerald-400" />
                 <span>Publier sur la boutique</span>

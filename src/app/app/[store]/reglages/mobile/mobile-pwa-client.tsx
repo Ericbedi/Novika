@@ -109,7 +109,7 @@ export function MobilePwaClient({ storeSlug }: MobilePwaClientProps) {
       </ScrollReveal>
 
       {syncFeedback && (
-        <div className="p-4 rounded-2xl bg-[#111111] text-[#FAF8F5] text-xs font-semibold flex items-center justify-between gap-3 shadow-xl animate-in fade-in">
+        <div className="p-4 rounded-2xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-semibold flex items-center justify-between gap-3 shadow-xl animate-in fade-in">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
             <span>{syncFeedback}</span>
@@ -202,7 +202,7 @@ export function MobilePwaClient({ storeSlug }: MobilePwaClientProps) {
       <div className="rounded-3xl border border-black/[0.08] bg-white p-6 sm:p-8 shadow-xl space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-black/[0.06] pb-4">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-[#111111] text-[#FAF8F5] flex items-center justify-center font-bold">
+            <div className="h-12 w-12 rounded-2xl bg-[#1F3A26] text-[#FAF8F5] flex items-center justify-center font-bold">
               <Database className="h-6 w-6" />
             </div>
             <div>
@@ -219,7 +219,7 @@ export function MobilePwaClient({ storeSlug }: MobilePwaClientProps) {
             <button
               type="button"
               onClick={handleSimulateOfflineDelivery}
-              className="px-3 py-2 rounded-xl border border-black/[0.08] bg-[#FAF8F5] text-xs font-bold text-[#111111] hover:bg-black hover:text-[#FAF8F5] transition-all cursor-pointer shadow-2xs"
+              className="px-3 py-2 rounded-xl border border-black/[0.08] bg-[#FAF8F5] text-xs font-bold text-[#111111] hover:bg-[#162B1C] hover:text-[#FAF8F5] transition-all cursor-pointer shadow-2xs"
             >
               + Simuler livraison hors-ligne
             </button>
@@ -230,7 +230,7 @@ export function MobilePwaClient({ storeSlug }: MobilePwaClientProps) {
               className={cn(
                 "inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer",
                 offlineQueue.length > 0
-                  ? "bg-[#111111] text-[#FAF8F5] hover:bg-black"
+                  ? "bg-[#1F3A26] text-[#FAF8F5] hover:bg-[#162B1C]"
                   : "bg-black/10 text-[#888880] cursor-not-allowed"
               )}
             >

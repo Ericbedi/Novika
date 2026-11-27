@@ -157,7 +157,7 @@ export function MarketStatsClient({ storeSlug }: MarketStatsClientProps) {
           <div>
             <span className="font-bold">Vue Manager restreinte : </span>
             <span>
-              Conformément à la politique de sécurité Novika, les coûts d'achat unitaires, budgets publicitaires et marges nettes sont masqués. Seuls les volumes de commandes et les taux de livraison sont visibles.
+              Conformément à la politique de sécurité Kelio, les coûts d'achat unitaires, budgets publicitaires et marges nettes sont masqués. Seuls les volumes de commandes et les taux de livraison sont visibles.
             </span>
           </div>
         </div>
@@ -396,7 +396,7 @@ export function MarketStatsClient({ storeSlug }: MarketStatsClientProps) {
                       <span>−{selectedMarket.adSpend.toLocaleString("fr-FR")} FCFA</span>
                     </div>
 
-                    <div className="flex items-center justify-between p-2 rounded-lg bg-[#111111] text-[#FAF8F5] font-black mt-2">
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-[#1F3A26] text-[#FAF8F5] font-black mt-2">
                       <span>= Marge Nette Réelle</span>
                       <span>
                         {selectedMarket.netMargin > 0 ? "+" : ""}

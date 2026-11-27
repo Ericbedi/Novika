@@ -123,7 +123,7 @@ export function SchedulesClient({ storeSlug }: SchedulesClientProps) {
       activeScope === "role" ? selectedRole : activeScope === "member" ? selectedMemberId : undefined
     );
     setDays(JSON.parse(JSON.stringify(reset.days)));
-    showToast("Horaires réinitialisés aux valeurs Novika par défaut : 07:00 → 18:00 (lun–sam, dimanche désactivé).");
+    showToast("Horaires réinitialisés aux valeurs Kelio par défaut : 07:00 → 18:00 (lun–sam, dimanche désactivé).");
   };
 
   const handleSave = (e: React.FormEvent) => {
@@ -157,7 +157,7 @@ export function SchedulesClient({ storeSlug }: SchedulesClientProps) {
       {toastMessage && (
         <div
           role="status"
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold shadow-lg animate-in fade-in"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold shadow-lg animate-in fade-in"
         >
           <CheckCircle2 className="h-4 w-4 text-[#22C55E]" />
           <span>{toastMessage}</span>
@@ -225,7 +225,7 @@ export function SchedulesClient({ storeSlug }: SchedulesClientProps) {
 
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-[#888880]">
-            Règle Novika : 07:00 → 18:00 (lun–sam, dimanche off)
+            Règle Kelio : 07:00 → 18:00 (lun–sam, dimanche off)
           </span>
         </div>
       </div>
@@ -295,7 +295,7 @@ export function SchedulesClient({ storeSlug }: SchedulesClientProps) {
                 className={cn(
                   "px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer",
                   selectedRole === r.id
-                    ? "bg-[#111111] text-[#FAF8F5]"
+                    ? "bg-[#1F3A26] text-[#FAF8F5]"
                     : "bg-black/[0.04] text-[#666660] hover:bg-black/[0.08]"
                 )}
               >
@@ -448,7 +448,7 @@ export function SchedulesClient({ storeSlug }: SchedulesClientProps) {
             type="submit"
             id="save-schedules-btn"
             disabled={!isOwner}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black transition-all shadow-sm cursor-pointer disabled:opacity-40"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm cursor-pointer disabled:opacity-40"
           >
             <Save className="h-4 w-4" />
             <span>Enregistrer le planning</span>

@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 
     const res = await fetch(url.trim(), {
       signal: controller.signal,
-      headers: { "User-Agent": "Novika-MediaDownloader/1.0" },
+      headers: { "User-Agent": "Kelio-MediaDownloader/1.0" },
     });
     clearTimeout(timeoutId);
 

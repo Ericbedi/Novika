@@ -633,7 +633,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
   const roleBadge = (role: UserRole) => {
     switch (role) {
       case "owner":
-        return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#111111] text-white">Propriétaire</span>;
+        return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#1F3A26] text-white">Propriétaire</span>;
       case "admin":
         return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-900 border border-purple-200">Administrateur</span>;
       case "closer":
@@ -746,7 +746,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
     <div className="space-y-6 pb-24">
       {/* Toast */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-[#111111] text-[#FAF8F5] px-4 py-2.5 text-xs font-semibold shadow-2xl flex items-center gap-2">
+        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-[#1F3A26] text-[#FAF8F5] px-4 py-2.5 text-xs font-semibold shadow-2xl flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
@@ -787,7 +787,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
           className="w-full flex items-center justify-between p-3.5 rounded-2xl border-2 border-[#111111] bg-[#FAF8F5] text-left shadow-2xs cursor-pointer min-h-[56px]"
         >
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-[#111111] text-white flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-[#1F3A26] text-white flex items-center justify-center shrink-0">
               {React.createElement(
                 SECTIONS.find((s) => s.id === activeTab)?.icon || Store,
                 { className: "h-5 w-5" }
@@ -863,7 +863,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
                     className={cn(
                       "w-full flex items-center justify-between p-3 rounded-xl transition-colors text-left min-h-[44px] cursor-pointer",
                       isActive
-                        ? "bg-[#111111] text-white"
+                        ? "bg-[#1F3A26] text-white"
                         : "hover:bg-black/[0.05] text-[#111111]"
                     )}
                   >
@@ -951,7 +951,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
               className={cn(
                 "p-3 rounded-2xl text-left transition-all flex flex-col justify-between min-h-[64px] cursor-pointer shadow-2xs",
                 isActive
-                  ? "bg-[#111111] text-[#FAF8F5] border-2 border-[#111111] shadow-xs"
+                  ? "bg-[#1F3A26] text-[#FAF8F5] border-2 border-[#111111] shadow-xs"
                   : "bg-[#FAF8F5] text-[#111111] border border-black/[0.08] hover:border-black/20 hover:bg-black/[0.02]"
               )}
             >
@@ -1016,7 +1016,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
               <Link
                 id="link-goto-storefront-info"
                 href={`/app/${storeSlug}/boutique-en-ligne?tab=info`}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black transition-all shadow-xs shrink-0 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold hover:bg-[#162B1C] transition-all shadow-xs shrink-0 cursor-pointer"
               >
                 <span>Modifier les informations</span>
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -1081,7 +1081,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black transition-all shadow-sm cursor-pointer"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm cursor-pointer"
               >
                 <Save className="h-4 w-4" />
                 <span>Enregistrer les préférences</span>
@@ -1342,7 +1342,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
           <div className="flex justify-end">
             <button
               type="submit"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black transition-all shadow-sm cursor-pointer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm cursor-pointer"
             >
               <Save className="h-4 w-4" />
               <span>Enregistrer le profil</span>
@@ -1399,7 +1399,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
                   <button
                     type="button"
                     onClick={() => setDeleteStep(2)}
-                    className="px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black"
+                    className="px-4 py-2 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C]"
                   >
                     Suivant : Exporter mes données
                   </button>
@@ -1439,7 +1439,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
                   <button
                     type="button"
                     onClick={() => setDeleteStep(3)}
-                    className="px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black"
+                    className="px-4 py-2 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C]"
                   >
                     Suivant : Réauthentification
                   </button>
@@ -1491,7 +1491,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
                   <button
                     type="button"
                     onClick={() => setDeleteStep(4)}
-                    className="px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black"
+                    className="px-4 py-2 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C]"
                   >
                     Suivant : Confirmation
                   </button>
@@ -1618,7 +1618,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
           <div className="flex justify-end">
             <button
               type="submit"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black transition-all shadow-sm cursor-pointer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm cursor-pointer"
             >
               <Save className="h-4 w-4" />
               <span>Enregistrer les modèles WhatsApp</span>
@@ -1707,7 +1707,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
                         id="btn-add-meta-pixel"
                         onClick={handleOpenAddPixel}
                         disabled={!canManagePixels(currentUserRole)}
-                        className="px-3.5 py-2 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black transition-all shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        className="px-3.5 py-2 rounded-xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                       >
                         <Plus className="h-3.5 w-3.5" />
                         <span>Ajouter un pixel</span>
@@ -1994,7 +1994,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
           <div className="flex justify-end">
             <button
               type="submit"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black transition-all shadow-sm cursor-pointer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm cursor-pointer"
             >
               <Save className="h-4 w-4" />
               <span>Enregistrer les Pixels</span>
@@ -2054,7 +2054,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
                             showToast("Cliquez pour autoriser la lecture audio.");
                           }
                         }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#111111] text-[#FAF8F5] text-[11px] font-bold hover:bg-black cursor-pointer shadow-2xs"
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#1F3A26] text-[#FAF8F5] text-[11px] font-bold hover:bg-[#162B1C] cursor-pointer shadow-2xs"
                       >
                         <Play className="h-3 w-3" />
                         <span>Tester le son</span>
@@ -2108,7 +2108,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
           <div className="flex justify-end">
             <button
               type="submit"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black transition-all shadow-sm cursor-pointer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm cursor-pointer"
             >
               <Save className="h-4 w-4" />
               <span>Enregistrer les préférences</span>
@@ -2150,7 +2150,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
                 <button
                   type="button"
                   onClick={() => setShowAddMemberModal(true)}
-                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black transition-all shadow-sm cursor-pointer self-start sm:self-auto"
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm cursor-pointer self-start sm:self-auto"
                 >
                   <Plus className="h-4 w-4" />
                   <span>Inviter un collaborateur</span>
@@ -2181,7 +2181,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
                   className={cn(
                     "px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
                     teamFilterRole === "all"
-                      ? "bg-[#111111] text-[#FAF8F5]"
+                      ? "bg-[#1F3A26] text-[#FAF8F5]"
                       : "bg-white text-[#666660] border border-black/[0.08]"
                   )}
                 >
@@ -2193,7 +2193,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
                   className={cn(
                     "px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
                     teamFilterRole === "owner"
-                      ? "bg-[#111111] text-[#FAF8F5]"
+                      ? "bg-[#1F3A26] text-[#FAF8F5]"
                       : "bg-white text-[#666660] border border-black/[0.08]"
                   )}
                 >
@@ -2357,7 +2357,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
                       </button>
                       <button
                         type="submit"
-                        className="px-4 py-2 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black"
+                        className="px-4 py-2 rounded-xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold hover:bg-[#162B1C]"
                       >
                         Générer l'invitation
                       </button>
@@ -2378,7 +2378,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
                   )}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="h-10 w-10 rounded-xl bg-[#111111] text-white flex items-center justify-center font-bold text-xs shrink-0">
+                    <div className="h-10 w-10 rounded-xl bg-[#1F3A26] text-white flex items-center justify-center font-bold text-xs shrink-0">
                       {member.role === "agency" ? (
                         <Building2 className="h-5 w-5 text-emerald-300" />
                       ) : member.role === "rider" ? (
@@ -2710,7 +2710,7 @@ export function SettingsClient({ storeSlug, initialSection = "general" }: Settin
                 <button
                   type="submit"
                   id="btn-submit-pixel-modal"
-                  className="px-5 py-2.5 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black transition-all shadow-sm cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm cursor-pointer"
                 >
                   {editingPixelInternalId ? "Enregistrer les modifications" : "Ajouter le pixel"}
                 </button>

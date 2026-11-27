@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
           {
             email: normalizedEmail,
             password_hash: password,
-            full_name: fullName || "Marchand Novika",
+            full_name: fullName || "Marchand Kelio",
             phone: phone || null,
             country: country || "TG",
             niches: Array.isArray(niches) ? niches : [],

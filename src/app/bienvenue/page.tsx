@@ -31,7 +31,7 @@ export default function BienvenuePage() {
           </div>
 
           <h1 className="text-2xl font-black text-[#0B1521] tracking-tight mb-2">
-            Bienvenue dans la bêta Novika
+            Bienvenue dans la bêta Kelio
           </h1>
           <p className="text-xs sm:text-sm text-[#666660] mb-6 leading-relaxed">
             Vous avez accès à l'ensemble des modules : closing, flotte de livreurs, preuves de remise et suivi de caisse.
@@ -76,7 +76,7 @@ export default function BienvenuePage() {
                 <span>Règles de bonne conduite en Bêta</span>
               </div>
               <p className="text-[11px] leading-relaxed">
-                Novika s'engage à protéger vos données financières. En retour, les membres s'engagent à traiter des commandes réelles et à respecter leurs clients.
+                Kelio s'engage à protéger vos données financières. En retour, les membres s'engagent à traiter des commandes réelles et à respecter leurs clients.
               </p>
             </div>
 

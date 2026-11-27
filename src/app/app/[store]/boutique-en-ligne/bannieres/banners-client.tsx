@@ -442,7 +442,7 @@ export function BannersClient({ storeSlug }: { storeSlug: string }) {
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
                   onChange={handleSimulateUpload}
-                  className="w-full text-xs text-[#666660] file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#111111] file:text-white hover:file:bg-black cursor-pointer"
+                  className="w-full text-xs text-[#666660] file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#1F3A26] file:text-white hover:file:bg-black cursor-pointer"
                 />
               </div>
             </div>
@@ -471,7 +471,7 @@ export function BannersClient({ storeSlug }: { storeSlug: string }) {
                     className="w-full h-full object-cover"
                   />
                   {asset.isUsedInBanner && (
-                    <span className="absolute top-1 left-1 px-1.5 py-0.2 rounded text-[8px] font-bold bg-[#111111]/80 text-white">
+                    <span className="absolute top-1 left-1 px-1.5 py-0.2 rounded text-[8px] font-bold bg-[#1F3A26]/80 text-white">
                       Utilisée
                     </span>
                   )}

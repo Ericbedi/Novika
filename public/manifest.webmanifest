@@ -1,20 +1,20 @@
 {
-  "name": "Novika",
-  "short_name": "Novika",
+  "name": "Kelio",
+  "short_name": "Kelio",
   "description": "Boutique, commandes, closeuses, livreurs, stock et finances dans un seul outil pour vendre en paiement à la livraison en Afrique.",
   "start_url": "/app",
   "display": "standalone",
-  "background_color": "#0B1521",
-  "theme_color": "#0B1521",
+  "background_color": "#1F3A26",
+  "theme_color": "#1F3A26",
   "icons": [
     {
-      "src": "/brand/novika-favicon.svg",
+      "src": "/brand/kelio-favicon.svg",
       "sizes": "64x64 32x32 24x24 16x16",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/brand/novika-icon.svg",
+      "src": "/brand/kelio-icon.svg",
       "sizes": "192x192 512x512",
       "type": "image/svg+xml",
       "purpose": "maskable"

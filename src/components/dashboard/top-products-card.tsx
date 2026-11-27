@@ -106,7 +106,7 @@ export function TopProductsCard({
                 <div className="mt-1.5 h-1.5 w-20 overflow-hidden rounded-full bg-black/[0.06] ml-auto">
                   <div
                     style={{ width: `${percentage}%` }}
-                    className="h-full rounded-full bg-[#111111]"
+                    className="h-full rounded-full bg-[#1F3A26]"
                   />
                 </div>
               </div>

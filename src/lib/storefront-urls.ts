@@ -1,5 +1,5 @@
 /**
- * Gestionnaire unifié des URLs publiques de la vitrine Novika (Prompt 17-K & Prompt 19)
+ * Gestionnaire unifié des URLs publiques de la vitrine Kelio (Prompt 17-K & Prompt 19)
  * 
  * Règle d'or Prompt 17-K : Une seule fonction getProductPublicUrl(product, shop, options)
  * utilisée PARTOUT (liste produits, icône œil, « Afficher en tant que client », liens courts, e-mails, WhatsApp).

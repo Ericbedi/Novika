@@ -124,7 +124,7 @@ export function RecentOrdersTable({
           <Link
             href={`/app/${storeSlug}/commandes/${order.orderNumber}`}
             title="Voir le détail de la commande"
-            className="p-1.5 rounded-lg border border-black/[0.08] bg-white text-[#111111] hover:bg-black hover:text-[#FAF8F5] transition-colors"
+            className="p-1.5 rounded-lg border border-black/[0.08] bg-white text-[#111111] hover:bg-[#162B1C] hover:text-[#FAF8F5] transition-colors"
           >
             <Eye className="h-3.5 w-3.5" />
           </Link>
@@ -194,7 +194,7 @@ export function RecentOrdersTable({
         </div>
         <Link
           href={`/app/${storeSlug}/commandes/${order.orderNumber}`}
-          className="h-11 min-h-[44px] px-3.5 rounded-lg border border-black/[0.08] bg-[#111111] flex items-center justify-center text-xs font-bold text-[#FAF8F5] hover:bg-black transition-colors"
+          className="h-11 min-h-[44px] px-3.5 rounded-lg border border-black/[0.08] bg-[#1F3A26] flex items-center justify-center text-xs font-bold text-[#FAF8F5] hover:bg-[#162B1C] transition-colors"
         >
           Détail
         </Link>

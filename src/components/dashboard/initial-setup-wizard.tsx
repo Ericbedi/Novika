@@ -92,7 +92,7 @@ export function InitialSetupWizard({
 
         {/* En-tête Wizard */}
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-2xl bg-[#111111] text-[#FAF8F5] flex items-center justify-center font-bold shadow-sm">
+          <div className="h-10 w-10 rounded-2xl bg-[#1F3A26] text-[#FAF8F5] flex items-center justify-center font-bold shadow-sm">
             <Sparkles className="h-5 w-5 text-emerald-400" />
           </div>
           <div>
@@ -162,7 +162,7 @@ export function InitialSetupWizard({
                   type="button"
                   disabled={!storeName.trim() || Boolean(subdomainError)}
                   onClick={() => setStep(2)}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm cursor-pointer disabled:opacity-50"
                 >
                   <span>Continuer</span>
                   <ArrowRight className="h-4 w-4" />
@@ -212,7 +212,7 @@ export function InitialSetupWizard({
                 <button
                   type="button"
                   onClick={() => setStep(3)}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black transition-all shadow-sm cursor-pointer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm cursor-pointer"
                 >
                   <span>Continuer</span>
                   <ArrowRight className="h-4 w-4" />
@@ -261,7 +261,7 @@ export function InitialSetupWizard({
                 </button>
                 <button
                   type="submit"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black transition-all shadow-md cursor-pointer"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold hover:bg-[#162B1C] transition-all shadow-md cursor-pointer"
                 >
                   <span>Terminer et accéder à mon tableau de bord</span>
                   <Sparkles className="h-4 w-4 text-emerald-400" />

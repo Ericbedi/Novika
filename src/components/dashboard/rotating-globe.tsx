@@ -153,7 +153,7 @@ export function RotatingGlobe({
             </div>
 
             {/* Badge flottant */}
-            <div className="absolute -bottom-2 px-3.5 py-1 rounded-full border border-black/[0.1] bg-[#111111] text-[#FAF8F5] shadow-lg text-center">
+            <div className="absolute -bottom-2 px-3.5 py-1 rounded-full border border-black/[0.1] bg-[#1F3A26] text-[#FAF8F5] shadow-lg text-center">
               <span className="text-[10px] font-extrabold uppercase tracking-widest flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 Afrique · Hub COD

@@ -89,14 +89,14 @@ export function ClosersClient({ storeSlug }: { storeSlug: string }) {
           <h1 className="text-xl font-extrabold text-[#111111] flex items-center gap-2"><Users className="w-5 h-5" /> Closeuses</h1>
           <p className="text-xs text-[#666660] mt-0.5">Qui confirme les commandes, leurs résultats et la commission due par livraison réussie.</p>
         </div>
-        <button type="button" onClick={() => setDraft({ ...EMPTY })} className="h-10 px-4 rounded-xl bg-[#111111] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+        <button type="button" onClick={() => setDraft({ ...EMPTY })} className="h-10 px-4 rounded-xl bg-[#1F3A26] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer">
           <Plus className="w-4 h-4" /> Ajouter
         </button>
       </div>
 
       <div className="flex gap-1.5 overflow-x-auto">
         {PERIODS.map((p) => (
-          <button key={p.id} type="button" onClick={() => setPeriod(p.id)} className={`shrink-0 h-10 px-4 rounded-xl text-xs font-bold cursor-pointer border ${period === p.id ? "bg-[#111111] text-white border-[#111111]" : "bg-white border-black/10"}`}>
+          <button key={p.id} type="button" onClick={() => setPeriod(p.id)} className={`shrink-0 h-10 px-4 rounded-xl text-xs font-bold cursor-pointer border ${period === p.id ? "bg-[#1F3A26] text-white border-[#111111]" : "bg-white border-black/10"}`}>
             {p.label}
           </button>
         ))}
@@ -120,7 +120,7 @@ export function ClosersClient({ storeSlug }: { storeSlug: string }) {
           </div>
           <div className="flex gap-2 justify-end">
             <button type="button" onClick={() => setDraft(null)} className="h-10 px-4 rounded-xl border border-black/10 bg-white text-xs font-bold cursor-pointer">Annuler</button>
-            <button type="submit" disabled={busy} className="h-10 px-4 rounded-xl bg-[#111111] text-white text-xs font-bold cursor-pointer disabled:opacity-50">{busy ? "Enregistrement…" : "Enregistrer"}</button>
+            <button type="submit" disabled={busy} className="h-10 px-4 rounded-xl bg-[#1F3A26] text-white text-xs font-bold cursor-pointer disabled:opacity-50">{busy ? "Enregistrement…" : "Enregistrer"}</button>
           </div>
         </form>
       )}

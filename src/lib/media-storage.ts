@@ -1,5 +1,5 @@
 /**
- * Gestionnaire de stockage média Novika (Prompts 17-G & 17-H)
+ * Gestionnaire de stockage média Kelio (Prompts 17-G & 17-H)
  * - Validation stricte des Magic Bytes (JPEG, PNG, WebP, GIF)
  * - Refus absolu des SVG
  * - Plafond de 5 Mo par image
@@ -342,7 +342,7 @@ export async function migrateExternalImagesBatch(
 
       const fetchRes = await fetch(trimmed, {
         signal: controller.signal,
-        headers: { "User-Agent": "Novika-MediaMigrator/1.0" },
+        headers: { "User-Agent": "Kelio-MediaMigrator/1.0" },
       });
       clearTimeout(timeoutId);
 

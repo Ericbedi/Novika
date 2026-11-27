@@ -271,7 +271,7 @@ export function DashboardClient({ storeSlug }: { storeSlug: string }) {
             className="group relative flex items-center justify-between p-3.5 rounded-2xl border border-black/[0.08] bg-[#FAF8F5] hover:border-black/20 transition-all shadow-2xs"
           >
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="h-9 w-9 rounded-xl bg-[#111111] text-[#FAF8F5] flex items-center justify-center shrink-0 font-bold shadow-2xs">
+              <div className="h-9 w-9 rounded-xl bg-[#1F3A26] text-[#FAF8F5] flex items-center justify-center shrink-0 font-bold shadow-2xs">
                 <ShoppingBag className="h-4 w-4" />
               </div>
               <div className="truncate">
@@ -283,7 +283,7 @@ export function DashboardClient({ storeSlug }: { storeSlug: string }) {
                 </p>
               </div>
             </div>
-            <span className="px-2 py-0.5 rounded-full bg-[#111111] text-[#FAF8F5] text-xs font-black shadow-2xs shrink-0">
+            <span className="px-2 py-0.5 rounded-full bg-[#1F3A26] text-[#FAF8F5] text-xs font-black shadow-2xs shrink-0">
               {kpis.pendingOrdersCount}
             </span>
           </Link>

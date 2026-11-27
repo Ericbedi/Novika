@@ -93,7 +93,7 @@ export function ProductPerformanceClient({ storeSlug }: ProductPerformanceClient
                 onClick={() => setPeriod(p.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                   period === p.id
-                    ? "bg-[#111111] text-white shadow-xs"
+                    ? "bg-[#1F3A26] text-white shadow-xs"
                     : "text-[#666666] hover:text-[#111111] hover:bg-[#F3EFE6]"
                 }`}
               >

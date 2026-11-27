@@ -67,7 +67,7 @@ export function AbandonedClient({ storeSlug }: { storeSlug: string }) {
 
       <div className="flex gap-1.5 overflow-x-auto">
         {([["todo", "À relancer"], ["contacted", "Relancés"], ["recovered", "Récupérés"]] as [Tab, string][]).map(([id, label]) => (
-          <button key={id} type="button" onClick={() => setTab(id)} className={`shrink-0 h-10 px-4 rounded-xl text-xs font-bold cursor-pointer border ${tab === id ? "bg-[#111111] text-white border-[#111111]" : "bg-white border-black/10"}`}>
+          <button key={id} type="button" onClick={() => setTab(id)} className={`shrink-0 h-10 px-4 rounded-xl text-xs font-bold cursor-pointer border ${tab === id ? "bg-[#1F3A26] text-white border-[#111111]" : "bg-white border-black/10"}`}>
             {label} <span className="opacity-70">({count(id)})</span>
           </button>
         ))}

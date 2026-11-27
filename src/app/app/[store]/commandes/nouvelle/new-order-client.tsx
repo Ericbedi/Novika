@@ -188,7 +188,7 @@ export function NewManualOrderClient({ storeSlug }: { storeSlug: string }) {
     <div className="space-y-6 pb-20 max-w-4xl mx-auto">
       {/* Toast */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-[#111111] text-[#FAF8F5] px-4 py-2.5 text-xs font-semibold shadow-2xl flex items-center gap-2">
+        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-[#1F3A26] text-[#FAF8F5] px-4 py-2.5 text-xs font-semibold shadow-2xl flex items-center gap-2">
           <Check className="h-4 w-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>

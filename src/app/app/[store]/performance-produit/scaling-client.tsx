@@ -319,7 +319,7 @@ export function ScalingClient({ storeSlug }: ScalingClientProps) {
           </div>
           <Link
             href={`/app/${storeSlug}/commandes`}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-colors"
           >
             <span>Retour aux Commandes</span>
           </Link>
@@ -332,7 +332,7 @@ export function ScalingClient({ storeSlug }: ScalingClientProps) {
     <div className="space-y-6 pb-24 max-w-7xl mx-auto">
       {/* Toast */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-[#111111] text-[#FAF8F5] px-4 py-2.5 text-xs font-semibold shadow-2xl flex items-center gap-2">
+        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-[#1F3A26] text-[#FAF8F5] px-4 py-2.5 text-xs font-semibold shadow-2xl flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
@@ -446,7 +446,7 @@ export function ScalingClient({ storeSlug }: ScalingClientProps) {
                         className={cn(
                           "w-full text-left p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2",
                           isSelected
-                            ? "bg-[#111111] text-white border-black shadow-xs"
+                            ? "bg-[#1F3A26] text-white border-black shadow-xs"
                             : "bg-[#FAF8F5] text-[#111111] border-black/[0.06] hover:bg-black/[0.04]"
                         )}
                       >
@@ -514,7 +514,7 @@ export function ScalingClient({ storeSlug }: ScalingClientProps) {
             className={cn(
               "inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all min-h-[36px] cursor-pointer",
               comparisonMode === "weekly_comparison"
-                ? "bg-[#111111] text-white border-black shadow-xs"
+                ? "bg-[#1F3A26] text-white border-black shadow-xs"
                 : "bg-white text-[#111111] border-black/10 hover:bg-black/[0.02] shadow-2xs"
             )}
           >
@@ -564,7 +564,7 @@ export function ScalingClient({ storeSlug }: ScalingClientProps) {
             className={cn(
               "px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer",
               activeTab === tab.id
-                ? "bg-[#111111] text-[#FAF8F5] shadow-xs"
+                ? "bg-[#1F3A26] text-[#FAF8F5] shadow-xs"
                 : "text-[#666660] hover:text-[#111111] hover:bg-black/[0.04]"
             )}
           >
@@ -1504,7 +1504,7 @@ export function ScalingClient({ storeSlug }: ScalingClientProps) {
                   <button
                     type="button"
                     onClick={() => showToast("Paramètres de scaling enregistrés !")}
-                    className="px-4 py-2 rounded-xl bg-[#111111] text-white font-bold text-xs hover:bg-black transition-colors cursor-pointer"
+                    className="px-4 py-2 rounded-xl bg-[#1F3A26] text-white font-bold text-xs hover:bg-[#162B1C] transition-colors cursor-pointer"
                   >
                     Enregistrer les réglages
                   </button>

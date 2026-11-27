@@ -112,7 +112,7 @@ export function detectCsvFormat(rawHeaders: string[]): CsvFormatType {
     return "shopify";
   }
 
-  // Modèle Novika : présence de 'identifiant' et 'titre'
+  // Modèle Kelio : présence de 'identifiant' et 'titre'
   if (set.has("identifiant") && (set.has("titre") || set.has("description") || set.has("prix"))) {
     return "novika";
   }
@@ -256,7 +256,7 @@ export function parseAndRoundPrice(
 }
 
 /**
- * Reconnait et groupe un export CSV Shopify en produits complets Novika.
+ * Reconnait et groupe un export CSV Shopify en produits complets Kelio.
  */
 export function mapShopifyCsvRows(
   headers: string[],
@@ -590,7 +590,7 @@ export function mapShopifyCsvRows(
       descriptionPlain,
       rawBodyHtml: bodyHtmlRaw,
       sanitizationReport: sanitizeResult,
-      brand: vendor || "Novika",
+      brand: vendor || "Kelio",
       category: category || productType || "Général",
       productType: productType || "Standard",
       tags,
@@ -625,7 +625,7 @@ export function mapShopifyCsvRows(
 }
 
 /**
- * Convertit un produit importé (MappedProductDraft) en entité Product Novika complète.
+ * Convertit un produit importé (MappedProductDraft) en entité Product Kelio complète.
  * Règle d'or Prompt 11 : Le produit est STRICTEMENT créé en statut 'draft' (brouillon).
  */
 export function convertDraftToProduct(

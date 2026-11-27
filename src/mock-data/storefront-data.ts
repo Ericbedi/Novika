@@ -52,7 +52,7 @@ export function validateSubdomain(subdomain: string): { isValid: boolean; error?
   if (RESERVED_SUBDOMAINS.includes(normalized)) {
     return {
       isValid: false,
-      error: `Le sous-domaine « ${normalized} » est un mot réservé par la plateforme Novika.`,
+      error: `Le sous-domaine « ${normalized} » est un mot réservé par la plateforme Kelio.`,
     };
   }
   return { isValid: true };
@@ -61,7 +61,7 @@ export function validateSubdomain(subdomain: string): { isValid: boolean; error?
 export const THEME_PRESETS: Record<string, ThemeConfig> = {
   novika: {
     id: "thm_novika",
-    name: "Novika Signature",
+    name: "Kelio Signature",
     preset: "novika" as any,
     colors: {
       primary: "#0B1521",
@@ -357,7 +357,7 @@ export function calculateOnboardingProgress(
       id: 4,
       key: "theme",
       title: "Personnalisez votre thème",
-      subtitle: `Thème actif : ${storefront.activeTheme?.name || "Novika Signature"} (Couleurs, typographie et boutons).`,
+      subtitle: `Thème actif : ${storefront.activeTheme?.name || "Kelio Signature"} (Couleurs, typographie et boutons).`,
       isCompleted: isThemeDone,
       actionUrl: `/app/${store.slug}/boutique-en-ligne?tab=theme`,
       actionLabel: isThemeDone ? "Modifier" : "Personnaliser",

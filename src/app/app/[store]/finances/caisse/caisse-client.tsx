@@ -195,7 +195,7 @@ export function CaisseClient({ storeSlug }: CaisseClientProps) {
     <div className="space-y-6 pb-16">
       {/* Toast Feedback */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-[#111111] text-[#FAF8F5] px-4 py-2.5 text-xs font-semibold shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-3">
+        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-[#1F3A26] text-[#FAF8F5] px-4 py-2.5 text-xs font-semibold shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-3">
           <CheckCircle2 className="h-4 w-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
@@ -215,7 +215,7 @@ export function CaisseClient({ storeSlug }: CaisseClientProps) {
               <button
                 type="button"
                 onClick={() => setIsCreateOpen(true)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#111111] text-xs font-bold text-[#FAF8F5] hover:bg-black transition-all shadow-2xs cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#1F3A26] text-xs font-bold text-[#FAF8F5] hover:bg-[#162B1C] transition-all shadow-2xs cursor-pointer"
               >
                 <Plus className="h-3.5 w-3.5" />
                 <span>Créer une caisse</span>
@@ -288,7 +288,7 @@ export function CaisseClient({ storeSlug }: CaisseClientProps) {
               className={cn(
                 "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
                 activeTab === "active"
-                  ? "bg-[#111111] text-[#FAF8F5] shadow-xs"
+                  ? "bg-[#1F3A26] text-[#FAF8F5] shadow-xs"
                   : "text-[#666660] hover:text-[#111111]"
               )}
             >
@@ -300,7 +300,7 @@ export function CaisseClient({ storeSlug }: CaisseClientProps) {
               className={cn(
                 "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
                 activeTab === "archived"
-                  ? "bg-[#111111] text-[#FAF8F5] shadow-xs"
+                  ? "bg-[#1F3A26] text-[#FAF8F5] shadow-xs"
                   : "text-[#666660] hover:text-[#111111]"
               )}
             >
@@ -510,7 +510,7 @@ export function CaisseClient({ storeSlug }: CaisseClientProps) {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-[#111111] font-bold text-[#FAF8F5] hover:bg-black"
+                  className="px-4 py-2 rounded-xl bg-[#1F3A26] font-bold text-[#FAF8F5] hover:bg-[#162B1C]"
                 >
                   Créer le compte
                 </button>
@@ -606,7 +606,7 @@ export function CaisseClient({ storeSlug }: CaisseClientProps) {
                 <button
                   type="button"
                   onClick={handleSaveReconciliation}
-                  className="px-4 py-2 rounded-xl bg-[#111111] font-bold text-[#FAF8F5] hover:bg-black"
+                  className="px-4 py-2 rounded-xl bg-[#1F3A26] font-bold text-[#FAF8F5] hover:bg-[#162B1C]"
                 >
                   Valider la réconciliation
                 </button>

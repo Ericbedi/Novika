@@ -53,7 +53,7 @@ export function InvitationClient({ token }: InvitationClientProps) {
           </div>
           <h1 className="text-xl font-black text-[#111111]">Invitation Invalide ou Révoquée</h1>
           <p className="text-xs text-[#666660]">
-            Ce lien d'invitation à la bêta privée n'existe pas ou a expiré. Veuillez contacter l'administrateur Novika qui vous a invité.
+            Ce lien d'invitation à la bêta privée n'existe pas ou a expiré. Veuillez contacter l'administrateur Kelio qui vous a invité.
           </p>
           <Link
             href="/"
@@ -345,7 +345,7 @@ export function InvitationClient({ token }: InvitationClientProps) {
                       className="h-4 w-4 rounded border-black/[0.1] accent-[#111111] mt-0.5 cursor-pointer"
                     />
                     <span>
-                      J'accepte la charte des bêta-testeurs Novika et la politique de paiement à la livraison.
+                      J'accepte la charte des bêta-testeurs Kelio et la politique de paiement à la livraison.
                     </span>
                   </label>
                 </div>
@@ -366,7 +366,7 @@ export function InvitationClient({ token }: InvitationClientProps) {
       </div>
 
       <footer className="text-center py-4 text-[11px] text-[#888880]">
-        Novika · Infrastructure e-commerce COD pour l'Afrique de l'Ouest & Centrale
+        Kelio · Infrastructure e-commerce COD pour l'Afrique de l'Ouest & Centrale
       </footer>
     </div>
   );

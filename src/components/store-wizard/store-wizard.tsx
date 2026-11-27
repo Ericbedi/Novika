@@ -301,7 +301,7 @@ export function StoreWizard() {
     <div className="min-h-screen bg-gradient-to-b from-[#F4F5FF] to-[#FAF8F5] px-4 py-10 flex flex-col items-center">
       <div className="text-center mb-6">
         <div className="text-2xl font-black tracking-tight" style={{ color }}>
-          Novika
+          Kelio
         </div>
         <div className="text-xs text-[#7A7A7A] mt-0.5">Créez votre boutique en 3 étapes</div>
       </div>

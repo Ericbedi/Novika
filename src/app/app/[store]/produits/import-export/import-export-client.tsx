@@ -114,7 +114,7 @@ export function ImportExportClient({ storeSlug }: ImportExportClientProps) {
 
         {/* Toast */}
         {toastMessage && (
-          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-[#111111] text-white px-4 py-3 rounded-xl shadow-xl text-sm animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-[#1F3A26] text-white px-4 py-3 rounded-xl shadow-xl text-sm animate-in fade-in slide-in-from-bottom-2 duration-200">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>{toastMessage}</span>
           </div>
@@ -141,7 +141,7 @@ export function ImportExportClient({ storeSlug }: ImportExportClientProps) {
               {canImport ? (
                 <button
                   onClick={() => setIsImportModalOpen(true)}
-                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#111111] text-white font-medium hover:bg-black transition-colors"
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1F3A26] text-white font-medium hover:bg-[#162B1C] transition-colors"
                 >
                   <Upload className="w-4 h-4" />
                   <span>Lancer l'importation</span>

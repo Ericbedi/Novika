@@ -537,7 +537,7 @@ export function generatePendingStockWhatsAppUrl(params: {
   productName: string;
   storeName?: string;
 }): string {
-  const { customerPhone, customerName, orderNumber, productName, storeName = "Novika" } = params;
+  const { customerPhone, customerName, orderNumber, productName, storeName = "Kelio" } = params;
   const firstName = customerName.trim().split(" ")[0] || "cher client";
   const message = `Bonjour ${firstName}, l'équipe ${storeName} vous remercie pour votre commande #${orderNumber} (${productName}).\n\nCe produit est temporairement en cours de réapprovisionnement express. Souhaitez-vous que nous maintenions votre commande prioritaire pour livraison dès réassort, ou préférez-vous découvrir un produit alternatif ?`;
   const cleanPhone = customerPhone.replace(/\D/g, "");

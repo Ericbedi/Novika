@@ -482,7 +482,7 @@ export default function CartAndCodCheckoutPage({ params }: PageProps) {
             </div>
           </div>
 
-          {/* Garanties Novika COD */}
+          {/* Garanties Kelio COD */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="p-4 rounded-2xl bg-white border border-black/[0.08] flex items-center gap-3 shadow-2xs">
               <div className="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">

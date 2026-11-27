@@ -123,7 +123,7 @@ export function IntegrationsClient({ storeSlug }: IntegrationsClientProps) {
           </div>
           <Link
             href={`/app/${storeSlug}`}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-all shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm"
           >
             <span>Retour au Tableau de Bord</span>
           </Link>
@@ -313,7 +313,7 @@ export function IntegrationsClient({ storeSlug }: IntegrationsClientProps) {
     <div className="space-y-6 pb-20">
       {/* Toast */}
       {toastMessage && (
-        <div className="fixed top-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl bg-[#111111] text-white text-xs font-bold shadow-xl animate-in fade-in">
+        <div className="fixed top-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl bg-[#1F3A26] text-white text-xs font-bold shadow-xl animate-in fade-in">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
@@ -343,7 +343,7 @@ export function IntegrationsClient({ storeSlug }: IntegrationsClientProps) {
             setWizardStep(1);
             setIsWizardOpen(true);
           }}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black transition-all shadow-sm cursor-pointer"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm cursor-pointer"
         >
           <Plus className="h-4 w-4" />
           <span>Relier une Google Sheet</span>
@@ -418,7 +418,7 @@ export function IntegrationsClient({ storeSlug }: IntegrationsClientProps) {
                 type="button"
                 onClick={handleImportNow}
                 disabled={isImporting || activeSource.status === "paused"}
-                className="py-2 px-3 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-all shadow-xs cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                className="py-2 px-3 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-all shadow-xs cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
                 title="Déclencher un import manuel immédiat"
               >
                 <RefreshCw className={`h-3.5 w-3.5 ${isImporting ? "animate-spin" : ""}`} />
@@ -484,7 +484,7 @@ export function IntegrationsClient({ storeSlug }: IntegrationsClientProps) {
         <div className="rounded-3xl border border-black/10 bg-white/70 p-5 shadow-2xs space-y-4 flex flex-col justify-between opacity-80">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <div className="h-10 w-10 rounded-2xl bg-[#111111] text-white flex items-center justify-center">
+              <div className="h-10 w-10 rounded-2xl bg-[#1F3A26] text-white flex items-center justify-center">
                 <Webhook className="h-5 w-5" />
               </div>
               <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-black/5 text-[#666660]">
@@ -631,7 +631,7 @@ export function IntegrationsClient({ storeSlug }: IntegrationsClientProps) {
                     <button
                       type="button"
                       onClick={handleCopyColumns}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#111111] text-white text-[11px] font-bold hover:bg-black transition-all cursor-pointer shadow-2xs"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1F3A26] text-white text-[11px] font-bold hover:bg-[#162B1C] transition-all cursor-pointer shadow-2xs"
                     >
                       <Copy className="h-3.5 w-3.5" />
                       <span>Copier les colonnes</span>
@@ -646,7 +646,7 @@ export function IntegrationsClient({ storeSlug }: IntegrationsClientProps) {
                   <button
                     type="button"
                     onClick={() => setWizardStep(2)}
-                    className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-all shadow-sm cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm cursor-pointer"
                   >
                     <span>Étape suivante : Publication</span>
                     <ArrowRight className="h-4 w-4" />
@@ -694,7 +694,7 @@ export function IntegrationsClient({ storeSlug }: IntegrationsClientProps) {
                   <button
                     type="button"
                     onClick={() => setWizardStep(3)}
-                    className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-all shadow-sm cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm cursor-pointer"
                   >
                     <span>Étape suivante : Coller le lien</span>
                     <ArrowRight className="h-4 w-4" />
@@ -726,7 +726,7 @@ export function IntegrationsClient({ storeSlug }: IntegrationsClientProps) {
                       type="button"
                       onClick={() => handleTestConnection()}
                       disabled={isTesting}
-                      className="px-4 py-2.5 rounded-xl bg-[#111111] text-white font-bold hover:bg-black transition-all shadow-sm cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                      className="px-4 py-2.5 rounded-xl bg-[#1F3A26] text-white font-bold hover:bg-[#162B1C] transition-all shadow-sm cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
                     >
                       <RefreshCw className={`h-3.5 w-3.5 ${isTesting ? "animate-spin" : ""}`} />
                       <span>Tester</span>
@@ -925,7 +925,7 @@ export function IntegrationsClient({ storeSlug }: IntegrationsClientProps) {
                       onClick={() => setSyncFreq(f.val as any)}
                       className={`p-2.5 rounded-xl border text-center font-bold transition-all ${
                         syncFreq === f.val
-                          ? "border-[#111111] bg-[#111111] text-white"
+                          ? "border-[#111111] bg-[#1F3A26] text-white"
                           : "border-black/10 bg-white text-[#666660]"
                       }`}
                     >
@@ -1004,7 +1004,7 @@ export function IntegrationsClient({ storeSlug }: IntegrationsClientProps) {
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black shadow-sm"
+                    className="px-5 py-2 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] shadow-sm"
                   >
                     Enregistrer les réglages
                   </button>

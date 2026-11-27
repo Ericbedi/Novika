@@ -92,7 +92,7 @@ export default function NotFound() {
         </div>
 
         <p className="text-[11px] text-[#888880]">
-          Plateforme Novika • Commerce COD & Logistique
+          Plateforme Kelio • Commerce COD & Logistique
         </p>
       </div>
     </main>

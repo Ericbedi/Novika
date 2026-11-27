@@ -491,7 +491,7 @@ export function FollowupsClient({ storeSlug }: FollowupsClientProps) {
       {toastMessage && (
         <div
           id="followup-toast"
-          className="fixed bottom-6 right-6 z-50 rounded-2xl bg-[#111111] text-[#FAF8F5] px-4 py-3 text-xs font-semibold shadow-2xl flex items-center gap-2 border border-white/10 animate-in fade-in slide-in-from-bottom-2"
+          className="fixed bottom-6 right-6 z-50 rounded-2xl bg-[#1F3A26] text-[#FAF8F5] px-4 py-3 text-xs font-semibold shadow-2xl flex items-center gap-2 border border-white/10 animate-in fade-in slide-in-from-bottom-2"
         >
           <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
@@ -502,7 +502,7 @@ export function FollowupsClient({ storeSlug }: FollowupsClientProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-white border border-black/[0.08] shadow-2xs">
         <div className="flex items-center gap-2 text-xs">
           <span className="font-bold text-[#666660]">Rôle connecté :</span>
-          <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#111111] text-white capitalize">
+          <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#1F3A26] text-white capitalize">
             {activeRole === "closer" ? "Closeuse" : activeRole}
           </span>
           <span className="text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
@@ -560,7 +560,7 @@ export function FollowupsClient({ storeSlug }: FollowupsClientProps) {
               className={cn(
                 "inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all shadow-2xs cursor-pointer",
                 showManagerStats
-                  ? "bg-[#111111] text-white border-black"
+                  ? "bg-[#1F3A26] text-white border-black"
                   : "bg-white text-[#111111] border-black/[0.08] hover:bg-[#FAF8F5]"
               )}
             >
@@ -702,7 +702,7 @@ export function FollowupsClient({ storeSlug }: FollowupsClientProps) {
               className={cn(
                 "px-4 py-2.5 rounded-2xl text-xs font-black transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 shadow-2xs",
                 activeTab === "due_now"
-                  ? "bg-[#111111] text-[#FAF8F5]"
+                  ? "bg-[#1F3A26] text-[#FAF8F5]"
                   : "bg-white text-[#666660] hover:text-[#111111] border border-black/[0.06]"
               )}
             >
@@ -725,7 +725,7 @@ export function FollowupsClient({ storeSlug }: FollowupsClientProps) {
               className={cn(
                 "px-4 py-2.5 rounded-2xl text-xs font-black transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 shadow-2xs",
                 activeTab === "scheduled"
-                  ? "bg-[#111111] text-[#FAF8F5]"
+                  ? "bg-[#1F3A26] text-[#FAF8F5]"
                   : "bg-white text-[#666660] hover:text-[#111111] border border-black/[0.06]"
               )}
             >
@@ -742,7 +742,7 @@ export function FollowupsClient({ storeSlug }: FollowupsClientProps) {
               className={cn(
                 "px-4 py-2.5 rounded-2xl text-xs font-black transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 shadow-2xs",
                 activeTab === "archive"
-                  ? "bg-[#111111] text-[#FAF8F5]"
+                  ? "bg-[#1F3A26] text-[#FAF8F5]"
                   : "bg-white text-[#666660] hover:text-[#111111] border border-black/[0.06]"
               )}
             >

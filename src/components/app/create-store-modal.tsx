@@ -105,7 +105,7 @@ export function CreateStoreModal({
           <div>
             <h3 className="text-lg font-black text-[#111111]">Limite de boutique atteinte</h3>
             <p className="text-xs text-[#666660] mt-1.5 leading-relaxed">
-              Sur Novika, un e-mail / compte marchand a le droit de créer <strong>une seule boutique unique</strong> dans une devise donnée.
+              Sur Kelio, un e-mail / compte marchand a le droit de créer <strong>une seule boutique unique</strong> dans une devise donnée.
             </p>
             <p className="text-xs text-[#111111] font-bold mt-2">
               Votre boutique active : {existingStoreName}
@@ -114,7 +114,7 @@ export function CreateStoreModal({
           <div className="pt-2 flex flex-col gap-2">
             <a
               href={`/app/${existingStoreSlug}`}
-              className="w-full py-2.5 rounded-xl bg-[#111111] text-white text-xs font-bold shadow-xs hover:bg-black transition-colors"
+              className="w-full py-2.5 rounded-xl bg-[#1F3A26] text-white text-xs font-bold shadow-xs hover:bg-[#162B1C] transition-colors"
             >
               Accéder à ma boutique
             </a>
@@ -585,7 +585,7 @@ export function CreateStoreModal({
             <button
               type="button"
               onClick={handleNext}
-              className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-all cursor-pointer shadow-xs"
+              className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-all cursor-pointer shadow-xs"
             >
               <span>Suivant</span>
               <ArrowRight className="h-3.5 w-3.5" />

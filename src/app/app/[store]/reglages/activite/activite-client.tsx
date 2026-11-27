@@ -147,7 +147,7 @@ export function ActiviteClient({ storeSlug }: ActiviteClientProps) {
     <div className="space-y-6 pb-16">
       {/* Toast Feedback */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-[#111111] text-[#FAF8F5] px-4 py-2.5 text-xs font-semibold shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-3">
+        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-[#1F3A26] text-[#FAF8F5] px-4 py-2.5 text-xs font-semibold shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-3">
           <CheckCircle2 className="h-4 w-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
@@ -170,7 +170,7 @@ export function ActiviteClient({ storeSlug }: ActiviteClientProps) {
               <button
                 type="button"
                 onClick={() => setIsInviteModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#111111] text-xs font-bold text-[#FAF8F5] hover:bg-black transition-all shadow-2xs cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#1F3A26] text-xs font-bold text-[#FAF8F5] hover:bg-[#162B1C] transition-all shadow-2xs cursor-pointer"
               >
                 <Plus className="h-3.5 w-3.5" />
                 <span>Inviter un membre</span>
@@ -190,7 +190,7 @@ export function ActiviteClient({ storeSlug }: ActiviteClientProps) {
               className={cn(
                 "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
                 activeTab === "logs"
-                  ? "bg-[#111111] text-[#FAF8F5] shadow-xs"
+                  ? "bg-[#1F3A26] text-[#FAF8F5] shadow-xs"
                   : "text-[#666660] hover:text-[#111111]"
               )}
             >
@@ -216,7 +216,7 @@ export function ActiviteClient({ storeSlug }: ActiviteClientProps) {
               className={cn(
                 "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
                 activeTab === "invitations"
-                  ? "bg-[#111111] text-[#FAF8F5] shadow-xs"
+                  ? "bg-[#1F3A26] text-[#FAF8F5] shadow-xs"
                   : "text-[#666660] hover:text-[#111111]"
               )}
             >
@@ -366,7 +366,7 @@ export function ActiviteClient({ storeSlug }: ActiviteClientProps) {
                         {inv.recipientIdentifier}
                       </td>
                       <td className="py-3 px-4">
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#111111] text-white">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#1F3A26] text-white">
                           {inv.role}
                         </span>
                       </td>
@@ -510,7 +510,7 @@ export function ActiviteClient({ storeSlug }: ActiviteClientProps) {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-[#111111] font-bold text-[#FAF8F5] hover:bg-black"
+                  className="px-4 py-2 rounded-xl bg-[#1F3A26] font-bold text-[#FAF8F5] hover:bg-[#162B1C]"
                 >
                   Générer le lien d'invitation
                 </button>

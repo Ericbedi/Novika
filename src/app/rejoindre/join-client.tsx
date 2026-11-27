@@ -117,7 +117,7 @@ export function JoinClient() {
         <div className="flex flex-col items-center text-center space-y-2">
           <Logo variant="full" tone="light" size={32} />
           <h1 className="text-base font-bold text-[#111111] tracking-tight">
-            Invitation d'équipe Novika
+            Invitation d'équipe Kelio
           </h1>
           <p className="text-xs text-[#777770]">
             Activez votre accès pour rejoindre votre espace collaborateur.

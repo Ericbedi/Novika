@@ -104,7 +104,7 @@ export function DeliveriesClient({ storeSlug }: { storeSlug: string }) {
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
-            className={`shrink-0 h-10 px-4 rounded-xl text-xs font-bold cursor-pointer border ${tab === t.id ? "bg-[#111111] text-white border-[#111111]" : "bg-white border-black/10 text-[#333330]"}`}
+            className={`shrink-0 h-10 px-4 rounded-xl text-xs font-bold cursor-pointer border ${tab === t.id ? "bg-[#1F3A26] text-white border-[#111111]" : "bg-white border-black/10 text-[#333330]"}`}
           >
             {t.label} <span className="opacity-70">({counts[t.id]})</span>
           </button>
@@ -184,7 +184,7 @@ export function DeliveriesClient({ storeSlug }: { storeSlug: string }) {
 
                 <div className="flex flex-wrap gap-2">
                   {tab === "assign" && (
-                    <button type="button" disabled={busy || !o.assignedRider} onClick={() => setStatus(o, "shipped")} className="h-10 px-4 rounded-xl bg-[#111111] text-white text-xs font-bold cursor-pointer disabled:opacity-40">
+                    <button type="button" disabled={busy || !o.assignedRider} onClick={() => setStatus(o, "shipped")} className="h-10 px-4 rounded-xl bg-[#1F3A26] text-white text-xs font-bold cursor-pointer disabled:opacity-40">
                       {busy ? "…" : o.assignedRider ? "Expédier" : "Choisir un livreur d'abord"}
                     </button>
                   )}

@@ -1,5 +1,5 @@
 /**
- * Thème de départ « Novika Classique » pour nouvelle boutique (Prompt 12)
+ * Thème de départ « Kelio Classique » pour nouvelle boutique (Prompt 12)
  *
  * CRITÈRE D'ACCEPTATION NON NÉGOCIABLE :
  * - Les modèles de départ d'une nouvelle boutique contiennent des sections VIDES.
@@ -15,14 +15,14 @@ import { createNovikaSimpleSections } from "./novika-simple";
 export function createDefaultNewShopTheme(shopId: string, shopName = "Ma Boutique"): ShopTheme {
   const basePreset = THEME_PRESETS["novika-classique"];
 
-  // 8 Sections initiales du modèle « Novika Simple » (Prompt 21-b)
+  // 8 Sections initiales du modèle « Kelio Simple » (Prompt 21-b)
   // VIDES de contenu factice pour une nouvelle boutique (Prompt 12 & 21-b)
   const homeSections: ThemeSection[] = createNovikaSimpleSections({ empty: true });
 
   return {
     id: `theme_${shopId}_v1`,
     shopId,
-    name: `${shopName} — Thème Novika Classique`,
+    name: `${shopName} — Thème Kelio Classique`,
     preset: "novika-classique",
     generalSettings: basePreset.generalSettings,
     pages: {
@@ -173,7 +173,7 @@ export function createLomeGlowDemoTheme(): ShopTheme {
           ],
           showSocials: true,
           showPaymentBadges: true,
-          copyrightText: "© 2026 Lomé Glow Cosmétiques. Propulsé par Novika.",
+          copyrightText: "© 2026 Lomé Glow Cosmétiques. Propulsé par Kelio.",
         },
       };
     }

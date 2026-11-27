@@ -1,4 +1,4 @@
-// Types pour les Objectifs de chiffre d'affaires encaissé Novika
+// Types pour les Objectifs de chiffre d'affaires encaissé Kelio
 
 export type GoalMetric = "collected_real" | "delivered_gross";
 export type GoalPeriodType = "month" | "week" | "custom";

@@ -69,7 +69,7 @@ export function DeliveryRatesClient({ storeSlug }: { storeSlug: string }) {
       <form onSubmit={add} className="rounded-[20px] border border-black/[0.08] bg-[#FAF8F5] p-4 flex flex-col sm:flex-row gap-2.5">
         <input className={`${input} flex-1`} placeholder="Ville ou quartier (ex. Lomé)" value={city} onChange={(e) => setCity(e.target.value)} required />
         <input className={`${input} sm:w-40`} placeholder="Frais (FCFA)" value={fee} onChange={(e) => setFee(e.target.value.replace(/\D/g, ""))} inputMode="numeric" required />
-        <button type="submit" disabled={busy} className="h-11 px-5 rounded-xl bg-[#111111] text-white text-xs font-bold cursor-pointer disabled:opacity-50">
+        <button type="submit" disabled={busy} className="h-11 px-5 rounded-xl bg-[#1F3A26] text-white text-xs font-bold cursor-pointer disabled:opacity-50">
           Enregistrer
         </button>
       </form>

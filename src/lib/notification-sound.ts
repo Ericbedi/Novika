@@ -1,7 +1,7 @@
 import { SOUND_CONFIG } from "@/config/sounds";
 
 /**
- * Singleton de gestion audio pour Novika
+ * Singleton de gestion audio pour Kelio
  * Conforme Prompt 05-S & RGPD / Accessibilité :
  * - Un seul élément Audio préchargé
  * - Coordination inter-onglets via BroadcastChannel
@@ -87,7 +87,7 @@ class NotificationSoundService {
 
     // 1. Règle horaire : Si le membre est hors service, son coupé (notification muette)
     if (!isMemberOnDuty) {
-      console.info("[Novika Audio] Son coupé : membre actuellement hors service.");
+      console.info("[Kelio Audio] Son coupé : membre actuellement hors service.");
       return false;
     }
 

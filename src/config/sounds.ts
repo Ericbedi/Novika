@@ -1,5 +1,5 @@
 /**
- * Configuration centralisée des sons de la plateforme Novika
+ * Configuration centralisée des sons de la plateforme Kelio
  * Règle Prompt 05-S : Son unique pour les nouvelles commandes, partagé par tous les rôles.
  * Aucun chemin de son ne doit être écrit en dur ailleurs.
  */

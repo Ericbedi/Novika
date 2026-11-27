@@ -351,7 +351,7 @@ export function SignupClient() {
                 className="mt-0.5 h-4 w-4 rounded border-black/[0.2] text-black focus:ring-black"
               />
               <label htmlFor="cgu-agree" className="text-[11px] text-[#666660] leading-snug">
-                J'accepte les conditions d'utilisation et la politique de confidentialité de Novika pour la vente en paiement à la livraison.
+                J'accepte les conditions d'utilisation et la politique de confidentialité de Kelio pour la vente en paiement à la livraison.
               </label>
             </div>
 

@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { LoginClient } from "./connexion/login-client";
 
 export const metadata: Metadata = {
-  title: "Novika",
+  title: "Kelio",
   description: "Plateforme de gestion e-commerce privée.",
   robots: {
     index: false,

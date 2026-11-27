@@ -352,7 +352,7 @@ export function OrderDetailClient({ storeSlug, orderNumber, initialOrder: provid
     <div className="space-y-6 pb-20 max-w-6xl mx-auto">
       {/* Toast Alert */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-[#111111] text-[#FAF8F5] px-4 py-2.5 text-xs font-semibold shadow-2xl flex items-center gap-2 animate-in fade-in">
+        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-[#1F3A26] text-[#FAF8F5] px-4 py-2.5 text-xs font-semibold shadow-2xl flex items-center gap-2 animate-in fade-in">
           <Check className="h-4 w-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
@@ -401,7 +401,7 @@ export function OrderDetailClient({ storeSlug, orderNumber, initialOrder: provid
               setIsFailureMode(false);
               setIsStatusModalOpen(true);
             }}
-            className="px-3.5 py-2 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black transition-all shadow-2xs cursor-pointer"
+            className="px-3.5 py-2 rounded-xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold hover:bg-[#162B1C] transition-all shadow-2xs cursor-pointer"
           >
             Changer le statut
           </button>
@@ -438,7 +438,7 @@ export function OrderDetailClient({ storeSlug, orderNumber, initialOrder: provid
                 customerName: order.customerName,
                 orderNumber: order.orderNumber,
                 productName: order.items?.[0]?.productName || (order.items?.[0] as any)?.name || "votre produit",
-                storeName: "Novika",
+                storeName: "Kelio",
               })}
               target="_blank"
               rel="noopener noreferrer"
@@ -521,7 +521,7 @@ export function OrderDetailClient({ storeSlug, orderNumber, initialOrder: provid
             <div className="relative pl-6 space-y-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-black/[0.08]">
               {history.map((entry, idx) => (
                 <div key={idx} className="relative">
-                  <div className="absolute -left-6 top-1 h-3 w-3 rounded-full border-2 border-[#FAF8F5] bg-[#111111]" />
+                  <div className="absolute -left-6 top-1 h-3 w-3 rounded-full border-2 border-[#FAF8F5] bg-[#1F3A26]" />
                   <div className="bg-white border border-black/[0.06] rounded-xl p-3 shadow-2xs text-xs space-y-1">
                     <div className="flex items-center justify-between gap-2">
                       <StatusBadge status={entry.status} size="sm" />
@@ -942,7 +942,7 @@ export function OrderDetailClient({ storeSlug, orderNumber, initialOrder: provid
                           className={cn(
                             "py-1.5 px-2 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all cursor-pointer",
                             deliveryProofType === item.id
-                              ? "bg-[#111111] text-[#FAF8F5] border-[#111111] shadow-2xs"
+                              ? "bg-[#1F3A26] text-[#FAF8F5] border-[#111111] shadow-2xs"
                               : "bg-white text-emerald-950 border-emerald-200 hover:bg-emerald-100/50"
                           )}
                         >
@@ -1078,7 +1078,7 @@ export function OrderDetailClient({ storeSlug, orderNumber, initialOrder: provid
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-[#111111] text-xs font-bold text-[#FAF8F5] hover:bg-black shadow-2xs"
+                  className="px-4 py-2 rounded-xl bg-[#1F3A26] text-xs font-bold text-[#FAF8F5] hover:bg-[#162B1C] shadow-2xs"
                 >
                   Mettre à jour
                 </button>
@@ -1163,7 +1163,7 @@ export function OrderDetailClient({ storeSlug, orderNumber, initialOrder: provid
                   href={trackingUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2 rounded-xl border border-black/[0.08] bg-white text-[#111111] hover:bg-black hover:text-[#FAF8F5] transition-all"
+                  className="p-2 rounded-xl border border-black/[0.08] bg-white text-[#111111] hover:bg-[#162B1C] hover:text-[#FAF8F5] transition-all"
                   title="Ouvrir la page de suivi client"
                 >
                   <ExternalLink className="h-4 w-4" />
@@ -1340,7 +1340,7 @@ export function OrderDetailClient({ storeSlug, orderNumber, initialOrder: provid
                   customerName: order.customerName,
                   orderNumber: order.orderNumber,
                   productName: order.items?.[0]?.productName || (order.items?.[0] as any)?.name || "votre commande",
-                  storeName: "Novika",
+                  storeName: "Kelio",
                 })}
                 target="_blank"
                 rel="noopener noreferrer"

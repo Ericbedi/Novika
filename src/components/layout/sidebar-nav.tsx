@@ -278,7 +278,7 @@ export function SidebarNav({
                     "flex items-center justify-between rounded-xl transition-all group min-w-0 pr-1.5",
                     itemHeightClass,
                     isActive
-                      ? "bg-[#111111] text-[#FAF8F5] shadow-xs font-bold"
+                      ? "bg-[#1F3A26] text-[#FAF8F5] shadow-xs font-bold"
                       : "text-[#111111] hover:bg-black/[0.04]"
                   )}
                 >
@@ -326,7 +326,7 @@ export function SidebarNav({
                   "flex items-center gap-2.5 px-2.5 rounded-xl text-[14px] font-semibold transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/[0.15] min-w-0",
                   itemHeightClass,
                   isActive
-                    ? "bg-[#111111] text-[#FAF8F5] shadow-xs font-bold"
+                    ? "bg-[#1F3A26] text-[#FAF8F5] shadow-xs font-bold"
                     : "text-[#111111] hover:bg-black/[0.04]"
                 )}
               >
@@ -402,7 +402,7 @@ export function SidebarNav({
                             "flex items-center justify-between gap-2 px-2.5 rounded-xl text-[13px] font-medium transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/[0.15] min-w-0",
                             itemHeightClass,
                             isActive
-                              ? "bg-[#111111] text-[#FAF8F5] font-bold shadow-2xs"
+                              ? "bg-[#1F3A26] text-[#FAF8F5] font-bold shadow-2xs"
                               : "text-[#333330] hover:bg-black/[0.04] hover:text-[#111111]"
                           )}
                         >

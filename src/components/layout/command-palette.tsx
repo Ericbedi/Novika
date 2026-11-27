@@ -221,7 +221,7 @@ export function CommandPalette({ isOpen, onClose, basePath }: CommandPaletteProp
                           className={cn(
                             "w-full flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs transition-colors cursor-pointer",
                             isHighlighted
-                              ? "bg-[#111111] text-[#FAF8F5]"
+                              ? "bg-[#1F3A26] text-[#FAF8F5]"
                               : "hover:bg-black/[0.04] text-[#222220]"
                           )}
                         >
@@ -268,7 +268,7 @@ export function CommandPalette({ isOpen, onClose, basePath }: CommandPaletteProp
                           className={cn(
                             "w-full flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs transition-colors cursor-pointer",
                             isHighlighted
-                              ? "bg-[#111111] text-[#FAF8F5]"
+                              ? "bg-[#1F3A26] text-[#FAF8F5]"
                               : "hover:bg-black/[0.04] text-[#222220]"
                           )}
                         >
@@ -315,7 +315,7 @@ export function CommandPalette({ isOpen, onClose, basePath }: CommandPaletteProp
                           className={cn(
                             "w-full flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs transition-colors cursor-pointer",
                             isHighlighted
-                              ? "bg-[#111111] text-[#FAF8F5]"
+                              ? "bg-[#1F3A26] text-[#FAF8F5]"
                               : "hover:bg-black/[0.04] text-[#222220]"
                           )}
                         >

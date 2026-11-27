@@ -16,7 +16,7 @@ interface FooterSectionProps {
 export function FooterSection({
   settings,
   palette,
-  storeName = "Novika",
+  storeName = "Kelio",
 }: FooterSectionProps) {
   const {
     aboutText,
@@ -109,7 +109,7 @@ export function FooterSection({
         <div className="pt-8 border-t border-black/[0.08] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-medium opacity-60 text-center sm:text-left">
           <p>{copyrightText || `© ${new Date().getFullYear()} ${storeName}. Tous droits réservés.`}</p>
           <p className="text-[11px]">
-            Propulsé par <span className="font-bold">Novika</span> — E-commerce COD en Afrique
+            Propulsé par <span className="font-bold">Kelio</span> — E-commerce COD en Afrique
           </p>
         </div>
       </div>

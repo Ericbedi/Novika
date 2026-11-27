@@ -150,7 +150,7 @@ export async function reverseDomains(ip: string): Promise<string[]> {
   return out;
 }
 
-/** Vérifie si un domaine pointe vers l'hébergement Novika (Vercel). */
+/** Vérifie si un domaine pointe vers l'hébergement Kelio (Vercel). */
 export function checkNovikaDns(rec: DnsRecords): { ok: boolean; detail: string } {
   const VERCEL_A = "76.76.21.21";
   if (rec.a.includes(VERCEL_A)) return { ok: true, detail: `Enregistrement A correct (${VERCEL_A}).` };

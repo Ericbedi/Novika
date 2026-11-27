@@ -101,7 +101,7 @@ export function BetaManagementHub() {
       {toastMessage && (
         <div
           role="status"
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold shadow-lg animate-in fade-in"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold shadow-lg animate-in fade-in"
         >
           <CheckCircle2 className="h-4 w-4 text-[#22C55E]" />
           <span>{toastMessage}</span>
@@ -307,7 +307,7 @@ export function BetaManagementHub() {
                     <button
                       type="button"
                       onClick={() => handleApprove(req.id)}
-                      className="px-4 py-1.5 rounded-lg bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black cursor-pointer shadow-2xs flex items-center gap-1.5"
+                      className="px-4 py-1.5 rounded-lg bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold hover:bg-[#162B1C] cursor-pointer shadow-2xs flex items-center gap-1.5"
                     >
                       <CheckCircle2 className="h-3.5 w-3.5 text-[#22C55E]" />
                       <span>Approuver & Inviter</span>
@@ -530,7 +530,7 @@ export function BetaManagementHub() {
                     showToast(`✓ ${batchReport.summary.validCount} invitations envoyées avec succès.`);
                     setBatchRawText("");
                   }}
-                  className="px-5 py-2.5 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black disabled:opacity-40 cursor-pointer shadow-sm"
+                  className="px-5 py-2.5 rounded-xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold hover:bg-[#162B1C] disabled:opacity-40 cursor-pointer shadow-sm"
                 >
                   Confirmer et envoyer {batchReport.summary.validCount} invitations
                 </button>

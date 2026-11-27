@@ -87,7 +87,7 @@ export function MainPerformanceChart({ data, className }: MainPerformanceChartPr
             className={cn(
               "px-3 py-1.5 text-xs font-semibold rounded-lg transition-all",
               activeTab === "sales"
-                ? "bg-[#111111] text-[#FAF8F5] font-extrabold shadow-2xs"
+                ? "bg-[#1F3A26] text-[#FAF8F5] font-extrabold shadow-2xs"
                 : "text-[#666660] hover:text-[#111111]"
             )}
           >
@@ -99,7 +99,7 @@ export function MainPerformanceChart({ data, className }: MainPerformanceChartPr
             className={cn(
               "px-3 py-1.5 text-xs font-semibold rounded-lg transition-all",
               activeTab === "volume"
-                ? "bg-[#111111] text-[#FAF8F5] font-extrabold shadow-2xs"
+                ? "bg-[#1F3A26] text-[#FAF8F5] font-extrabold shadow-2xs"
                 : "text-[#666660] hover:text-[#111111]"
             )}
           >
@@ -111,7 +111,7 @@ export function MainPerformanceChart({ data, className }: MainPerformanceChartPr
             className={cn(
               "px-3 py-1.5 text-xs font-semibold rounded-lg transition-all",
               activeTab === "all"
-                ? "bg-[#111111] text-[#FAF8F5] font-extrabold shadow-2xs"
+                ? "bg-[#1F3A26] text-[#FAF8F5] font-extrabold shadow-2xs"
                 : "text-[#666660] hover:text-[#111111]"
             )}
           >
@@ -233,7 +233,7 @@ export function MainPerformanceChart({ data, className }: MainPerformanceChartPr
         {(activeTab === "sales" || activeTab === "all") && (
           <>
             <div className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded-full bg-[#111111]" />
+              <span className="h-3 w-3 rounded-full bg-[#1F3A26]" />
               <span className="font-bold text-[#111111]">
                 CA Livré Encaissé (espèces)
               </span>

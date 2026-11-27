@@ -511,7 +511,7 @@ export function DateRangePicker({
                   "h-9 w-9 rounded-full text-xs font-medium flex items-center justify-center transition-all cursor-pointer relative",
                   isInRange && "bg-black/[0.06] text-[#111111] rounded-none",
                   (isStart || isEnd) &&
-                    "bg-[#111111] text-[#FAF8F5] font-bold shadow-xs rounded-full z-10",
+                    "bg-[#1F3A26] text-[#FAF8F5] font-bold shadow-xs rounded-full z-10",
                   !isInRange && !isStart && !isEnd && !isFuture && "hover:bg-black/[0.06] text-[#111111]",
                   isFuture && "opacity-20 cursor-not-allowed",
                   isToday && !isStart && !isEnd && "ring-1 ring-black/40 font-bold"
@@ -598,7 +598,7 @@ export function DateRangePicker({
                         className={cn(
                           "px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap shrink-0 transition-all",
                           isSelected
-                            ? "bg-[#111111] text-[#FAF8F5] font-bold shadow-xs"
+                            ? "bg-[#1F3A26] text-[#FAF8F5] font-bold shadow-xs"
                             : "bg-white border border-black/[0.08] text-[#111111]"
                         )}
                       >
@@ -674,7 +674,7 @@ export function DateRangePicker({
                   <button
                     type="button"
                     onClick={handleApplyCustom}
-                    className="h-11 flex-1 rounded-xl bg-[#111111] text-xs font-bold text-[#FAF8F5] flex items-center justify-center gap-1.5 shadow-xs"
+                    className="h-11 flex-1 rounded-xl bg-[#1F3A26] text-xs font-bold text-[#FAF8F5] flex items-center justify-center gap-1.5 shadow-xs"
                   >
                     <Check className="h-4 w-4" />
                     <span>Appliquer</span>
@@ -726,7 +726,7 @@ export function DateRangePicker({
                           className={cn(
                             "w-full h-9 flex items-center px-3 rounded-full text-xs font-semibold cursor-pointer transition-all text-left",
                             isSelected
-                              ? "bg-[#111111] text-[#FAF8F5] font-bold shadow-xs"
+                              ? "bg-[#1F3A26] text-[#FAF8F5] font-bold shadow-xs"
                               : "text-[#111111] hover:bg-black/[0.04]"
                           )}
                         >
@@ -825,7 +825,7 @@ export function DateRangePicker({
                     onClick={() => setIsCompareEnabled(!isCompareEnabled)}
                     className={cn(
                       "w-9 h-5 rounded-full transition-colors p-0.5 cursor-pointer relative shrink-0",
-                      isCompareEnabled ? "bg-[#111111]" : "bg-black/20"
+                      isCompareEnabled ? "bg-[#1F3A26]" : "bg-black/20"
                     )}
                     role="switch"
                     aria-checked={isCompareEnabled}
@@ -871,7 +871,7 @@ export function DateRangePicker({
                       "h-11 px-5 rounded-[14px] text-xs font-bold text-[#FAF8F5] flex items-center gap-2 transition-all shadow-xs",
                       inputError
                         ? "bg-black/20 cursor-not-allowed opacity-50"
-                        : "bg-[#111111] hover:bg-black cursor-pointer"
+                        : "bg-[#1F3A26] hover:bg-[#162B1C] cursor-pointer"
                     )}
                   >
                     <Check className="h-4 w-4" />

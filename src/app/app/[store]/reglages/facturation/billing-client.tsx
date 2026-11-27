@@ -62,7 +62,7 @@ export function BillingClient({ storeSlug }: BillingClientProps) {
     <div className="space-y-8 pb-20 max-w-6xl mx-auto">
       {/* Toast Alert */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-[#111111] text-[#FAF8F5] px-4 py-2.5 text-xs font-semibold shadow-2xl flex items-center gap-2 animate-in fade-in">
+        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-[#1F3A26] text-[#FAF8F5] px-4 py-2.5 text-xs font-semibold shadow-2xl flex items-center gap-2 animate-in fade-in">
           <Check className="h-4 w-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
@@ -220,7 +220,7 @@ export function BillingClient({ storeSlug }: BillingClientProps) {
             className={cn(
               "px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer",
               billingCycle === "monthly"
-                ? "bg-[#111111] text-[#FAF8F5] shadow-xs"
+                ? "bg-[#1F3A26] text-[#FAF8F5] shadow-xs"
                 : "text-[#666660] hover:text-[#111111]"
             )}
           >
@@ -232,7 +232,7 @@ export function BillingClient({ storeSlug }: BillingClientProps) {
             className={cn(
               "px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer",
               billingCycle === "yearly"
-                ? "bg-[#111111] text-[#FAF8F5] shadow-xs"
+                ? "bg-[#1F3A26] text-[#FAF8F5] shadow-xs"
                 : "text-[#666660] hover:text-[#111111]"
             )}
           >
@@ -261,7 +261,7 @@ export function BillingClient({ storeSlug }: BillingClientProps) {
               )}
             >
               {plan.isPopular && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#111111] text-[#FAF8F5] shadow-sm">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#1F3A26] text-[#FAF8F5] shadow-sm">
                   Recommandé Volume
                 </span>
               )}
@@ -307,7 +307,7 @@ export function BillingClient({ storeSlug }: BillingClientProps) {
                     isCurrent
                       ? "bg-black/5 text-[#888880] cursor-default border border-black/[0.06]"
                       : plan.isPopular
-                      ? "bg-[#111111] text-[#FAF8F5] hover:bg-black"
+                      ? "bg-[#1F3A26] text-[#FAF8F5] hover:bg-[#162B1C]"
                       : "bg-white text-[#111111] border border-black/[0.1] hover:bg-[#FAF8F5]"
                   )}
                 >
@@ -419,7 +419,7 @@ export function BillingClient({ storeSlug }: BillingClientProps) {
                 <button
                   type="submit"
                   disabled={isPaying}
-                  className="px-5 py-2.5 rounded-xl bg-[#111111] text-xs font-bold text-[#FAF8F5] hover:bg-black transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-[#1F3A26] text-xs font-bold text-[#FAF8F5] hover:bg-[#162B1C] transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
                 >
                   {isPaying ? (
                     <span>Validation en cours...</span>

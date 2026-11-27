@@ -84,15 +84,15 @@ export function ProductEditContainer({
         <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-left text-xs text-amber-900 max-w-lg mx-auto flex items-start gap-3">
           <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
           <div>
-            <strong className="font-bold block text-amber-950">Règle de sécurité Novika :</strong>
-            Pour éviter toute corruption de commande ou écrasement accidentel, Novika n'affiche jamais un autre produit par défaut.
+            <strong className="font-bold block text-amber-950">Règle de sécurité Kelio :</strong>
+            Pour éviter toute corruption de commande ou écrasement accidentel, Kelio n'affiche jamais un autre produit par défaut.
           </div>
         </div>
 
         <div>
           <Link
             href={`/app/${storeSlug}/produits`}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-all shadow-sm"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Retour au catalogue des produits</span>

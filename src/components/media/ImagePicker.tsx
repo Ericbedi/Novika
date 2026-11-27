@@ -251,7 +251,7 @@ export function ImagePicker({
             </div>
             <div className="w-full h-2 rounded-full bg-[#E6E0D4] overflow-hidden">
               <div
-                className="h-full bg-[#111111] transition-all duration-200"
+                className="h-full bg-[#1F3A26] transition-all duration-200"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -318,7 +318,7 @@ export function ImagePicker({
                     e.stopPropagation();
                     fileInputRef.current?.click();
                   }}
-                  className="px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-colors"
+                  className="px-4 py-2 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-colors"
                 >
                   Choisir un fichier
                 </button>
@@ -378,7 +378,7 @@ export function ImagePicker({
                         className="w-full h-full object-cover"
                       />
                       {isSelected && (
-                        <div className="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-[#111111] text-white flex items-center justify-center">
+                        <div className="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-[#1F3A26] text-white flex items-center justify-center">
                           <Check className="h-3 w-3" />
                         </div>
                       )}
@@ -392,7 +392,7 @@ export function ImagePicker({
                 type="button"
                 disabled={!selectedLibraryItem}
                 onClick={handleSelectFromLibrary}
-                className="px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-colors disabled:opacity-50"
+                className="px-4 py-2 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-colors disabled:opacity-50"
               >
                 Insérer l'image sélectionnée
               </button>
@@ -404,7 +404,7 @@ export function ImagePicker({
         {activeTab === "url" && (
           <form onSubmit={handleUrlSubmit} className="space-y-4">
             <div className="p-3 rounded-2xl bg-[#FAF8F5] border border-[#E6E0D4] text-[11px] text-[#7A7A7A] leading-relaxed">
-              <strong>Sécurité Novika :</strong> L'image sera téléchargée et enregistrée sur nos serveurs sécurisés. Aucun lien externe direct n'est conservé.
+              <strong>Sécurité Kelio :</strong> L'image sera téléchargée et enregistrée sur nos serveurs sécurisés. Aucun lien externe direct n'est conservé.
             </div>
 
             <div>
@@ -425,7 +425,7 @@ export function ImagePicker({
               <button
                 type="submit"
                 disabled={isUploading || !externalUrl.trim()}
-                className="px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-colors disabled:opacity-50"
+                className="px-4 py-2 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-colors disabled:opacity-50"
               >
                 {isUploading ? "Copie sécurisée..." : "Télécharger et insérer"}
               </button>

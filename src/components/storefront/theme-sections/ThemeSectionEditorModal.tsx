@@ -175,7 +175,7 @@ function ThemeSectionEditorContent({
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-black uppercase tracking-wider text-amber-900 bg-amber-200 px-2 py-0.5 rounded-full">
-                Édition Thème Novika Simple
+                Édition Thème Kelio Simple
               </span>
               <span className="text-[10px] font-mono opacity-50">{section.type}</span>
             </div>
@@ -204,7 +204,7 @@ function ThemeSectionEditorContent({
           {restoredNotification && (
             <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold flex items-center gap-2 animate-in fade-in">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Contenu d'origine du modèle « Novika Simple » restauré !</span>
+              <span>Contenu d'origine du modèle « Kelio Simple » restauré !</span>
             </div>
           )}
 
@@ -638,7 +638,7 @@ function ThemeSectionEditorContent({
                 />
               </div>
               <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 space-y-1">
-                <p className="font-bold">Intégrité & Transparence Novika</p>
+                <p className="font-bold">Intégrité & Transparence Kelio</p>
                 <p className="text-[11px] leading-relaxed">
                   Cette section affiche automatiquement les retours d'expérience et notes réelles des commandes livrées par vos livreurs ou agences.
                 </p>

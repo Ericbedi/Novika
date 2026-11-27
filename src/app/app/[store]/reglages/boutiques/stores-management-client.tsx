@@ -142,7 +142,7 @@ export function StoresManagementClient({ storeSlug }: StoresManagementClientProp
           <div className="pt-2">
             <Link
               href={`/app/${storeSlug}`}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold hover:bg-[#162B1C] transition-colors"
             >
               <span>Retour au tableau de bord</span>
               <ArrowRight className="h-3.5 w-3.5" />
@@ -308,7 +308,7 @@ export function StoresManagementClient({ storeSlug }: StoresManagementClientProp
       {successMessage && (
         <div
           role="status"
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-[#111111] text-[#FAF8F5] text-xs font-bold shadow-2xl animate-in fade-in slide-in-from-bottom-3 duration-200 border border-white/10"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold shadow-2xl animate-in fade-in slide-in-from-bottom-3 duration-200 border border-white/10"
         >
           <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
           <span>{successMessage}</span>
@@ -406,7 +406,7 @@ export function StoresManagementClient({ storeSlug }: StoresManagementClientProp
               className={cn(
                 "px-3 py-1.5 text-xs font-bold rounded-xl transition-colors cursor-pointer",
                 filterStatus === tab.id
-                  ? "bg-[#111111] text-[#FAF8F5]"
+                  ? "bg-[#1F3A26] text-[#FAF8F5]"
                   : "bg-[#FAF8F5] text-[#666660] hover:text-[#111111]"
               )}
             >
@@ -476,7 +476,7 @@ export function StoresManagementClient({ storeSlug }: StoresManagementClientProp
                         <CountryFlag code={s.country} width={20} height={14} />
                         <span>{s.name}</span>
                         {s.id === activeStore.id && (
-                          <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-[#111111] text-white">Active</span>
+                          <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-[#1F3A26] text-white">Active</span>
                         )}
                       </div>
                     </td>
@@ -564,7 +564,7 @@ export function StoresManagementClient({ storeSlug }: StoresManagementClientProp
                         )}
 
                         {isCurrentActive && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#111111] text-[#FAF8F5]">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#1F3A26] text-[#FAF8F5]">
                             Boutique Active
                           </span>
                         )}
@@ -824,7 +824,7 @@ export function StoresManagementClient({ storeSlug }: StoresManagementClientProp
               <button
                 type="button"
                 onClick={handleConfirmDuplicate}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-[#111111] text-[#FAF8F5] hover:bg-black shadow-xs cursor-pointer"
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-[#1F3A26] text-[#FAF8F5] hover:bg-[#162B1C] shadow-xs cursor-pointer"
               >
                 Confirmer la duplication
               </button>
@@ -872,7 +872,7 @@ export function StoresManagementClient({ storeSlug }: StoresManagementClientProp
               <button
                 type="button"
                 onClick={() => handleToggleArchive()}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-[#111111] text-[#FAF8F5] hover:bg-black shadow-xs cursor-pointer"
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-[#1F3A26] text-[#FAF8F5] hover:bg-[#162B1C] shadow-xs cursor-pointer"
               >
                 {archiveTarget.status === "archived" ? "Réactiver la boutique" : "Confirmer l'archivage"}
               </button>

@@ -299,7 +299,7 @@ export function LiveGlobeCard({
               <div
                 role="status"
                 aria-live="polite"
-                className="absolute bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-[#111111] text-[#FAF8F5] text-[10px] font-bold shadow-lg flex items-center gap-1.5 animate-bounce"
+                className="absolute bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-[#1F3A26] text-[#FAF8F5] text-[10px] font-bold shadow-lg flex items-center gap-1.5 animate-bounce"
               >
                 <Sparkles className="h-3 w-3 text-amber-400" />
                 <span>
@@ -389,7 +389,7 @@ export function LiveGlobeCard({
             <Link
               href={`/app/${storeSlug}/stats/live`}
               id="btn-open-live-view"
-              className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black transition-all shadow-xs group"
+              className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold hover:bg-[#162B1C] transition-all shadow-xs group"
             >
               <span>Ouvrir la vue en direct</span>
               <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />

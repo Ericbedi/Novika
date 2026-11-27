@@ -291,7 +291,7 @@ function AppShellInner({
             table: "orders",
           },
           (payload) => {
-            // Déclenche le son distinctif Novika (ordre d'encaissement COD)
+            // Déclenche le son distinctif Kelio (ordre d'encaissement COD)
             notificationSound.playOrderSound();
             console.log("[Supabase Realtime] Nouvelle commande reçue:", payload.new);
           }
@@ -464,7 +464,7 @@ function AppShellInner({
         },
       }}
     >
-      <div className="min-h-screen bg-[#F3EFE6] text-[#111111] flex selection:bg-[#111111] selection:text-[#FAF8F5]">
+      <div className="min-h-screen bg-[#F3EFE6] text-[#111111] flex selection:bg-[#1F3A26] selection:text-[#FAF8F5]">
         {/* ======================================================== */}
         {/* BOUTON FLOTTANT MOBILE (44px, zéro barre supérieure) */}
         {/* ======================================================== */}
@@ -489,7 +489,7 @@ function AppShellInner({
           )}
         >
           {/* ======================================================== */}
-          {/* EN-TÊTE SIMPLIFIÉ (56px, Contenu unique : Logo + Nom Novika, lien vers Accueil) */}
+          {/* EN-TÊTE SIMPLIFIÉ (56px, Contenu unique : Logo + Nom Kelio, lien vers Accueil) */}
           {/* ======================================================== */}
           <div id="sidebar-header" className="h-14 px-3 flex items-center shrink-0 border-b border-black/[0.08] min-w-0">
             <Link
@@ -552,7 +552,7 @@ function AppShellInner({
                     className={cn(
                       "flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-colors group",
                       pathname.includes("/reglages/boutiques")
-                        ? "bg-[#111111] text-[#FAF8F5]"
+                        ? "bg-[#1F3A26] text-[#FAF8F5]"
                         : "text-[#111111] hover:bg-black/[0.04]"
                     )}
                     title="Gérer mes boutiques (créer, dupliquer, archiver, supprimer)"
@@ -578,7 +578,7 @@ function AppShellInner({
                       "flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-colors group",
                       pathname === `${basePath}/reglages` ||
                         (pathname.startsWith(`${basePath}/reglages`) && !pathname.includes("/boutiques"))
-                        ? "bg-[#111111] text-[#FAF8F5]"
+                        ? "bg-[#1F3A26] text-[#FAF8F5]"
                         : "text-[#111111] hover:bg-black/[0.04]"
                     )}
                     title="Paramètres de la boutique"
@@ -608,7 +608,7 @@ function AppShellInner({
                     className={cn(
                       "p-1.5 rounded-lg transition-colors",
                       pathname.includes("/reglages/boutiques")
-                        ? "bg-[#111111] text-[#FAF8F5]"
+                        ? "bg-[#1F3A26] text-[#FAF8F5]"
                         : "text-[#666660] hover:text-[#111111] hover:bg-black/[0.04]"
                     )}
                   >
@@ -623,7 +623,7 @@ function AppShellInner({
                       "p-1.5 rounded-lg transition-colors",
                       pathname === `${basePath}/reglages` ||
                         (pathname.startsWith(`${basePath}/reglages`) && !pathname.includes("/boutiques"))
-                        ? "bg-[#111111] text-[#FAF8F5]"
+                        ? "bg-[#1F3A26] text-[#FAF8F5]"
                         : "text-[#666660] hover:text-[#111111] hover:bg-black/[0.04]"
                     )}
                   >
@@ -764,7 +764,7 @@ function AppShellInner({
                           className={cn(
                             "py-1 text-[9px] font-bold rounded-lg transition-colors text-center border truncate cursor-pointer",
                             activeRole === role
-                              ? "bg-[#111111] text-[#FAF8F5] font-extrabold border-[#111111] shadow-2xs"
+                              ? "bg-[#1F3A26] text-[#FAF8F5] font-extrabold border-[#111111] shadow-2xs"
                               : "bg-white text-[#555550] border-black/[0.08] hover:border-black/20"
                           )}
                         >
@@ -815,7 +815,7 @@ function AppShellInner({
                 )}
               >
                 <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <div className="h-7 w-7 rounded-full bg-[#111111] text-[#FAF8F5] flex items-center justify-center font-bold text-[10px] shadow-2xs shrink-0">
+                  <div className="h-7 w-7 rounded-full bg-[#1F3A26] text-[#FAF8F5] flex items-center justify-center font-bold text-[10px] shadow-2xs shrink-0">
                     {currentUser.initials}
                   </div>
                   {!isSidebarCollapsed && (
@@ -853,7 +853,7 @@ function AppShellInner({
             />
 
             <div id="mobile-sidebar-drawer" className="fixed inset-y-0 left-0 w-[275px] max-w-[85vw] bg-[#FAF8F5] border-r border-black/[0.1] shadow-2xl flex flex-col z-50 animate-in slide-in-from-left duration-200">
-              {/* Haut du tiroir mobile (même en-tête épuré Logo + Novika + bouton fermeture) */}
+              {/* Haut du tiroir mobile (même en-tête épuré Logo + Kelio + bouton fermeture) */}
               <div className="h-14 px-3.5 border-b border-black/[0.08] flex items-center justify-between shrink-0">
                 <Link
                   href={basePath}
@@ -985,7 +985,7 @@ function AppShellInner({
                   type="button"
                   id="btn-create-first-store"
                   onClick={() => router.push("/nouvelle-boutique")}
-                  className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-[#111111] hover:bg-black text-[#FAF8F5] text-xs font-bold transition-all shadow-md cursor-pointer active:scale-95"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-[#1F3A26] hover:bg-[#162B1C] text-[#FAF8F5] text-xs font-bold transition-all shadow-md cursor-pointer active:scale-95"
                 >
                   <Plus className="h-4 w-4" />
                   <span>Créer ma première boutique</span>

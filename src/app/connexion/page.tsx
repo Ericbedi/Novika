@@ -3,8 +3,8 @@ import { Suspense } from "react";
 import { LoginClient } from "./login-client";
 
 export const metadata: Metadata = {
-  title: "Connexion | Novika",
-  description: "Connectez-vous à votre espace vendeur Novika.",
+  title: "Connexion | Kelio",
+  description: "Connectez-vous à votre espace vendeur Kelio.",
 };
 
 export default function LoginPage() {

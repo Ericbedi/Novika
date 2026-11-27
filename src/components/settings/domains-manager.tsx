@@ -204,7 +204,7 @@ export function DomainsManager({ storeSlug, storeName = "Ma Boutique", role = "o
     <div className="space-y-6">
       {/* Toast */}
       {toastMsg && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-[#111111] text-[#FAF8F5] px-4 py-2.5 text-xs font-semibold shadow-2xl flex items-center gap-2">
+        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-[#1F3A26] text-[#FAF8F5] px-4 py-2.5 text-xs font-semibold shadow-2xl flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 text-emerald-400" />
           <span>{toastMsg}</span>
         </div>
@@ -236,7 +236,7 @@ export function DomainsManager({ storeSlug, storeName = "Ma Boutique", role = "o
             setErrorMsg(null);
             setIsAddModalOpen(true);
           }}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-all shadow-xs shrink-0"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-all shadow-xs shrink-0"
         >
           <Plus className="h-4 w-4" />
           <span>Ajouter un domaine</span>
@@ -248,7 +248,7 @@ export function DomainsManager({ storeSlug, storeName = "Ma Boutique", role = "o
         <ShieldCheck className="h-5 w-5 text-amber-700 shrink-0 mt-0.5" />
         <div className="text-xs space-y-1">
           <p className="font-bold text-[#111111]">
-            Isolation étanche de l'administration (Sécurité Novika)
+            Isolation étanche de l'administration (Sécurité Kelio)
           </p>
           <p className="text-[#666660] leading-relaxed">
             Vos domaines personnalisés servent <strong>uniquement la vitrine</strong> de votre boutique. Aucune page d'administration ni interface de commande n'y est accessible. Tout appel non autorisé renvoie une erreur 404 neutre sans révéler la plateforme.
@@ -256,12 +256,12 @@ export function DomainsManager({ storeSlug, storeName = "Ma Boutique", role = "o
         </div>
       </div>
 
-      {/* Adresse de secours Novika */}
+      {/* Adresse de secours Kelio */}
       <div className="p-4 rounded-2xl bg-white border border-[#E6E0D4] space-y-2">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Server className="h-4 w-4 text-[#666660]" />
-            <span className="text-xs font-bold text-[#111111]">Adresse par défaut Novika (Secours)</span>
+            <span className="text-xs font-bold text-[#111111]">Adresse par défaut Kelio (Secours)</span>
           </div>
           {primaryDomain && (
             <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-black/5 text-[#666660]">
@@ -313,7 +313,7 @@ export function DomainsManager({ storeSlug, storeName = "Ma Boutique", role = "o
             <div className="space-y-1">
               <p className="text-sm font-bold text-[#111111]">Aucun domaine personnalisé</p>
               <p className="text-xs text-[#666660] max-w-md mx-auto">
-                Votre boutique utilise actuellement l'adresse de secours Novika. Ajoutez votre propre domaine pour renforcer votre crédibilité et votre image de marque auprès de vos clients.
+                Votre boutique utilise actuellement l'adresse de secours Kelio. Ajoutez votre propre domaine pour renforcer votre crédibilité et votre image de marque auprès de vos clients.
               </p>
             </div>
             <button
@@ -324,7 +324,7 @@ export function DomainsManager({ storeSlug, storeName = "Ma Boutique", role = "o
                 setIsPrimaryChecked(true);
                 setIsAddModalOpen(true);
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-all"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-all"
             >
               <Plus className="h-3.5 w-3.5" />
               <span>Connecter un domaine</span>
@@ -353,7 +353,7 @@ export function DomainsManager({ storeSlug, storeName = "Ma Boutique", role = "o
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-mono text-sm font-black text-[#111111]">{dom.domain}</span>
                           {dom.isPrimary ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#111111] text-white">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#1F3A26] text-white">
                               <Star className="h-3 w-3 fill-current" />
                               Principal
                             </span>
@@ -598,7 +598,7 @@ export function DomainsManager({ storeSlug, storeName = "Ma Boutique", role = "o
                     <button
                       type="submit"
                       disabled={isSubmitting || !domainInput.trim()}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-all disabled:opacity-50"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-all disabled:opacity-50"
                     >
                       {isSubmitting ? (
                         <>
@@ -661,7 +661,7 @@ export function DomainsManager({ storeSlug, storeName = "Ma Boutique", role = "o
                     <button
                       type="button"
                       onClick={() => setIsAddModalOpen(false)}
-                      className="px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-all"
+                      className="px-4 py-2 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-all"
                     >
                       Terminer & Fermer
                     </button>

@@ -45,7 +45,7 @@ export function PreviewDeviceSelector({
     if (onOpenNewTab) {
       onOpenNewTab();
     } else if (previewUrl) {
-      openInNewWindowAtSize(previewUrl, width, height, "Aperçu Novika");
+      openInNewWindowAtSize(previewUrl, width, height, "Aperçu Kelio");
     }
   };
 

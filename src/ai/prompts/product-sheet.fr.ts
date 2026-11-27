@@ -1,5 +1,5 @@
 /**
- * Modèle officiel et source unique de rédaction de fiches produits pour Novika (Prompt 07).
+ * Modèle officiel et source unique de rédaction de fiches produits pour Kelio (Prompt 07).
  * Ne pas altérer la structure ni les consignes de copywriting.
  */
 
@@ -90,7 +90,7 @@ export function buildProductSheetUserPrompt(data: ProductSheetInputData): string
   return `Voici les DONNÉES FACTUELLES du produit fournies par l'administrateur. Rédige la fiche produit en respectant rigoureusement les consignes déontologiques :
 
 - Nom du produit : ${data.productName}
-- Marque / Boutique : ${data.brandName || "Novika Boutique"}
+- Marque / Boutique : ${data.brandName || "Kelio Boutique"}
 - Catégorie : ${data.category || "Générale"}
 - Prix de vente : ${data.sellingPrice} ${data.currency || "FCFA"}
 - Prix barré de référence : ${data.comparePrice ? `${data.comparePrice} ${data.currency || "FCFA"}` : "Non spécifié"}

@@ -1,4 +1,4 @@
-// Source unique des permissions Novika
+// Source unique des permissions Kelio
 // Définit les droits d'accès : ressources × actions × rôles × condition de périmètre
 
 import { UserRole } from "@/server/data/types";
@@ -31,7 +31,7 @@ export interface PermissionRule {
   notes?: string;
 }
 
-// Matrice d'accès officielle Novika
+// Matrice d'accès officielle Kelio
 export const PERMISSIONS_MATRIX: PermissionRule[] = [
   // Dashboard
   { resource: "dashboard", role: "owner", level: "full", allowedActions: ["view", "export"] },

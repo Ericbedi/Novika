@@ -1,5 +1,5 @@
 /**
- * Service d'envoi d'e-mails pour Novika (Prompt 18 & Prompt 17-O/2FA)
+ * Service d'envoi d'e-mails pour Kelio (Prompt 18 & Prompt 17-O/2FA)
  * 
  * Supporte :
  * 1. Resend (si RESEND_API_KEY configuré) via l'API REST officielle
@@ -39,7 +39,7 @@ export async function send2FAEmail(to: string, code: string): Promise<EmailSendR
   const resendApiKey = process.env.RESEND_API_KEY;
   if (resendApiKey && resendApiKey.trim()) {
     try {
-      const fromEmail = process.env.EMAIL_FROM || "Novika Sécurité <securite@novika.africa>";
+      const fromEmail = process.env.EMAIL_FROM || "Kelio Sécurité <securite@novika.africa>";
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
@@ -49,18 +49,18 @@ export async function send2FAEmail(to: string, code: string): Promise<EmailSendR
         body: JSON.stringify({
           from: fromEmail,
           to: [normalizedEmail],
-          subject: `Votre code de validation Novika : ${code}`,
+          subject: `Votre code de validation Kelio : ${code}`,
           html: `
             <div style="font-family: Arial, sans-serif; background-color: #FAF8F5; padding: 32px; border-radius: 16px; max-width: 500px; margin: auto;">
-              <h1 style="color: #111; font-size: 20px; font-weight: 800; margin-bottom: 8px;">Vérification de sécurité Novika</h1>
+              <h1 style="color: #111; font-size: 20px; font-weight: 800; margin-bottom: 8px;">Vérification de sécurité Kelio</h1>
               <p style="color: #555; font-size: 14px; line-height: 1.5;">Bonjour,</p>
-              <p style="color: #555; font-size: 14px; line-height: 1.5;">Votre code de sécurité à 6 chiffres pour accéder à votre espace Novika est :</p>
+              <p style="color: #555; font-size: 14px; line-height: 1.5;">Votre code de sécurité à 6 chiffres pour accéder à votre espace Kelio est :</p>
               <div style="background-color: #ffffff; border: 1px solid #E6E0D4; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
                 <span style="font-size: 32px; font-weight: 900; letter-spacing: 6px; color: #111;">${code}</span>
               </div>
               <p style="color: #888; font-size: 12px; line-height: 1.4;">Ce code est valable pendant <strong>10 minutes</strong>. Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail.</p>
               <hr style="border: none; border-top: 1px solid #E6E0D4; margin: 24px 0;" />
-              <p style="color: #999; font-size: 11px;">Plateforme Novika · Gestion e-commerce privée</p>
+              <p style="color: #999; font-size: 11px;">Plateforme Kelio · Gestion e-commerce privée</p>
             </div>
           `,
         }),
@@ -113,17 +113,17 @@ export async function send2FAEmail(to: string, code: string): Promise<EmailSendR
         },
       });
 
-      const fromAddress = process.env.EMAIL_FROM || `Novika Sécurité <${smtpUser}>`;
+      const fromAddress = process.env.EMAIL_FROM || `Kelio Sécurité <${smtpUser}>`;
       const info = await transporter.sendMail({
         from: fromAddress,
         to: normalizedEmail,
-        subject: `Votre code de validation Novika : ${code}`,
-        text: `Bonjour,\n\nVotre code de sécurité Novika est : ${code}\nCe code est valable 10 minutes.\n\nNovika Plateforme`,
+        subject: `Votre code de validation Kelio : ${code}`,
+        text: `Bonjour,\n\nVotre code de sécurité Kelio est : ${code}\nCe code est valable 10 minutes.\n\nNovika Plateforme`,
         html: `
           <div style="font-family: Arial, sans-serif; background-color: #FAF8F5; padding: 32px; border-radius: 16px; max-width: 500px; margin: auto;">
-            <h1 style="color: #111; font-size: 20px; font-weight: 800; margin-bottom: 8px;">Vérification de sécurité Novika</h1>
+            <h1 style="color: #111; font-size: 20px; font-weight: 800; margin-bottom: 8px;">Vérification de sécurité Kelio</h1>
             <p style="color: #555; font-size: 14px; line-height: 1.5;">Bonjour,</p>
-            <p style="color: #555; font-size: 14px; line-height: 1.5;">Votre code de sécurité à 6 chiffres pour accéder à votre espace Novika est :</p>
+            <p style="color: #555; font-size: 14px; line-height: 1.5;">Votre code de sécurité à 6 chiffres pour accéder à votre espace Kelio est :</p>
             <div style="background-color: #ffffff; border: 1px solid #E6E0D4; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
               <span style="font-size: 32px; font-weight: 900; letter-spacing: 6px; color: #111;">${code}</span>
             </div>

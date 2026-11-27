@@ -1,7 +1,7 @@
 import { UserRole } from "@/server/data/types";
 
 /**
- * Configuration des espaces par rôle Novika (Prompt 06-L)
+ * Configuration des espaces par rôle Kelio (Prompt 06-L)
  * Définit la redirection par défaut pour chaque rôle et le périmètre d'accès autorisé.
  */
 

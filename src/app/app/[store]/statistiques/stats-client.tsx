@@ -161,7 +161,7 @@ export function StatsClient({ storeSlug }: StatsClientProps) {
             className={cn(
               "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
               activeTab === "sales"
-                ? "bg-[#111111] text-[#FAF8F5] shadow-xs"
+                ? "bg-[#1F3A26] text-[#FAF8F5] shadow-xs"
                 : "text-[#666660] hover:text-[#111111]"
             )}
           >
@@ -174,7 +174,7 @@ export function StatsClient({ storeSlug }: StatsClientProps) {
             className={cn(
               "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
               activeTab === "closing"
-                ? "bg-[#111111] text-[#FAF8F5] shadow-xs"
+                ? "bg-[#1F3A26] text-[#FAF8F5] shadow-xs"
                 : "text-[#666660] hover:text-[#111111]"
             )}
           >
@@ -269,7 +269,7 @@ export function StatsClient({ storeSlug }: StatsClientProps) {
                     </div>
                     <div className="h-2 w-full rounded-full bg-black/[0.06] overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-[#111111] transition-all"
+                        className="h-full rounded-full bg-[#1F3A26] transition-all"
                         style={{ width: `${cat.percentage}%` }}
                       />
                     </div>
@@ -390,7 +390,7 @@ export function StatsClient({ storeSlug }: StatsClientProps) {
                 )}
 
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-[#111111] text-white flex items-center justify-center font-bold text-sm">
+                  <div className="h-10 w-10 rounded-xl bg-[#1F3A26] text-white flex items-center justify-center font-bold text-sm">
                     {closer.closerName.charAt(0)}
                   </div>
                   <div>

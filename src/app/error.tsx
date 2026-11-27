@@ -154,7 +154,7 @@ export default function GlobalError({
               </button>
             </div>
             <p className="text-[10px] text-[#888880] leading-tight">
-              Transmettez ce code à l&apos;équipe Novika pour un diagnostic immédiat.
+              Transmettez ce code à l&apos;équipe Kelio pour un diagnostic immédiat.
             </p>
           </div>
 
@@ -229,7 +229,7 @@ export default function GlobalError({
         </div>
 
         <p className="text-[11px] text-[#888880]">
-          Plateforme Novika • Assistance & Monitoring automatique
+          Plateforme Kelio • Assistance & Monitoring automatique
         </p>
       </div>
     </main>

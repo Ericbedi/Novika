@@ -76,7 +76,7 @@ export function InitialsAvatar({
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-center rounded-full bg-[#111111] font-bold text-[#FAF8F5] ring-2 ring-white shadow-2xs",
+        "flex shrink-0 items-center justify-center rounded-full bg-[#1F3A26] font-bold text-[#FAF8F5] ring-2 ring-white shadow-2xs",
         sizeClasses[size],
         className
       )}

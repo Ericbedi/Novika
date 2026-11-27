@@ -139,7 +139,7 @@ export function TrackingClient({ token, initialOrder }: TrackingClientProps) {
         <footer className="w-full max-w-md mx-auto pt-8 pb-4 text-center text-xs text-[#888880]">
           <p className="flex items-center justify-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-            Suivi sécurisé Novika · Confidentialité garantie
+            Suivi sécurisé Kelio · Confidentialité garantie
           </p>
         </footer>
       </main>
@@ -161,7 +161,7 @@ export function TrackingClient({ token, initialOrder }: TrackingClientProps) {
     <main className="min-h-screen bg-[#FAF8F5] text-[#111111] p-3 sm:p-6 font-sans antialiased">
       <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6">
 
-        {/* 1. En-tête : Marque de la boutique (Prompt 05-T : Marque boutique, pas Novika) */}
+        {/* 1. En-tête : Marque de la boutique (Prompt 05-T : Marque boutique, pas Kelio) */}
         <header className="bg-white rounded-3xl p-5 sm:p-6 border border-black/[0.08] shadow-sm flex items-center justify-between gap-4">
           <div className="flex items-center gap-3.5 min-w-0">
             {order.shopLogo ? (
@@ -459,7 +459,7 @@ export function TrackingClient({ token, initialOrder }: TrackingClientProps) {
             <span>Vos données personnelles sont protégées. Seules les informations nécessaires à la livraison sont affichées.</span>
           </p>
           <p className="text-[11px] text-[#888880]/80">
-            Propulsé par Novika Platform · Suivi étape par étape en direct
+            Propulsé par Kelio Platform · Suivi étape par étape en direct
           </p>
         </footer>
 

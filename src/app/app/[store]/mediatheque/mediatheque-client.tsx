@@ -209,7 +209,7 @@ export function MediathequeClient({ storeSlug }: MediathequeClientProps) {
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
-              className="px-4 py-2.5 rounded-xl bg-[#111111] hover:bg-black text-white text-xs font-bold transition-colors flex items-center gap-2 shadow-xs"
+              className="px-4 py-2.5 rounded-xl bg-[#1F3A26] hover:bg-[#162B1C] text-white text-xs font-bold transition-colors flex items-center gap-2 shadow-xs"
             >
               <UploadCloud className="w-3.5 h-3.5" />
               <span>{isUploading ? `Envoi en cours (${progress}%)...` : "Ajouter des images"}</span>
@@ -327,7 +327,7 @@ export function MediathequeClient({ storeSlug }: MediathequeClientProps) {
               className={cn(
                 "px-3 py-1.5 rounded-xl font-bold transition-colors whitespace-nowrap",
                 selectedType === tab.id
-                  ? "bg-[#111111] text-white"
+                  ? "bg-[#1F3A26] text-white"
                   : "bg-white border border-[#E6E0D4] text-[#4A4A4A] hover:bg-[#FAF8F5]"
               )}
             >

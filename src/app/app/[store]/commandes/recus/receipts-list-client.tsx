@@ -189,7 +189,7 @@ export function ReceiptsListClient({ storeSlug }: ReceiptsListClientProps) {
     <div className="space-y-6 pb-20">
       {/* Toast de notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#111111] text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-bold animate-in fade-in slide-in-from-bottom-2">
+        <div className="fixed bottom-6 right-6 z-50 bg-[#1F3A26] text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-bold animate-in fade-in slide-in-from-bottom-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>
@@ -319,7 +319,7 @@ export function ReceiptsListClient({ storeSlug }: ReceiptsListClientProps) {
               className={cn(
                 "px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5",
                 statusFilter === tab.key
-                  ? "bg-[#111111] text-[#FAF8F5]"
+                  ? "bg-[#1F3A26] text-[#FAF8F5]"
                   : "text-[#666660] hover:bg-[#FAF8F5] hover:text-[#111111]"
               )}
             >
@@ -758,7 +758,7 @@ export function ReceiptsListClient({ storeSlug }: ReceiptsListClientProps) {
                   setIsSettingsOpen(false);
                   showToast("Paramètres des reçus enregistrés avec succès !");
                 }}
-                className="px-5 py-2 rounded-xl bg-[#111111] hover:bg-black text-[#FAF8F5] text-xs font-black transition-colors cursor-pointer shadow-xs"
+                className="px-5 py-2 rounded-xl bg-[#1F3A26] hover:bg-[#162B1C] text-[#FAF8F5] text-xs font-black transition-colors cursor-pointer shadow-xs"
               >
                 Enregistrer les paramètres
               </button>

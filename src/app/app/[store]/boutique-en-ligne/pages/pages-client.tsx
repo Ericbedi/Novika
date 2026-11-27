@@ -72,7 +72,7 @@ export function PagesClient({ storeSlug }: { storeSlug: string }) {
           <h1 className="text-2xl font-black text-[#111111]">Pages</h1>
           <p className="text-xs text-[#666660]">À propos, livraison, conditions… affichées sur votre vitrine.</p>
         </div>
-        <button type="button" onClick={() => { setError(null); setForm(EMPTY); }} className="min-h-[44px] px-4 rounded-xl bg-[#111111] text-white text-xs font-bold inline-flex items-center gap-2 cursor-pointer">
+        <button type="button" onClick={() => { setError(null); setForm(EMPTY); }} className="min-h-[44px] px-4 rounded-xl bg-[#1F3A26] text-white text-xs font-bold inline-flex items-center gap-2 cursor-pointer">
           <FilePlus2 className="h-4 w-4" /> Créer une page
         </button>
       </div>

@@ -1,5 +1,5 @@
 /**
- * Gestionnaire d'état et Persistance du Moteur de Thème « Novika Classique » (Prompt 12)
+ * Gestionnaire d'état et Persistance du Moteur de Thème « Kelio Classique » (Prompt 12)
  *
  * Fonctionnalités :
  * - Gestion du brouillon (draft) vs version publiée (published).

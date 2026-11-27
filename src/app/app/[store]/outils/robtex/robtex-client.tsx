@@ -63,7 +63,7 @@ export function RobtexClient() {
   return (
     <div className="max-w-3xl mx-auto py-6 px-4 sm:px-6 space-y-5">
       <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-2xl bg-[#111111] text-white flex items-center justify-center">
+        <div className="h-10 w-10 rounded-2xl bg-[#1F3A26] text-white flex items-center justify-center">
           <Globe className="h-5 w-5" />
         </div>
         <div>
@@ -85,7 +85,7 @@ export function RobtexClient() {
         <button
           type="submit"
           disabled={loading}
-          className="min-h-[44px] px-4 rounded-xl bg-[#111111] text-white text-xs font-black flex items-center gap-1.5 disabled:opacity-60 cursor-pointer"
+          className="min-h-[44px] px-4 rounded-xl bg-[#1F3A26] text-white text-xs font-black flex items-center gap-1.5 disabled:opacity-60 cursor-pointer"
         >
           <Search className="h-4 w-4" />
           {loading ? "Analyse…" : "Analyser"}
@@ -104,7 +104,7 @@ export function RobtexClient() {
             >
               {res.novika.ok ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertTriangle className="h-4 w-4 shrink-0" />}
               <span>
-                {res.novika.ok ? "Ce domaine pointe vers Novika. " : "Ce domaine ne pointe pas encore vers Novika. "}
+                {res.novika.ok ? "Ce domaine pointe vers Kelio. " : "Ce domaine ne pointe pas encore vers Kelio. "}
                 {res.novika.detail}
               </span>
             </div>

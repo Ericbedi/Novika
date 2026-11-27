@@ -69,7 +69,7 @@ export function CountriesClient({ storeSlug }: CountriesClientProps) {
     if (!country.platformEligible) {
       setFeedbackMessage({
         type: "info",
-        text: `${country.name} n'est pas encore disponible sur la plateforme Novika (Bientôt disponible).`,
+        text: `${country.name} n'est pas encore disponible sur la plateforme Kelio (Bientôt disponible).`,
       });
       return;
     }

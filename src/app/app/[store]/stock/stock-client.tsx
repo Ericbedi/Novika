@@ -102,7 +102,7 @@ export function StockClient({ storeSlug }: { storeSlug: string }) {
 
         <div className="flex gap-1.5">
           {([["levels", "Niveaux"], ["history", "Historique"]] as const).map(([id, label]) => (
-            <button key={id} type="button" onClick={() => setTab(id)} className={`h-10 px-4 rounded-xl text-xs font-bold cursor-pointer border ${tab === id ? "bg-[#111111] text-white border-[#111111]" : "bg-white border-black/10"}`}>{label}</button>
+            <button key={id} type="button" onClick={() => setTab(id)} className={`h-10 px-4 rounded-xl text-xs font-bold cursor-pointer border ${tab === id ? "bg-[#1F3A26] text-white border-[#111111]" : "bg-white border-black/10"}`}>{label}</button>
           ))}
         </div>
 
@@ -132,7 +132,7 @@ export function StockClient({ storeSlug }: { storeSlug: string }) {
                     <div className="rounded-xl bg-[#FAF8F5] p-3 space-y-2.5">
                       <div className="flex gap-1.5">
                         {MODES.map((m) => (
-                          <button key={m.id} type="button" onClick={() => setMode(m.id)} className={`flex-1 h-9 rounded-lg text-xs font-bold cursor-pointer border ${mode === m.id ? "bg-[#111111] text-white border-[#111111]" : "bg-white border-black/10"}`}>{m.label}</button>
+                          <button key={m.id} type="button" onClick={() => setMode(m.id)} className={`flex-1 h-9 rounded-lg text-xs font-bold cursor-pointer border ${mode === m.id ? "bg-[#1F3A26] text-white border-[#111111]" : "bg-white border-black/10"}`}>{m.label}</button>
                         ))}
                       </div>
                       <div className="flex gap-2">
@@ -143,7 +143,7 @@ export function StockClient({ storeSlug }: { storeSlug: string }) {
                             <option value="inventory_adjustment">Correction d'inventaire</option>
                           </select>
                         )}
-                        <button type="button" disabled={busy || qty === ""} onClick={() => apply(p)} className="h-11 px-4 rounded-xl bg-[#111111] text-white text-xs font-bold cursor-pointer disabled:opacity-40">{busy ? "…" : "Valider"}</button>
+                        <button type="button" disabled={busy || qty === ""} onClick={() => apply(p)} className="h-11 px-4 rounded-xl bg-[#1F3A26] text-white text-xs font-bold cursor-pointer disabled:opacity-40">{busy ? "…" : "Valider"}</button>
                       </div>
                     </div>
                   )}

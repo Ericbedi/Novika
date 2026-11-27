@@ -128,7 +128,7 @@ export function OnboardingCard({ storeSlug }: OnboardingCardProps) {
     return (
       <div className="flex items-center justify-between p-3.5 rounded-2xl border border-black/[0.08] bg-[#FAF8F5] shadow-2xs">
         <div className="flex items-center gap-2.5">
-          <div className="h-7 w-7 rounded-xl bg-[#111111] text-[#FAF8F5] flex items-center justify-center font-bold text-xs">
+          <div className="h-7 w-7 rounded-xl bg-[#1F3A26] text-[#FAF8F5] flex items-center justify-center font-bold text-xs">
             {progress.percent}%
           </div>
           <div>
@@ -281,7 +281,7 @@ export function OnboardingCard({ storeSlug }: OnboardingCardProps) {
                       className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer ${
                         st.isCompleted
                           ? "bg-emerald-700 text-white hover:bg-emerald-800"
-                          : "bg-[#111111] text-[#FAF8F5] hover:bg-black"
+                          : "bg-[#1F3A26] text-[#FAF8F5] hover:bg-[#162B1C]"
                       }`}
                     >
                       {st.isCompleted ? "Boutique Publiée ✓" : "Publier la boutique"}
@@ -293,7 +293,7 @@ export function OnboardingCard({ storeSlug }: OnboardingCardProps) {
                     className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-2xs ${
                       st.isCompleted
                         ? "border border-black/[0.08] bg-white text-[#666660] hover:text-[#111111] hover:bg-[#FAF8F5]"
-                        : "bg-[#111111] text-[#FAF8F5] hover:bg-black"
+                        : "bg-[#1F3A26] text-[#FAF8F5] hover:bg-[#162B1C]"
                     }`}
                   >
                     <span>{st.actionLabel}</span>

@@ -147,7 +147,7 @@ export function WaterfallClient({ storeSlug }: WaterfallClientProps) {
               className={cn(
                 "px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
                 levelFilter === "all_org"
-                  ? "bg-[#111111] text-[#FAF8F5] shadow-xs"
+                  ? "bg-[#1F3A26] text-[#FAF8F5] shadow-xs"
                   : "text-[#666660] hover:text-[#111111]"
               )}
             >
@@ -159,7 +159,7 @@ export function WaterfallClient({ storeSlug }: WaterfallClientProps) {
               className={cn(
                 "px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
                 levelFilter === "country"
-                  ? "bg-[#111111] text-[#FAF8F5] shadow-xs"
+                  ? "bg-[#1F3A26] text-[#FAF8F5] shadow-xs"
                   : "text-[#666660] hover:text-[#111111]"
               )}
             >
@@ -171,7 +171,7 @@ export function WaterfallClient({ storeSlug }: WaterfallClientProps) {
               className={cn(
                 "px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
                 levelFilter === "store"
-                  ? "bg-[#111111] text-[#FAF8F5] shadow-xs"
+                  ? "bg-[#1F3A26] text-[#FAF8F5] shadow-xs"
                   : "text-[#666660] hover:text-[#111111]"
               )}
             >
@@ -183,7 +183,7 @@ export function WaterfallClient({ storeSlug }: WaterfallClientProps) {
               className={cn(
                 "px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
                 levelFilter === "product"
-                  ? "bg-[#111111] text-[#FAF8F5] shadow-xs"
+                  ? "bg-[#1F3A26] text-[#FAF8F5] shadow-xs"
                   : "text-[#666660] hover:text-[#111111]"
               )}
             >
@@ -415,7 +415,7 @@ export function WaterfallClient({ storeSlug }: WaterfallClientProps) {
             </div>
 
             {/* TOTAL FINAL : BÉNÉFICE NET EN POCHE */}
-            <div className="flex items-center justify-between p-5 rounded-3xl bg-[#111111] text-[#FAF8F5] shadow-lg font-sans">
+            <div className="flex items-center justify-between p-5 rounded-3xl bg-[#1F3A26] text-[#FAF8F5] shadow-lg font-sans">
               <div>
                 <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 block">
                   RÉSULTAT NET RÉEL EN POCHE
@@ -455,7 +455,7 @@ export function WaterfallClient({ storeSlug }: WaterfallClientProps) {
                 className="p-3 rounded-2xl bg-[#FAF8F5] border border-black/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
               >
                 <div className="flex items-center gap-3">
-                  <span className="h-6 w-6 rounded-full bg-[#111111] text-white flex items-center justify-center font-bold text-[10px]">
+                  <span className="h-6 w-6 rounded-full bg-[#1F3A26] text-white flex items-center justify-center font-bold text-[10px]">
                     {idx + 1}
                   </span>
                   <span className="font-bold text-[#111111]">{item.step}</span>

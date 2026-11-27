@@ -1,5 +1,5 @@
 /**
- * Configuration de l'intégration IA Gemini pour Novika.
+ * Configuration de l'intégration IA Gemini pour Kelio.
  * La clé API GEMINI_API_KEY est strictement réservée au serveur (jamais exposée côté client).
  */
 

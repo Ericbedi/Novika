@@ -97,7 +97,7 @@ export function VideoEmbedModal({ isOpen, onClose, onInsertVideo }: VideoEmbedMo
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black"
+              className="px-4 py-2 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C]"
             >
               Insérer la vidéo
             </button>

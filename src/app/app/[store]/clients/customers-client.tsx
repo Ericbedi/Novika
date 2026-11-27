@@ -58,7 +58,7 @@ export function CustomersClient({ storeSlug }: { storeSlug: string }) {
 
       <div className="flex gap-1.5 overflow-x-auto">
         {(Object.keys(LABELS) as Filter[]).map((f) => (
-          <button key={f} type="button" onClick={() => setFilter(f)} className={`shrink-0 h-10 px-4 rounded-xl text-xs font-bold cursor-pointer border ${filter === f ? "bg-[#111111] text-white border-[#111111]" : "bg-white border-black/10"}`}>
+          <button key={f} type="button" onClick={() => setFilter(f)} className={`shrink-0 h-10 px-4 rounded-xl text-xs font-bold cursor-pointer border ${filter === f ? "bg-[#1F3A26] text-white border-[#111111]" : "bg-white border-black/10"}`}>
             {LABELS[f]}
           </button>
         ))}

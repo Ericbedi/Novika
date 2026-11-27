@@ -1,5 +1,5 @@
 /**
- * Source unique de vérité des routes et URLs de l'application Novika.
+ * Source unique de vérité des routes et URLs de l'application Kelio.
  * Aucune URL critique (notamment /connexion) ne doit être écrite en dur.
  */
 

@@ -3,8 +3,8 @@ import { Suspense } from "react";
 import { JoinClient } from "./join-client";
 
 export const metadata: Metadata = {
-  title: "Rejoindre l'équipe | Novika",
-  description: "Finalisez votre invitation pour accéder à l'espace de votre équipe Novika.",
+  title: "Rejoindre l'équipe | Kelio",
+  description: "Finalisez votre invitation pour accéder à l'espace de votre équipe Kelio.",
   robots: {
     index: false,
     follow: false,

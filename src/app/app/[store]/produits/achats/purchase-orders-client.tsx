@@ -200,7 +200,7 @@ export function PurchaseOrdersClient({ storeSlug }: PurchaseOrdersClientProps) {
           </div>
           <Link
             href={`/app/${storeSlug}/produits`}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-all shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm"
           >
             <span>Retour au Catalogue</span>
           </Link>
@@ -365,7 +365,7 @@ export function PurchaseOrdersClient({ storeSlug }: PurchaseOrdersClientProps) {
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#666660]">
               Approvisionnements & Importations
             </span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-[#111111]/[0.05] text-[#111111]">
+            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-[#1F3A26]/[0.05] text-[#111111]">
               {orders.length} bons d'achat
             </span>
           </div>
@@ -389,7 +389,7 @@ export function PurchaseOrdersClient({ storeSlug }: PurchaseOrdersClientProps) {
           </button>
           <button
             onClick={() => setIsNewModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black transition-all shadow-sm cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm cursor-pointer"
           >
             <Plus className="h-4 w-4" />
             <span>Sourcer un produit</span>
@@ -519,7 +519,7 @@ export function PurchaseOrdersClient({ storeSlug }: PurchaseOrdersClientProps) {
               className={cn(
                 "px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer",
                 statusFilter === st
-                  ? "bg-[#111111] text-white shadow-xs"
+                  ? "bg-[#1F3A26] text-white shadow-xs"
                   : "bg-white border border-black/[0.06] text-[#666660] hover:text-[#111111]"
               )}
             >
@@ -544,7 +544,7 @@ export function PurchaseOrdersClient({ storeSlug }: PurchaseOrdersClientProps) {
                 className={cn(
                   "rounded-[20px] border p-4 cursor-pointer transition-all flex flex-col justify-between space-y-2.5 shadow-2xs",
                   isSelected
-                    ? "bg-[#111111] text-white border-black"
+                    ? "bg-[#1F3A26] text-white border-black"
                     : "bg-[#FAF8F5] text-[#111111] border-black/[0.08] hover:bg-white"
                 )}
               >
@@ -791,7 +791,7 @@ export function PurchaseOrdersClient({ storeSlug }: PurchaseOrdersClientProps) {
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-black/[0.06] bg-[#111111] text-white p-4 space-y-2 flex flex-col justify-between">
+                  <div className="rounded-xl border border-black/[0.06] bg-[#1F3A26] text-white p-4 space-y-2 flex flex-col justify-between">
                     <div>
                       <span className="text-[10px] uppercase font-bold text-white/70 block mb-1">
                         Montant Total Engagé
@@ -949,7 +949,7 @@ export function PurchaseOrdersClient({ storeSlug }: PurchaseOrdersClientProps) {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-[#111111] text-white font-bold hover:bg-black"
+                  className="px-5 py-2 rounded-xl bg-[#1F3A26] text-white font-bold hover:bg-[#162B1C]"
                 >
                   Valider la réception
                 </button>
@@ -1149,7 +1149,7 @@ export function PurchaseOrdersClient({ storeSlug }: PurchaseOrdersClientProps) {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-[#111111] text-white font-bold hover:bg-black"
+                  className="px-5 py-2 rounded-xl bg-[#1F3A26] text-white font-bold hover:bg-[#162B1C]"
                 >
                   Créer et Valider le Bon
                 </button>

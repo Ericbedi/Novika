@@ -1,5 +1,5 @@
 /**
- * Modèle « Novika Simple » (Prompt 21-b)
+ * Modèle « Kelio Simple » (Prompt 21-b)
  *
  * Vitrine épurée en 8 sections modifiables :
  * 1. Barre annonce (livraison, paiement cash)
@@ -166,7 +166,7 @@ export const NOVIKA_SIMPLE_DEFAULTS: Record<string, NovikaSimpleDefaultContent> 
 };
 
 /**
- * Génère les 8 sections initiales du modèle « Novika Simple »
+ * Génère les 8 sections initiales du modèle « Kelio Simple »
  * Par défaut (ou avec empty: true pour une nouvelle boutique), les sections sont vides de texte factice.
  */
 export function createNovikaSimpleSections(options: { empty?: boolean } = {}): ThemeSection[] {

@@ -1,5 +1,5 @@
 /**
- * Préréglages et Palettes de couleurs pour le Moteur de Thème « Novika Classique » (Prompt 12)
+ * Préréglages et Palettes de couleurs pour le Moteur de Thème « Kelio Classique » (Prompt 12)
  *
  * Chaque thème supporte jusqu'à 5 palettes de couleurs complètes :
  * - palette-1 : Défaut (Fond principal, texte, bouton d'action)
@@ -14,10 +14,10 @@ import { ThemeColorPalette, ThemePresetKey, ThemeGeneralSettings } from "./types
 export const PRESET_NOVIKA_CLASSIQUE_PALETTES: ThemeColorPalette[] = [
   {
     id: "palette-1",
-    name: "Clair & Orange Novika",
+    name: "Clair & Orange Kelio",
     background: "#FAF8F5",
     text: "#111111",
-    button: "#C2410C", // Orange signature Novika
+    button: "#C2410C", // Orange signature Kelio
     buttonText: "#FFFFFF",
     accent: "#F97316",
     cardBackground: "#FFFFFF",
@@ -312,7 +312,7 @@ export interface ThemePresetDefinition {
 export const THEME_PRESETS: Record<ThemePresetKey, ThemePresetDefinition> = {
   "novika-classique": {
     key: "novika-classique",
-    name: "Novika Classique",
+    name: "Kelio Classique",
     tagline: "Le standard e-commerce COD en Afrique",
     description: "Design épuré et ultra-lisible, optimisé pour les téléphones 390px et le paiement à la livraison.",
     generalSettings: {

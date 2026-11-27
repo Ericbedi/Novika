@@ -235,7 +235,7 @@ export function ProductCanonicalDetailPageClient({
             <div className="mt-6 pt-5 border-t border-amber-200/80 bg-amber-50/60 p-3.5 rounded-2xl text-left space-y-1.5">
               <div className="flex items-center gap-1.5 text-amber-900 font-black text-[11px]">
                 <ShieldAlert className="w-3.5 h-3.5 text-amber-700" />
-                <span>Diagnostic Administrateur Novika</span>
+                <span>Diagnostic Administrateur Kelio</span>
               </div>
               <p className="text-[11px] text-amber-800 leading-snug">
                 {diagnosticReason}

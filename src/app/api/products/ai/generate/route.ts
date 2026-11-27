@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       : `Retours authentiques vérifiés : « ${data.realProofs} »`;
 
     const generatedSheet: ProductSheetContent = {
-      seoTitle: `${data.productName} | ${data.brandName || "Novika"} Officiel`.slice(0, 60),
+      seoTitle: `${data.productName} | ${data.brandName || "Kelio"} Officiel`.slice(0, 60),
       metaDescription: `Découvrez ${data.productName}. Paiement sécurisé à la livraison à ${data.targetMarket}. Commandez en ligne simplement.`.slice(0, 150),
       headlines: [
         `Découvrez ${data.productName} : la solution concrète pour ${data.mainProblem || "votre confort au quotidien"}.`,

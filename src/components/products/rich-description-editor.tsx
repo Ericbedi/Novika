@@ -408,7 +408,7 @@ export function RichDescriptionEditor({
       setCleanFeedback(
         report.status === "sanitized"
           ? "Éléments non conformes ou scripts neutralisés avec succès."
-          : "Styles superflus retirés et mise en forme Novika appliquée."
+          : "Styles superflus retirés et mise en forme Kelio appliquée."
       );
     } else {
       setCleanFeedback("Description déjà parfaitement conforme.");
@@ -664,7 +664,7 @@ export function RichDescriptionEditor({
           <button
             type="button"
             onClick={onOpenAiGenerator}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#111111] hover:bg-black text-white text-xs font-bold transition-colors"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#1F3A26] hover:bg-[#162B1C] text-white text-xs font-bold transition-colors"
             title="Ouvrir l'assistant complet de rédaction IA"
           >
             <Sparkles className="w-3 h-3 text-amber-300" />

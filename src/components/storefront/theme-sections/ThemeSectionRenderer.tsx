@@ -47,7 +47,7 @@ export function ThemeSectionRenderer({
   generalSettings,
   products = [],
   reviews = [],
-  storeName = "Novika",
+  storeName = "Kelio",
   storeSlug,
   isEditMode = false,
   onEditSection,

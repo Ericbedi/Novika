@@ -1,5 +1,5 @@
 /**
- * Schémas Zod et Validations du Moteur de Thème « Novika Classique » (Prompt 12)
+ * Schémas Zod et Validations du Moteur de Thème « Kelio Classique » (Prompt 12)
  *
  * RÈGLES FORMELLES :
  * 1. Zéro bloc de code libre (« HTML ou JavaScript personnalisé » interdit).

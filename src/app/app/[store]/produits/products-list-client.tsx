@@ -867,7 +867,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
           <div className="mt-6">
             <Link
               href={`/app/${storeSlug}`}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-colors"
             >
               Retourner au tableau de bord
             </Link>
@@ -885,7 +885,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
     <div className="space-y-6 pb-24 text-[#111111]">
       {/* Toast d'action */}
       {toastMessage && (
-        <div className="fixed top-5 right-5 z-50 bg-[#111111] text-white px-5 py-3 rounded-2xl shadow-xl text-xs font-semibold flex items-center gap-2.5 animate-in fade-in slide-in-from-top-3">
+        <div className="fixed top-5 right-5 z-50 bg-[#1F3A26] text-white px-5 py-3 rounded-2xl shadow-xl text-xs font-semibold flex items-center gap-2.5 animate-in fade-in slide-in-from-top-3">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>
@@ -895,7 +895,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
       {undoToast && (
         <div
           id="toast-undo-trash"
-          className="fixed bottom-6 right-6 z-50 bg-[#111111] text-white px-5 py-3.5 rounded-2xl shadow-2xl text-xs font-semibold flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 border border-white/10"
+          className="fixed bottom-6 right-6 z-50 bg-[#1F3A26] text-white px-5 py-3.5 rounded-2xl shadow-2xl text-xs font-semibold flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 border border-white/10"
         >
           <div className="flex items-center gap-2">
             <Trash2 className="w-4 h-4 text-amber-400 shrink-0" />
@@ -1100,7 +1100,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
               <Link
                 href={`/app/${storeSlug}/produits/nouveau`}
                 id="btn-add-product-main"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-colors shadow-sm"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-colors shadow-sm"
               >
                 <Plus className="w-4 h-4" />
                 <span>Ajouter un produit</span>
@@ -1174,7 +1174,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
                 className={cn(
                   "px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer",
                   indicatorPeriod === p.id
-                    ? "bg-[#111111] text-white shadow-xs"
+                    ? "bg-[#1F3A26] text-white shadow-xs"
                     : "text-[#666660] hover:text-[#111111] hover:bg-[#F3EFE6]"
                 )}
               >
@@ -1314,7 +1314,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
                       ? "bg-red-700 text-white shadow-xs"
                       : v.id === "low_stock"
                         ? "bg-amber-700 text-white shadow-xs"
-                        : "bg-[#111111] text-white shadow-xs"
+                        : "bg-[#1F3A26] text-white shadow-xs"
                   : "bg-white border border-[#E6E0D4] text-[#666660] hover:text-[#111111] hover:bg-[#F3EFE6]"
               )}
             >
@@ -1442,7 +1442,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
                 onClick={() => setViewMode("table")}
                 className={cn(
                   "p-1.5 rounded-lg transition-all cursor-pointer",
-                  viewMode === "table" ? "bg-[#111111] text-white" : "text-[#888880] hover:text-[#111111]"
+                  viewMode === "table" ? "bg-[#1F3A26] text-white" : "text-[#888880] hover:text-[#111111]"
                 )}
                 title="Vue Tableau"
               >
@@ -1452,7 +1452,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
                 onClick={() => setViewMode("grid")}
                 className={cn(
                   "p-1.5 rounded-lg transition-all cursor-pointer",
-                  viewMode === "grid" ? "bg-[#111111] text-white" : "text-[#888880] hover:text-[#111111]"
+                  viewMode === "grid" ? "bg-[#1F3A26] text-white" : "text-[#888880] hover:text-[#111111]"
                 )}
                 title="Vue Grille"
               >
@@ -1499,7 +1499,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
             <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
               <Link
                 href={`/app/${storeSlug}/produits/nouveau`}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-colors shadow-xs"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-colors shadow-xs"
               >
                 <Plus className="w-4 h-4" />
                 <span>Ajouter un produit</span>
@@ -1945,7 +1945,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
                     {canManage && (
                       <Link
                         href={`/app/${storeSlug}/produits/${product.id}/modifier`}
-                        className="px-3 py-1.5 rounded-lg bg-[#111111] text-white text-xs font-bold"
+                        className="px-3 py-1.5 rounded-lg bg-[#1F3A26] text-white text-xs font-bold"
                       >
                         Modifier
                       </Link>
@@ -2070,7 +2070,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
                   {canManage && (
                     <Link
                       href={`/app/${storeSlug}/produits/${product.id}/modifier`}
-                      className="flex-1 text-center py-2 rounded-lg bg-[#111111] text-white text-xs font-bold"
+                      className="flex-1 text-center py-2 rounded-lg bg-[#1F3A26] text-white text-xs font-bold"
                     >
                       Modifier
                     </Link>
@@ -2088,7 +2088,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
       {selectedProductIds.length > 0 && canManage && (
         <div
           id="batch-bar"
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[#111111] text-white px-5 py-3 rounded-2xl shadow-2xl flex flex-wrap items-center gap-3 text-xs font-semibold animate-in slide-in-from-bottom-3 duration-200 border border-white/10"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[#1F3A26] text-white px-5 py-3 rounded-2xl shadow-2xl flex flex-wrap items-center gap-3 text-xs font-semibold animate-in slide-in-from-bottom-3 duration-200 border border-white/10"
         >
           <span className="font-bold text-white whitespace-nowrap">
             {selectedProductIds.length} sélectionné(s)
@@ -2216,7 +2216,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
               <button
                 type="button"
                 onClick={handleConfirmBatchStatus}
-                className="px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black"
+                className="px-4 py-2 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C]"
               >
                 Appliquer
               </button>
@@ -2255,7 +2255,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
               <button
                 type="button"
                 onClick={handleConfirmBatchCollection}
-                className="px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black"
+                className="px-4 py-2 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C]"
               >
                 Valider
               </button>
@@ -2294,7 +2294,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
               <button
                 type="button"
                 onClick={handleConfirmBatchTag}
-                className="px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black"
+                className="px-4 py-2 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C]"
               >
                 Ajouter la balise
               </button>
@@ -2323,7 +2323,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
               </div>
             </div>
             <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 leading-relaxed">
-              <strong>Avertissement :</strong> Activer le suivi de stock oblige Novika à décompter les pièces physiques disponibles. Les produits sélectionnés dont le stock n'est pas encore renseigné seront initialisés à 0 et pourront apparaître en rupture tant qu'un réapprovisionnement n'aura pas été saisi.
+              <strong>Avertissement :</strong> Activer le suivi de stock oblige Kelio à décompter les pièces physiques disponibles. Les produits sélectionnés dont le stock n'est pas encore renseigné seront initialisés à 0 et pourront apparaître en rupture tant qu'un réapprovisionnement n'aura pas été saisi.
             </div>
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E6E0D4]">
               <button
@@ -2561,7 +2561,7 @@ export function ProductsListClient({ storeSlug }: ProductsListClientProps) {
             <button
               type="button"
               onClick={() => setIsSyncModalOpen(false)}
-              className="w-full py-2.5 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-colors"
+              className="w-full py-2.5 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-colors"
             >
               Fermer le rapport
             </button>

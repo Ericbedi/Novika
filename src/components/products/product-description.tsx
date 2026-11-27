@@ -13,7 +13,7 @@ interface ProductDescriptionProps {
 }
 
 /**
- * Composant unique de rendu de la description produit Novika (Prompt 17-F, 2).
+ * Composant unique de rendu de la description produit Kelio (Prompt 17-F, 2).
  * Assure un affichage identique, responsive, élégant et sécurisé sur :
  * - La vitrine client publique
  * - L'aperçu en direct dans l'éditeur de fiche produit

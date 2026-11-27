@@ -106,7 +106,7 @@ export function FinancesClient({ storeSlug }: { storeSlug: string }) {
 
       <div className="flex gap-1.5 overflow-x-auto">
         {PERIODS.map((p) => (
-          <button key={p.id} type="button" onClick={() => setPeriod(p.id)} className={`shrink-0 h-10 px-4 rounded-xl text-xs font-bold cursor-pointer border ${period === p.id ? "bg-[#111111] text-white border-[#111111]" : "bg-white border-black/10"}`}>
+          <button key={p.id} type="button" onClick={() => setPeriod(p.id)} className={`shrink-0 h-10 px-4 rounded-xl text-xs font-bold cursor-pointer border ${period === p.id ? "bg-[#1F3A26] text-white border-[#111111]" : "bg-white border-black/10"}`}>
             {p.label}
           </button>
         ))}
@@ -164,7 +164,7 @@ export function FinancesClient({ storeSlug }: { storeSlug: string }) {
           </select>
           <input className={input} placeholder="Montant" inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))} required />
           <input className={input} placeholder="Note (facultatif)" value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} />
-          <button type="submit" disabled={busy} className="h-11 px-4 rounded-xl bg-[#111111] text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50">
+          <button type="submit" disabled={busy} className="h-11 px-4 rounded-xl bg-[#1F3A26] text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50">
             <Plus className="w-4 h-4" /> Ajouter
           </button>
         </form>

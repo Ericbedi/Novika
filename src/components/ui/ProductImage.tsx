@@ -55,7 +55,7 @@ export function NeutralProductPlaceholder({
 }
 
 /**
- * Composant ProductImage universel pour Novika (Prompt 13 - Étape 3).
+ * Composant ProductImage universel pour Kelio (Prompt 13 - Étape 3).
  * Utilisé partout : catalogue, page produit, miniatures, formulaires COD, confirmation, aperçus.
  */
 export function ProductImage({
@@ -102,7 +102,7 @@ export function ProductImage({
       <div className={`relative overflow-hidden ${aspectClass} ${className}`}>
         <Image
           src={src}
-          alt={alt || "Produit Novika"}
+          alt={alt || "Produit Kelio"}
           fill
           sizes={sizes}
           priority={priority}
@@ -117,7 +117,7 @@ export function ProductImage({
   return (
     <Image
       src={src}
-      alt={alt || "Produit Novika"}
+      alt={alt || "Produit Kelio"}
       width={width || 400}
       height={height || 400}
       priority={priority}

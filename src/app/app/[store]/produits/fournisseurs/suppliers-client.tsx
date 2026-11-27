@@ -103,7 +103,7 @@ export function SuppliersClient({ storeSlug }: SuppliersClientProps) {
           </div>
           <Link
             href={`/app/${storeSlug}/produits`}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-all shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm"
           >
             <span>Retour au Catalogue</span>
           </Link>
@@ -231,7 +231,7 @@ export function SuppliersClient({ storeSlug }: SuppliersClientProps) {
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#666660]">
               Approvisionnement & Sourcing
             </span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-[#111111]/[0.05] text-[#111111]">
+            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-[#1F3A26]/[0.05] text-[#111111]">
               {suppliers.length} fournisseurs actifs
             </span>
           </div>
@@ -246,7 +246,7 @@ export function SuppliersClient({ storeSlug }: SuppliersClientProps) {
         <div className="flex items-center gap-2.5">
           <button
             onClick={handleOpenCreate}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black transition-all shadow-sm cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm cursor-pointer"
           >
             <Plus className="h-4 w-4" />
             <span>Nouveau fournisseur</span>
@@ -304,7 +304,7 @@ export function SuppliersClient({ storeSlug }: SuppliersClientProps) {
                   className={cn(
                     "rounded-[20px] border p-4 cursor-pointer transition-all flex flex-col justify-between space-y-2.5 shadow-2xs",
                     isSelected
-                      ? "bg-[#111111] text-white border-black"
+                      ? "bg-[#1F3A26] text-white border-black"
                       : "bg-[#FAF8F5] text-[#111111] border-black/[0.08] hover:bg-white"
                   )}
                 >
@@ -476,7 +476,7 @@ export function SuppliersClient({ storeSlug }: SuppliersClientProps) {
                     </h3>
                     <Link
                       href={`/app/${storeSlug}/produits/achats?action=new&supplier=${selectedSupplier.id}`}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-colors"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Commander à ce fournisseur</span>
@@ -679,7 +679,7 @@ export function SuppliersClient({ storeSlug }: SuppliersClientProps) {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-[#111111] text-white font-bold hover:bg-black"
+                  className="px-5 py-2 rounded-xl bg-[#1F3A26] text-white font-bold hover:bg-[#162B1C]"
                 >
                   {editingSupplier ? "Mettre à jour" : "Créer le fournisseur"}
                 </button>

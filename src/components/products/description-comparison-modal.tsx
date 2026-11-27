@@ -18,7 +18,7 @@ interface DescriptionComparisonModalProps {
  * Modale de comparaison Avant / Après de la description produit (Prompt 17-F, 4).
  * Affiche côte à côte :
  * - À gauche : Description brute d'origine (conservée 30 jours)
- * - À droite : Description assainie et mise en forme Novika
+ * - À droite : Description assainie et mise en forme Kelio
  * - Rapport honnête sur les modifications (sécurité vs mise en forme simplifiée)
  */
 export function DescriptionComparisonModal({
@@ -153,12 +153,12 @@ export function DescriptionComparisonModal({
             </div>
           </div>
 
-          {/* Colonne Droite : Rendu Novika Assaini */}
+          {/* Colonne Droite : Rendu Kelio Assaini */}
           <div className="p-6 flex flex-col space-y-3 bg-white">
             <div className="flex items-center justify-between pb-2 border-b border-[#E6E0D4]/70">
               <span className="text-xs font-black uppercase tracking-wider text-emerald-700 flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                <span>Rendu Novika sécurisé (Vitrine)</span>
+                <span>Rendu Kelio sécurisé (Vitrine)</span>
               </span>
               <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
                 Style standardisé & Responsive
@@ -204,7 +204,7 @@ export function DescriptionComparisonModal({
             <button
               type="button"
               onClick={onClose}
-              className="w-full sm:w-auto px-5 py-2 rounded-xl bg-[#111111] hover:bg-black text-white text-xs font-black shadow-xs transition-colors"
+              className="w-full sm:w-auto px-5 py-2 rounded-xl bg-[#1F3A26] hover:bg-[#162B1C] text-white text-xs font-black shadow-xs transition-colors"
             >
               Fermer
             </button>

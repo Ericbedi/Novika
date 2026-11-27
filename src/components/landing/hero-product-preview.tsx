@@ -16,9 +16,9 @@ import {
 import { CountryFlag } from "@/components/ui/country-flag";
 
 /**
- * Aperçu visuel immersif du vrai produit Novika pour le Hero de la landing page (Prompt 05-L).
+ * Aperçu visuel immersif du vrai produit Kelio pour le Hero de la landing page (Prompt 05-L).
  * - Entièrement conçu en HTML/CSS/SVG ultra-léger (0 image lourde, net sur Retina/4K, zéro CLS).
- * - Cadre bureau : Tableau de bord Novika (liste de commandes COD avec les 4 familles de couleurs, objectif de CA encaissé, alerte cloche).
+ * - Cadre bureau : Tableau de bord Kelio (liste de commandes COD avec les 4 familles de couleurs, objectif de CA encaissé, alerte cloche).
  * - Cadre mobile superposé : Page de suivi client par étapes en direct (Reçue → Confirmée → En route → Livrée).
  * - Mention discrète « Aperçu — données d'exemple », données anonymisées sans fausse preuve sociale.
  * - Flottement doux et balancement sobre de la cloche ; strictement désactivé si prefers-reduced-motion est actif.
@@ -71,7 +71,7 @@ export function HeroProductPreview() {
       <div className="absolute -inset-4 bg-gradient-to-tr from-[#F26522]/15 via-[#0B1521]/5 to-[#F59E0B]/10 rounded-3xl blur-2xl -z-10" />
 
       {/* =========================================================================
-          1. CADRE ORDINATEUR (Tableau de bord Novika)
+          1. CADRE ORDINATEUR (Tableau de bord Kelio)
           ========================================================================= */}
       <div className="anim-hero-desktop rounded-2xl sm:rounded-3xl border border-black/10 dark:border-white/10 bg-white/95 dark:bg-[#0B1521]/95 shadow-2xl backdrop-blur-md overflow-hidden text-left transition-transform">
         {/* Barre de titre de fenêtre */}

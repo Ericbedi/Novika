@@ -134,7 +134,7 @@ export function CsvImportModal({
 
   if (!isOpen) return null;
 
-  // Télécharger le modèle Novika CSV
+  // Télécharger le modèle Kelio CSV
   const handleDownloadTemplate = () => {
     const blob = new Blob([NOVIKA_SAMPLE_TEMPLATE], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -327,7 +327,7 @@ export function CsvImportModal({
         {/* En-tête de la modale */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-black/[0.08] bg-white">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-[#111111] text-[#FAF8F5] flex items-center justify-center shadow-xs">
+            <div className="h-10 w-10 rounded-2xl bg-[#1F3A26] text-[#FAF8F5] flex items-center justify-center shadow-xs">
               <FileSpreadsheet className="w-5 h-5" />
             </div>
             <div>
@@ -384,7 +384,7 @@ export function CsvImportModal({
                 className={cn(
                   "relative border-2 border-dashed rounded-3xl p-8 text-center transition-all cursor-pointer",
                   isDragging
-                    ? "border-[#111111] bg-[#111111]/5 scale-[0.99]"
+                    ? "border-[#111111] bg-[#1F3A26]/5 scale-[0.99]"
                     : "border-black/15 bg-white hover:border-black/30 hover:bg-[#FAF8F5]"
                 )}
                 onClick={() => document.getElementById("csv-file-input")?.click()}
@@ -396,7 +396,7 @@ export function CsvImportModal({
                   className="hidden"
                   onChange={handleFileChange}
                 />
-                <div className="mx-auto w-14 h-14 rounded-2xl bg-[#111111]/5 text-[#111111] flex items-center justify-center mb-3">
+                <div className="mx-auto w-14 h-14 rounded-2xl bg-[#1F3A26]/5 text-[#111111] flex items-center justify-center mb-3">
                   <UploadCloud className="w-7 h-7" />
                 </div>
                 <h3 className="text-base font-black text-[#111111]">
@@ -513,7 +513,7 @@ export function CsvImportModal({
                     id="btn-start-auto-import"
                     disabled={!fileContent || !legalRightsConfirmed}
                     onClick={() => startAutomaticImport()}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-[#111111] hover:bg-black text-[#FAF8F5] text-xs font-black shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-[#1F3A26] hover:bg-[#162B1C] text-[#FAF8F5] text-xs font-black shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     <Package className="w-4 h-4" />
                     <span>Lancer l'import automatique</span>
@@ -654,7 +654,7 @@ export function CsvImportModal({
           {/* ÉCRAN 2 : PROGRESSION AUTOMATIQUE EN 7 ÉTAPES (Prompt 11) */}
           {isProcessing && (
             <div id="auto-import-stages-progress" className="py-8 px-4 text-center space-y-6">
-              <div className="mx-auto w-16 h-16 rounded-full bg-[#111111] text-[#FAF8F5] flex items-center justify-center animate-spin">
+              <div className="mx-auto w-16 h-16 rounded-full bg-[#1F3A26] text-[#FAF8F5] flex items-center justify-center animate-spin">
                 <RefreshCw className="w-8 h-8" />
               </div>
 
@@ -705,7 +705,7 @@ export function CsvImportModal({
                           isDone
                             ? "bg-emerald-600 text-white"
                             : isCurrent
-                            ? "bg-[#111111] text-white animate-pulse"
+                            ? "bg-[#1F3A26] text-white animate-pulse"
                             : "bg-black/10 text-[#666660]"
                         )}
                       >
@@ -981,7 +981,7 @@ export function CsvImportModal({
                     type="button"
                     id="btn-finish-import"
                     onClick={onClose}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-[#111111] hover:bg-black text-[#FAF8F5] text-xs font-black shadow-md hover:shadow-lg transition-all cursor-pointer"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-[#1F3A26] hover:bg-[#162B1C] text-[#FAF8F5] text-xs font-black shadow-md hover:shadow-lg transition-all cursor-pointer"
                   >
                     <span>Terminer</span>
                   </button>

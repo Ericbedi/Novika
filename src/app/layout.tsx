@@ -1,12 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import { Poppins } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import { brandConfig } from "@/config/brand";
 import "./globals.css";
 
-const poppins = Poppins({
-  variable: "--font-poppins",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
+  subsets: ["latin"],
   display: "swap",
 });
 
@@ -33,8 +38,8 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={`${poppins.variable} font-sans h-full`} suppressHydrationWarning>
-      <body className="min-h-full font-sans antialiased bg-slate-50 text-slate-900" suppressHydrationWarning>{children}</body>
+    <html lang="fr" className={`${inter.variable} ${jetbrainsMono.variable} font-sans h-full`} suppressHydrationWarning>
+      <body className="min-h-full font-sans antialiased bg-[#F8F7F2] text-slate-900" suppressHydrationWarning>{children}</body>
     </html>
   );
 }

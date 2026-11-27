@@ -449,7 +449,7 @@ export function ObjectivesClient({ storeSlug }: ObjectivesClientProps) {
                   type="button"
                   id="btn-wizard-next"
                   onClick={() => setWizardStep(wizardStep + 1)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold bg-[#0B1521] text-white hover:bg-black transition-colors flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-[#0B1521] text-white hover:bg-[#162B1C] transition-colors flex items-center gap-1.5"
                 >
                   <span>Suivant</span>
                   <ArrowRight className="h-3.5 w-3.5" />

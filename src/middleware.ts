@@ -43,9 +43,9 @@ export async function middleware(request: NextRequest) {
   if (!isPlatformHost(host)) {
     const storeMatch = findStoreByHost(host);
     if (!storeMatch) {
-      // Domaine inconnu : page 404 neutre Novika (jamais de fuite d'informations)
+      // Domaine inconnu : page 404 neutre Kelio (jamais de fuite d'informations)
       return new NextResponse(
-        `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Boutique introuvable - Novika</title><style>body{font-family:sans-serif;background:#FAF8F5;color:#111;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;}.box{background:#fff;border:1px solid #E6E0D4;padding:40px;border-radius:24px;max-width:440px;box-shadow:0 4px 12px rgba(0,0,0,0.04);}</style></head><body><div class="box"><h1 style="font-size:24px;margin-bottom:8px;">404 - Boutique introuvable</h1><p style="color:#7A7A7A;font-size:14px;line-height:1.5;">Ce nom de domaine n'est associé à aucune boutique active sur la plateforme.</p></div></body></html>`,
+        `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Boutique introuvable - Kelio</title><style>body{font-family:sans-serif;background:#FAF8F5;color:#111;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;}.box{background:#fff;border:1px solid #E6E0D4;padding:40px;border-radius:24px;max-width:440px;box-shadow:0 4px 12px rgba(0,0,0,0.04);}</style></head><body><div class="box"><h1 style="font-size:24px;margin-bottom:8px;">404 - Boutique introuvable</h1><p style="color:#7A7A7A;font-size:14px;line-height:1.5;">Ce nom de domaine n'est associé à aucune boutique active sur la plateforme.</p></div></body></html>`,
         { status: 404, headers: { "Content-Type": "text/html; charset=utf-8" } }
       );
     }
@@ -68,7 +68,7 @@ export async function middleware(request: NextRequest) {
 
     if (isAdminRoute) {
       return new NextResponse(
-        `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Accès réservé - Novika</title><style>body{font-family:sans-serif;background:#FAF8F5;color:#111;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;}.box{background:#fff;border:1px solid #E6E0D4;padding:40px;border-radius:24px;max-width:440px;}</style></head><body><div class="box"><h1 style="font-size:20px;">Espace d'administration réservé</h1><p style="color:#7A7A7A;font-size:13px;">L'espace d'administration n'est pas accessible depuis les domaines de vitrine.</p></div></body></html>`,
+        `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Accès réservé - Kelio</title><style>body{font-family:sans-serif;background:#FAF8F5;color:#111;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;}.box{background:#fff;border:1px solid #E6E0D4;padding:40px;border-radius:24px;max-width:440px;}</style></head><body><div class="box"><h1 style="font-size:20px;">Espace d'administration réservé</h1><p style="color:#7A7A7A;font-size:13px;">L'espace d'administration n'est pas accessible depuis les domaines de vitrine.</p></div></body></html>`,
         { status: 404, headers: { "Content-Type": "text/html; charset=utf-8" } }
       );
     }

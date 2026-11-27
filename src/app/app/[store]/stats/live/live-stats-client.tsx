@@ -243,7 +243,7 @@ export function LiveStatsClient({ storeSlug }: { storeSlug: string }) {
           </div>
           <Link
             href={`/app/${storeSlug}`}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-all shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm"
           >
             <span>Retour au Tableau de Bord</span>
           </Link>
@@ -298,7 +298,7 @@ export function LiveStatsClient({ storeSlug }: { storeSlug: string }) {
                 className={cn(
                   "px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer",
                   activeWindow === win
-                    ? "bg-[#111111] text-[#FAF8F5] shadow-xs"
+                    ? "bg-[#1F3A26] text-[#FAF8F5] shadow-xs"
                     : "hover:text-[#111111]"
                 )}
               >
@@ -315,7 +315,7 @@ export function LiveStatsClient({ storeSlug }: { storeSlug: string }) {
               className={cn(
                 "px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
                 viewMode === "visitors"
-                  ? "bg-[#111111] text-[#FAF8F5] shadow-xs"
+                  ? "bg-[#1F3A26] text-[#FAF8F5] shadow-xs"
                   : "text-[#666660] hover:text-[#111111]"
               )}
             >
@@ -328,7 +328,7 @@ export function LiveStatsClient({ storeSlug }: { storeSlug: string }) {
               className={cn(
                 "px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
                 viewMode === "orders"
-                  ? "bg-[#111111] text-[#FAF8F5] shadow-xs"
+                  ? "bg-[#1F3A26] text-[#FAF8F5] shadow-xs"
                   : "text-[#666660] hover:text-[#111111]"
               )}
             >
@@ -411,7 +411,7 @@ export function LiveStatsClient({ storeSlug }: { storeSlug: string }) {
 
               {/* Tooltip interactif au survol d'un pays */}
               {selectedCountry && (
-                <div className="absolute bottom-4 right-4 z-20 p-3 rounded-2xl bg-[#111111] text-[#FAF8F5] text-xs shadow-xl animate-in fade-in duration-200">
+                <div className="absolute bottom-4 right-4 z-20 p-3 rounded-2xl bg-[#1F3A26] text-[#FAF8F5] text-xs shadow-xl animate-in fade-in duration-200">
                   <p className="font-bold flex items-center gap-1.5">
                     <span>{selectedCountry.flag}</span>
                     <span>{selectedCountry.name}</span>
@@ -551,7 +551,7 @@ export function LiveStatsClient({ storeSlug }: { storeSlug: string }) {
               </div>
               <div className="h-2 w-full rounded-full bg-black/[0.06] overflow-hidden">
                 <div
-                  className="h-full bg-[#111111] rounded-full transition-all duration-500"
+                  className="h-full bg-[#1F3A26] rounded-full transition-all duration-500"
                   style={{ width: `${pageViews.home}%` }}
                 />
               </div>
@@ -622,7 +622,7 @@ export function LiveStatsClient({ storeSlug }: { storeSlug: string }) {
               </div>
               <div className="h-2.5 w-full rounded-full bg-black/[0.06] overflow-hidden">
                 <div
-                  className="h-full bg-[#111111] rounded-full"
+                  className="h-full bg-[#1F3A26] rounded-full"
                   style={{ width: `${newVsReturning.newVisitorsPercent}%` }}
                 />
               </div>
@@ -686,7 +686,7 @@ export function LiveStatsClient({ storeSlug }: { storeSlug: string }) {
 
                 <div className="h-1.5 w-full rounded-full bg-black/[0.06] overflow-hidden">
                   <div
-                    className="h-full bg-[#111111] rounded-full transition-all"
+                    className="h-full bg-[#1F3A26] rounded-full transition-all"
                     style={{ width: `${c.percent}%` }}
                   />
                 </div>

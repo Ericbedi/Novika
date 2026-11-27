@@ -1,7 +1,7 @@
 /**
  * Moteur complet d'importation CSV et gestion des lots (Prompt 11)
  * Combine :
- * - Détection automatique de format (Shopify, Novika, Générique)
+ * - Détection automatique de format (Shopify, Kelio, Générique)
  * - Mappage et regroupement multi-lignes par Handle (Shopify)
  * - Assainissement HTML des descriptions
  * - Neutralisation des injections de formules Excel (=, +, -, @)
@@ -480,7 +480,7 @@ export function runCsvDryRun(
 
 /**
  * Exécute l'importation complète automatique d'un fichier CSV (Prompt 11).
- * Traite les fichiers Shopify, Novika et génériques, applique les stratégies de doublon,
+ * Traite les fichiers Shopify, Kelio et génériques, applique les stratégies de doublon,
  * télécharge/valide les images, crée le lot d'importation et renvoie un rapport complet.
  */
 export async function executeAutoCsvImport(params: {
@@ -532,7 +532,7 @@ export async function executeAutoCsvImport(params: {
       images: shopifyResult.fileImagesCount,
     };
   } else {
-    // Format Novika ou Générique
+    // Format Kelio ou Générique
     const dryRun = runCsvDryRun(csvContent, userRole, existingProducts, {
       mode: "create_and_update",
       newProductsStatus: "draft",

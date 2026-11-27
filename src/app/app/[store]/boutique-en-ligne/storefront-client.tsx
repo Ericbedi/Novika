@@ -370,7 +370,7 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
           </div>
           <Link
             href={`/app/${storeSlug}`}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-all shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm"
           >
             <span>Retour au Tableau de Bord</span>
           </Link>
@@ -538,7 +538,7 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
     <div className="space-y-6 pb-20">
       {/* Toast de Notification */}
       {toastMessage && (
-        <div className="fixed top-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl bg-[#111111] text-white text-xs font-bold shadow-xl animate-in fade-in">
+        <div className="fixed top-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl bg-[#1F3A26] text-white text-xs font-bold shadow-xl animate-in fade-in">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
@@ -654,7 +654,7 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
             id="btn-save-storefront"
             onClick={handlePublish}
             disabled={!publishCheck.allowed}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black transition-all shadow-sm cursor-pointer disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm cursor-pointer disabled:opacity-50"
           >
             <Save className="h-3.5 w-3.5" />
             <span>Enregistrer</span>
@@ -684,7 +684,7 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
                 className={cn(
                   "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
                   activeTab === tab.id
-                    ? "bg-[#111111] text-white shadow-2xs"
+                    ? "bg-[#1F3A26] text-white shadow-2xs"
                     : "text-[#666660] hover:text-[#111111] hover:bg-white"
                 )}
               >
@@ -1008,7 +1008,7 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
                   <button
                     type="submit"
                     id="btn-add-prepaid-zone"
-                    className="px-3 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-colors shadow-2xs cursor-pointer"
+                    className="px-3 py-2 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-colors shadow-2xs cursor-pointer"
                   >
                     Ajouter
                   </button>
@@ -1164,7 +1164,7 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
                         }))
                       }
                       className={`p-2.5 text-xs font-bold border transition-all text-center cursor-pointer ${draftTheme.styles.buttonStyle === btn.id
-                        ? "border-[#111111] bg-[#111111] text-white"
+                        ? "border-[#111111] bg-[#1F3A26] text-white"
                         : "border-black/10 bg-white text-[#666660] hover:text-[#111111]"
                         } ${btn.class}`}
                     >
@@ -1313,7 +1313,7 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
                           type="button"
                           onClick={() => setEditingSectionId(sec.id)}
                           className={`px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer ${editingSectionId === sec.id
-                            ? "bg-[#111111] text-white"
+                            ? "bg-[#1F3A26] text-white"
                             : "border border-black/10 text-[#666660]"
                             }`}
                         >
@@ -1879,7 +1879,7 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
               <button
                 type="button"
                 onClick={() => setPreviewPage("home")}
-                className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${previewPage === "home" ? "bg-[#111111] text-white" : "text-[#666660]"
+                className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${previewPage === "home" ? "bg-[#1F3A26] text-white" : "text-[#666660]"
                   }`}
               >
                 Accueil
@@ -1887,7 +1887,7 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
               <button
                 type="button"
                 onClick={() => setPreviewPage("catalog")}
-                className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${previewPage === "catalog" ? "bg-[#111111] text-white" : "text-[#666660]"
+                className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${previewPage === "catalog" ? "bg-[#1F3A26] text-white" : "text-[#666660]"
                   }`}
               >
                 Catalogue
@@ -1895,7 +1895,7 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
               <button
                 type="button"
                 onClick={() => setPreviewPage("contact")}
-                className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${previewPage === "contact" ? "bg-[#111111] text-white" : "text-[#666660]"
+                className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${previewPage === "contact" ? "bg-[#1F3A26] text-white" : "text-[#666660]"
                   }`}
               >
                 Contact
@@ -2035,7 +2035,7 @@ export function StorefrontClient({ storeSlug }: StorefrontClientProps) {
                           </div>
                           <button
                             type="button"
-                            className="w-full py-1.5 rounded-xl bg-[#111111] text-white text-[10px] font-bold"
+                            className="w-full py-1.5 rounded-xl bg-[#1F3A26] text-white text-[10px] font-bold"
                           >
                             Commander en Cash
                           </button>

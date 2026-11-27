@@ -801,7 +801,7 @@ export function EditStoreDrawer({
                 <button
                   type="button"
                   onClick={() => onRestoreRequest(store)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold bg-[#111111] text-white hover:bg-black transition-colors cursor-pointer shadow-xs"
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-[#1F3A26] text-white hover:bg-[#162B1C] transition-colors cursor-pointer shadow-xs"
                 >
                   Restaurer cette boutique
                 </button>
@@ -816,7 +816,7 @@ export function EditStoreDrawer({
                   "px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer",
                   !isDirty || isSubmitting || slugStatus === "checking" || slugStatus === "invalid" || slugStatus === "unavailable" || !!whatsappError
                     ? "bg-black/20 text-white/70 cursor-not-allowed"
-                    : "bg-[#111111] text-[#FAF8F5] hover:bg-black"
+                    : "bg-[#1F3A26] text-[#FAF8F5] hover:bg-[#162B1C]"
                 )}
               >
                 {isSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}

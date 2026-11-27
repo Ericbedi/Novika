@@ -1,5 +1,5 @@
 /**
- * Utilitaires de traitement des images et vidéos produit pour Novika (Prompt 15).
+ * Utilitaires de traitement des images et vidéos produit pour Kelio (Prompt 15).
  * - Validation format (JPG, PNG, WebP, AVIF) et taille (max 5 Mo).
  * - Nettoyage des métadonnées EXIF (notamment géolocalisation GPS) via Canvas HTML5.
  * - Analyse et génération d'URL d'intégration vidéo (YouTube, Vimeo, MP4).

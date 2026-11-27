@@ -48,7 +48,7 @@ export async function notifyNewOrder(a: NewOrderAlert): Promise<void> {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${resendKey}` },
         body: JSON.stringify({
-          from: process.env.EMAIL_FROM || "Novika <onboarding@resend.dev>",
+          from: process.env.EMAIL_FROM || "Kelio <onboarding@resend.dev>",
           to: [a.ownerEmail],
           subject: `Nouvelle commande ${a.orderNumber} — ${a.total} ${a.currency || "FCFA"}`,
           text: `Nouvelle commande sur ${a.shopName}\n\n${line(a)}`,

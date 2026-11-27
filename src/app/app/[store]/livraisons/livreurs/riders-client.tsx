@@ -86,7 +86,7 @@ export function RidersClient({ storeSlug }: { storeSlug: string }) {
         <button
           type="button"
           onClick={() => setDraft({ ...EMPTY })}
-          className="h-10 px-4 rounded-xl bg-[#111111] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+          className="h-10 px-4 rounded-xl bg-[#1F3A26] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
         >
           <Plus className="w-4 h-4" /> Ajouter
         </button>
@@ -107,7 +107,7 @@ export function RidersClient({ storeSlug }: { storeSlug: string }) {
             <button type="button" onClick={() => setDraft(null)} className="h-10 px-4 rounded-xl border border-black/10 bg-white text-xs font-bold cursor-pointer">
               Annuler
             </button>
-            <button type="submit" disabled={busy} className="h-10 px-4 rounded-xl bg-[#111111] text-white text-xs font-bold cursor-pointer disabled:opacity-50">
+            <button type="submit" disabled={busy} className="h-10 px-4 rounded-xl bg-[#1F3A26] text-white text-xs font-bold cursor-pointer disabled:opacity-50">
               {busy ? "Enregistrement…" : "Enregistrer"}
             </button>
           </div>

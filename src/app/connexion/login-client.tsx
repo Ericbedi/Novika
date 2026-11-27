@@ -214,7 +214,7 @@ export function LoginClient() {
   return (
     <div className="min-h-screen bg-[#FAF8F5] flex flex-col items-center justify-center p-4 selection:bg-[#F26522]/20">
       <div className="w-full max-w-sm rounded-3xl bg-white border border-black/[0.08] p-7 shadow-[0_4px_24px_rgba(0,0,0,0.04)] space-y-5">
-        {/* En-tête sobre : Logo Novika & Titre */}
+        {/* En-tête sobre : Logo Kelio & Titre */}
         <div className="flex flex-col items-center text-center space-y-2">
           <Logo variant="full" tone="light" size={32} />
           <h1 className="text-base font-bold text-[#111111] tracking-tight">
@@ -422,7 +422,7 @@ export function LoginClient() {
 
       {/* Mention sobre et discrète en bas */}
       <div className="text-center text-[11px] text-[#999990] mt-6">
-        Novika &copy; {new Date().getFullYear()} &middot; Accès restreint
+        Kelio &copy; {new Date().getFullYear()} &middot; Accès restreint
       </div>
     </div>
   );

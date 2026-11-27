@@ -1134,7 +1134,7 @@ export function ProductFormClient({
       {toastMessage && (
         <div
           id="product-form-toast"
-          className="fixed top-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl bg-[#111111] text-white text-xs font-bold shadow-2xl animate-in slide-in-from-top-2 duration-200"
+          className="fixed top-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl bg-[#1F3A26] text-white text-xs font-bold shadow-2xl animate-in slide-in-from-top-2 duration-200"
         >
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
@@ -1204,7 +1204,7 @@ export function ProductFormClient({
             type="button"
             id="btn-save-product-top"
             onClick={handleSave}
-            className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-all shadow-sm"
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm"
           >
             <Save className="w-4 h-4" />
             <span>Enregistrer</span>
@@ -1431,7 +1431,7 @@ export function ProductFormClient({
                     />
 
                     {item.isPrimary && (
-                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#111111] text-white shadow-xs">
+                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#1F3A26] text-white shadow-xs">
                         Principale
                       </span>
                     )}
@@ -2477,7 +2477,7 @@ export function ProductFormClient({
                             onClick={() =>
                               handleAddOptionValue(opt.id, newOptionValueInputs[opt.id] || "")
                             }
-                            className="px-3 py-1.5 rounded-xl bg-[#111111] text-white text-xs font-bold"
+                            className="px-3 py-1.5 rounded-xl bg-[#1F3A26] text-white text-xs font-bold"
                           >
                             Ajouter
                           </button>
@@ -2812,7 +2812,7 @@ export function ProductFormClient({
                 className={cn(
                   "py-2 rounded-xl text-xs font-bold border transition-colors",
                   productStatus === "active"
-                    ? "bg-[#111111] text-white border-black"
+                    ? "bg-[#1F3A26] text-white border-black"
                     : "bg-[#FAF8F5] text-[#4A4A4A] border-[#E6E0D4] hover:bg-[#EFECE6]"
                 )}
               >
@@ -2824,7 +2824,7 @@ export function ProductFormClient({
                 className={cn(
                   "py-2 rounded-xl text-xs font-bold border transition-colors",
                   productStatus === "draft"
-                    ? "bg-[#111111] text-white border-black"
+                    ? "bg-[#1F3A26] text-white border-black"
                     : "bg-[#FAF8F5] text-[#4A4A4A] border-[#E6E0D4] hover:bg-[#EFECE6]"
                 )}
               >
@@ -2836,7 +2836,7 @@ export function ProductFormClient({
                 className={cn(
                   "py-2 rounded-xl text-xs font-bold border transition-colors",
                   productStatus === "archived"
-                    ? "bg-[#111111] text-white border-black"
+                    ? "bg-[#1F3A26] text-white border-black"
                     : "bg-[#FAF8F5] text-[#4A4A4A] border-[#E6E0D4] hover:bg-[#EFECE6]"
                 )}
               >
@@ -2848,7 +2848,7 @@ export function ProductFormClient({
                 className={cn(
                   "py-2 rounded-xl text-xs font-bold border transition-colors",
                   productStatus === "scheduled"
-                    ? "bg-[#111111] text-white border-black"
+                    ? "bg-[#1F3A26] text-white border-black"
                     : "bg-[#FAF8F5] text-[#4A4A4A] border-[#E6E0D4] hover:bg-[#EFECE6]"
                 )}
               >
@@ -2968,7 +2968,7 @@ export function ProductFormClient({
                     type="button"
                     id="btn-add-collection-confirm"
                     onClick={handleCreateCollectionOnTheFly}
-                    className="px-3 py-1.5 rounded-xl bg-[#111111] text-white text-xs font-bold"
+                    className="px-3 py-1.5 rounded-xl bg-[#1F3A26] text-white text-xs font-bold"
                   >
                     Ajouter
                   </button>
@@ -3156,7 +3156,7 @@ export function ProductFormClient({
               <button
                 type="button"
                 onClick={handleBulkApply}
-                className="px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold"
+                className="px-4 py-2 rounded-xl bg-[#1F3A26] text-white text-xs font-bold"
               >
                 Appliquer à toutes
               </button>
@@ -3227,7 +3227,7 @@ export function ProductFormClient({
               <button
                 type="button"
                 onClick={handleCreateCustomField}
-                className="px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold"
+                className="px-4 py-2 rounded-xl bg-[#1F3A26] text-white text-xs font-bold"
               >
                 Créer la définition
               </button>
@@ -3266,7 +3266,7 @@ export function ProductFormClient({
               <button
                 type="button"
                 onClick={() => handleSaveAltText(editingAltItem.id, editingAltItem.alt)}
-                className="px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold"
+                className="px-4 py-2 rounded-xl bg-[#1F3A26] text-white text-xs font-bold"
               >
                 Enregistrer le texte Alt
               </button>
@@ -3329,7 +3329,7 @@ export function ProductFormClient({
       {isDirty && (
         <div
           id="bar-unsaved-changes-sticky"
-          className="fixed bottom-0 left-0 right-0 z-40 bg-[#111111]/95 backdrop-blur-md text-white border-t border-black/20 px-6 py-3.5 shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom-3 duration-200"
+          className="fixed bottom-0 left-0 right-0 z-40 bg-[#1F3A26]/95 backdrop-blur-md text-white border-t border-black/20 px-6 py-3.5 shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom-3 duration-200"
         >
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />

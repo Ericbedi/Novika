@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Règle Novika : 1 e-mail = 1 boutique, sauf les administrateurs de la plateforme (plusieurs marques)
+    // Règle Kelio : 1 e-mail = 1 boutique, sauf les administrateurs de la plateforme (plusieurs marques)
     const admins = (process.env.PLATFORM_ADMIN_EMAILS || "promisesbedi@gmail.com")
       .split(",")
       .map((e) => e.trim().toLowerCase())

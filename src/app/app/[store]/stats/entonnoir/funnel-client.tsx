@@ -205,7 +205,7 @@ export function FunnelClient({ storeSlug }: FunnelClientProps) {
           </div>
           <Link
             href={`/app/${storeSlug}/commandes`}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#111111] text-white text-xs font-bold hover:bg-black transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1F3A26] text-white text-xs font-bold hover:bg-[#162B1C] transition-colors"
           >
             <span>Retour aux Commandes</span>
           </Link>
@@ -339,7 +339,7 @@ export function FunnelClient({ storeSlug }: FunnelClientProps) {
                     idx === 5
                       ? "bg-emerald-600"
                       : idx >= 3
-                        ? "bg-[#111111]"
+                        ? "bg-[#1F3A26]"
                         : "bg-[#666660]"
                   )}
                   style={{ width: `${Math.max(4, step.percentOfTotal)}%` }}

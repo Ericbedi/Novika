@@ -383,7 +383,7 @@ class BetaStoreService {
     }
 
     if (new Date() > new Date(inv.expiresAt)) {
-      return { success: false, maskedEmail: "", error: "Cette invitation a expiré. Veuillez contacter le support Novika." };
+      return { success: false, maskedEmail: "", error: "Cette invitation a expiré. Veuillez contacter le support Kelio." };
     }
 
     const demoCode = "592184";

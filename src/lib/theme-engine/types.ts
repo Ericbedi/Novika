@@ -1,5 +1,5 @@
 /**
- * Types TypeScript du Moteur de Thème « Novika Classique » (Prompt 12)
+ * Types TypeScript du Moteur de Thème « Kelio Classique » (Prompt 12)
  * Architecture 100% originale : composants React + Tailwind, zéro code Liquid tiers.
  */
 

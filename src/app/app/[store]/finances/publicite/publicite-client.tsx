@@ -179,7 +179,7 @@ export function PubliciteClient({ storeSlug }: PubliciteClientProps) {
     <div className="space-y-6 pb-16">
       {/* Toast Feedback */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-[#111111] text-[#FAF8F5] px-4 py-2.5 text-xs font-semibold shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-3">
+        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-[#1F3A26] text-[#FAF8F5] px-4 py-2.5 text-xs font-semibold shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-3">
           <CheckCircle2 className="h-4 w-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
@@ -215,7 +215,7 @@ export function PubliciteClient({ storeSlug }: PubliciteClientProps) {
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#111111] text-xs font-bold text-[#FAF8F5] hover:bg-black transition-all shadow-2xs cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#1F3A26] text-xs font-bold text-[#FAF8F5] hover:bg-[#162B1C] transition-all shadow-2xs cursor-pointer"
               >
                 <Plus className="h-3.5 w-3.5" />
                 <span>Ajouter dépense</span>
@@ -353,7 +353,7 @@ export function PubliciteClient({ storeSlug }: PubliciteClientProps) {
               className={cn(
                 "px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
                 selectedPlatform === "all"
-                  ? "bg-[#111111] text-[#FAF8F5] shadow-xs"
+                  ? "bg-[#1F3A26] text-[#FAF8F5] shadow-xs"
                   : "bg-[#FAF8F5] border border-black/[0.08] text-[#666660] hover:text-[#111111]"
               )}
             >
@@ -365,7 +365,7 @@ export function PubliciteClient({ storeSlug }: PubliciteClientProps) {
               className={cn(
                 "px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
                 selectedPlatform === "meta"
-                  ? "bg-[#111111] text-[#FAF8F5] shadow-xs"
+                  ? "bg-[#1F3A26] text-[#FAF8F5] shadow-xs"
                   : "bg-[#FAF8F5] border border-black/[0.08] text-[#666660] hover:text-[#111111]"
               )}
             >
@@ -377,7 +377,7 @@ export function PubliciteClient({ storeSlug }: PubliciteClientProps) {
               className={cn(
                 "px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
                 selectedPlatform === "tiktok"
-                  ? "bg-[#111111] text-[#FAF8F5] shadow-xs"
+                  ? "bg-[#1F3A26] text-[#FAF8F5] shadow-xs"
                   : "bg-[#FAF8F5] border border-black/[0.08] text-[#666660] hover:text-[#111111]"
               )}
             >
@@ -389,7 +389,7 @@ export function PubliciteClient({ storeSlug }: PubliciteClientProps) {
               className={cn(
                 "px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
                 selectedPlatform === "google"
-                  ? "bg-[#111111] text-[#FAF8F5] shadow-xs"
+                  ? "bg-[#1F3A26] text-[#FAF8F5] shadow-xs"
                   : "bg-[#FAF8F5] border border-black/[0.08] text-[#666660] hover:text-[#111111]"
               )}
             >
@@ -401,7 +401,7 @@ export function PubliciteClient({ storeSlug }: PubliciteClientProps) {
               className={cn(
                 "px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
                 selectedPlatform === "snapchat"
-                  ? "bg-[#111111] text-[#FAF8F5] shadow-xs"
+                  ? "bg-[#1F3A26] text-[#FAF8F5] shadow-xs"
                   : "bg-[#FAF8F5] border border-black/[0.08] text-[#666660] hover:text-[#111111]"
               )}
             >
@@ -601,7 +601,7 @@ export function PubliciteClient({ storeSlug }: PubliciteClientProps) {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-[#111111] font-bold text-[#FAF8F5] hover:bg-black"
+                  className="px-4 py-2 rounded-xl bg-[#1F3A26] font-bold text-[#FAF8F5] hover:bg-[#162B1C]"
                 >
                   Enregistrer
                 </button>
@@ -652,7 +652,7 @@ export function PubliciteClient({ storeSlug }: PubliciteClientProps) {
                 <button
                   type="button"
                   onClick={handleSimulateCsvImport}
-                  className="px-4 py-2 rounded-xl bg-[#111111] font-bold text-[#FAF8F5] hover:bg-black"
+                  className="px-4 py-2 rounded-xl bg-[#1F3A26] font-bold text-[#FAF8F5] hover:bg-[#162B1C]"
                 >
                   Importer les données
                 </button>

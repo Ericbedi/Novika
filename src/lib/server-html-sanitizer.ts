@@ -1,6 +1,6 @@
 /**
  * Module d'assainissement HTML serveur strict pour les descriptions de produits (Prompt 17-F).
- * Conforme aux standards Novika :
+ * Conforme aux standards Kelio :
  * - Liste blanche stricte de balises et d'attributs via `sanitize-html`
  * - Remplacement automatique de <h1> par <h2> (hiérarchie SEO préservée)
  * - Conversion intelligente des anciens styles (inline styles -> balises sémantiques <strong>, <em>, <u>)
@@ -230,7 +230,7 @@ export function sanitizeProductDescription(
 
   const original = rawHtml;
   const removedSecurityElements: string[] = [];
-  const fallbackAlt = options.productTitle || "Produit Novika";
+  const fallbackAlt = options.productTitle || "Produit Kelio";
 
   // Analyse préalable des menaces de sécurité présentes dans le HTML brut
   if (/<script\b[^>]*>/i.test(original)) {

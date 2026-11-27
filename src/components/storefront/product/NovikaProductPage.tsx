@@ -577,7 +577,7 @@ export function NovikaProductPage({
                   <tr className="border-b border-black/[0.08]">
                     <th className="py-3 px-3 font-bold text-[#888880]">Critère de comparaison</th>
                     <th className="py-3 px-3 font-black text-[#111111] bg-emerald-50 rounded-t-xl text-center">
-                      Notre produit Novika
+                      Notre produit Kelio
                     </th>
                     <th className="py-3 px-3 font-bold text-[#888880] text-center">Autres boutiques</th>
                   </tr>

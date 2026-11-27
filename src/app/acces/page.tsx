@@ -203,7 +203,7 @@ export default function AccessRequestPage() {
           </div>
 
           <h1 className="text-xl sm:text-2xl font-black tracking-tight text-[#111111] mb-2">
-            Demander mon accès à Novika
+            Demander mon accès à Kelio
           </h1>
           <p className="text-xs text-[#666660] mb-6 leading-relaxed">
             Créez votre compte, choisissez vos niches e-commerce et validez le code à 6 chiffres envoyé dans votre boîte e-mail pour accéder à votre espace vendeur.
@@ -446,7 +446,7 @@ export default function AccessRequestPage() {
                   className="h-4 w-4 rounded border-black/[0.1] accent-[#111111] mt-0.5 cursor-pointer"
                 />
                 <span>
-                  J'accepte les conditions d'accès Novika et certifie que je suis le propriétaire légitime de cette adresse e-mail.
+                  J'accepte les conditions d'accès Kelio et certifie que je suis le propriétaire légitime de cette adresse e-mail.
                 </span>
               </label>
             </div>
@@ -465,7 +465,7 @@ export default function AccessRequestPage() {
       </div>
 
       <footer className="text-center py-4 text-[11px] text-[#888880]">
-        Plateforme Novika · Paiement à la livraison pour les 54 pays d'Afrique
+        Plateforme Kelio · Paiement à la livraison pour les 54 pays d'Afrique
       </footer>
     </div>
   );

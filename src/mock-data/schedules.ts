@@ -102,7 +102,7 @@ export function calculateDutyStatus(
   const activeDays = memberSched?.days || roleSched?.days || shopSched.days;
 
   // Jour de la semaine JS : 0 = Dimanche, 1 = Lundi, ..., 6 = Samedi
-  // Convertir en DayOfWeek Novika : 1 = Lundi, ..., 7 = Dimanche
+  // Convertir en DayOfWeek Kelio : 1 = Lundi, ..., 7 = Dimanche
   const jsDay = refDate.getDay();
   const dayOfWeek: 1 | 2 | 3 | 4 | 5 | 6 | 7 = jsDay === 0 ? 7 : (jsDay as 1 | 2 | 3 | 4 | 5 | 6);
 

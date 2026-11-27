@@ -149,7 +149,7 @@ export function PointClient({ storeSlug }: PointClientProps) {
     <div className="space-y-6 pb-16">
       {/* Toast Feedback */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-[#111111] text-[#FAF8F5] px-4 py-2.5 text-xs font-semibold shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-3">
+        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-[#1F3A26] text-[#FAF8F5] px-4 py-2.5 text-xs font-semibold shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-3">
           <CheckCircle2 className="h-4 w-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
@@ -177,7 +177,7 @@ export function PointClient({ storeSlug }: PointClientProps) {
             className={cn(
               "inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer",
               activeTab === "riders"
-                ? "bg-[#111111] text-[#FAF8F5] shadow-xs"
+                ? "bg-[#1F3A26] text-[#FAF8F5] shadow-xs"
                 : "text-[#666660] hover:text-[#111111]"
             )}
           >
@@ -190,7 +190,7 @@ export function PointClient({ storeSlug }: PointClientProps) {
             className={cn(
               "inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer",
               activeTab === "closers"
-                ? "bg-[#111111] text-[#FAF8F5] shadow-xs"
+                ? "bg-[#1F3A26] text-[#FAF8F5] shadow-xs"
                 : "text-[#666660] hover:text-[#111111]"
             )}
           >
@@ -258,7 +258,7 @@ export function PointClient({ storeSlug }: PointClientProps) {
                         setRemittanceModalRider(r);
                         setDeclaredRemittance(r.cashInHand);
                       }}
-                      className="px-3.5 py-1.5 rounded-xl bg-[#111111] text-xs font-bold text-[#FAF8F5] hover:bg-black transition-all shadow-2xs cursor-pointer flex items-center gap-1.5"
+                      className="px-3.5 py-1.5 rounded-xl bg-[#1F3A26] text-xs font-bold text-[#FAF8F5] hover:bg-[#162B1C] transition-all shadow-2xs cursor-pointer flex items-center gap-1.5"
                     >
                       <Wallet className="h-3.5 w-3.5" />
                       <span>Faire le point</span>
@@ -329,7 +329,7 @@ export function PointClient({ storeSlug }: PointClientProps) {
                               <button
                                 type="button"
                                 onClick={() => handleMarkStopDelivered(r.id, stop.id)}
-                                className="px-2.5 py-1.5 rounded-lg bg-[#111111] text-[#FAF8F5] font-bold text-[10px]"
+                                className="px-2.5 py-1.5 rounded-lg bg-[#1F3A26] text-[#FAF8F5] font-bold text-[10px]"
                               >
                                 Livré
                               </button>
@@ -552,7 +552,7 @@ export function PointClient({ storeSlug }: PointClientProps) {
                 <button
                   type="button"
                   onClick={handleConfirmRemittance}
-                  className="px-4 py-2 rounded-xl bg-[#111111] font-bold text-[#FAF8F5] hover:bg-black"
+                  className="px-4 py-2 rounded-xl bg-[#1F3A26] font-bold text-[#FAF8F5] hover:bg-[#162B1C]"
                 >
                   Confirmer la réception des fonds
                 </button>

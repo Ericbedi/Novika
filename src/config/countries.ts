@@ -1,5 +1,5 @@
 /**
- * Source unique de vérité des 54 pays d'Afrique pour la plateforme Novika / AfriBuilder.
+ * Source unique de vérité des 54 pays d'Afrique pour la plateforme Kelio / AfriBuilder.
  * Conforme à la spécification Prompt 05-P :
  * - Codes ISO 3166-1 alpha-2
  * - Noms officiels en français
@@ -16,7 +16,7 @@ export interface AfricanCountryConfig {
   dialCode: string; // Indicatif E.164 (ex: "+225", "+228", "+221")
   region: "west" | "central" | "east" | "southern" | "north";
   defaultVatRate?: number; // Taux de TVA indicatif
-  platformEligible: boolean; // Si supporté au niveau plateforme Novika
+  platformEligible: boolean; // Si supporté au niveau plateforme Kelio
   majorCities?: string[];
 }
 

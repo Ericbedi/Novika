@@ -105,7 +105,7 @@ export async function GET(
               currentStepIndex: currentStepIdx,
               city: orderData.city,
               country: orderData.country,
-              shopName: "Novika Store",
+              shopName: "Kelio Store",
               shopWhatsapp: "+22890123456",
               shopLogo: "/icons/brand-logo.png",
               requiresProofCode: false,

@@ -84,7 +84,7 @@ export const MOCK_STORE_CONFIG: OnlineStoreConfig = {
     },
     {
       id: "page_02",
-      title: "À Propos de Novika",
+      title: "À Propos de Kelio",
       slug: "a-propos",
       content: "Produits authentiques testés en laboratoire, sélectionnés pour les besoins spécifiques des clients en Afrique de l'Ouest.",
       published: true,

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" fill="none">
+  <rect width="44" height="44" y="2" rx="11" fill="#1F3A26"/>
+  <path d="M12 12h5v8l8-8h7l-9.8 9.6L33 36h-7.3L17 26.5V36h-5z" fill="#C8F26B"/>
+  <text x="56" y="32" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="26" font-weight="800" fill="#1F3A26" letter-spacing="-0.5">Kelio</text>
+</svg>

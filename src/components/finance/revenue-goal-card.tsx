@@ -153,10 +153,10 @@ export function RevenueGoalCard({
         {/* Repère d'allure (Pace line) montrant l'avancement théorique aujourd'hui */}
         <div
           style={{ left: `${Math.min(pace.expectedPercentToday, 100)}%` }}
-          className="absolute top-0 bottom-0 w-0.5 bg-[#111111] z-10 pointer-events-none"
+          className="absolute top-0 bottom-0 w-0.5 bg-[#1F3A26] z-10 pointer-events-none"
           title={`Repère aujourd'hui : jour ${pace.elapsedDays}/${pace.totalDays} (${Math.round(pace.expectedPercentToday)}%)`}
         >
-          <div className="w-2 h-2 -ml-[3px] -top-1 absolute bg-[#111111] rounded-full" />
+          <div className="w-2 h-2 -ml-[3px] -top-1 absolute bg-[#1F3A26] rounded-full" />
         </div>
       </div>
 

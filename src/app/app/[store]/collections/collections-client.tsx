@@ -139,7 +139,7 @@ export function CollectionsClient({ storeSlug }: { storeSlug: string }) {
 
       {/* Toast */}
       {toastMessage && (
-        <div className="fixed top-6 right-6 z-50 rounded-2xl bg-[#111111] text-[#FAF8F5] px-4 py-2.5 text-xs font-semibold shadow-2xl flex items-center gap-2">
+        <div className="fixed top-6 right-6 z-50 rounded-2xl bg-[#1F3A26] text-[#FAF8F5] px-4 py-2.5 text-xs font-semibold shadow-2xl flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
@@ -152,7 +152,7 @@ export function CollectionsClient({ storeSlug }: { storeSlug: string }) {
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#666660]">
               Organisation du Catalogue
             </span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-[#111111]/[0.05] text-[#111111]">
+            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-[#1F3A26]/[0.05] text-[#111111]">
               {collections.length} collections
             </span>
           </div>
@@ -167,7 +167,7 @@ export function CollectionsClient({ storeSlug }: { storeSlug: string }) {
         <button
           type="button"
           onClick={handleOpenCreate}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#111111] text-[#FAF8F5] text-xs font-bold hover:bg-black transition-all shadow-sm cursor-pointer self-start sm:self-auto"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1F3A26] text-[#FAF8F5] text-xs font-bold hover:bg-[#162B1C] transition-all shadow-sm cursor-pointer self-start sm:self-auto"
         >
           <Plus className="h-4 w-4" />
           <span>Nouvelle collection</span>
@@ -308,7 +308,7 @@ export function CollectionsClient({ storeSlug }: { storeSlug: string }) {
                     className={cn(
                       "py-2.5 rounded-xl font-bold transition-all text-center",
                       type === "manual"
-                        ? "bg-[#111111] text-white shadow-xs"
+                        ? "bg-[#1F3A26] text-white shadow-xs"
                         : "bg-white border border-black/[0.08] text-[#666660]"
                     )}
                   >
@@ -320,7 +320,7 @@ export function CollectionsClient({ storeSlug }: { storeSlug: string }) {
                     className={cn(
                       "py-2.5 rounded-xl font-bold transition-all text-center",
                       type === "automated"
-                        ? "bg-[#111111] text-white shadow-xs"
+                        ? "bg-[#1F3A26] text-white shadow-xs"
                         : "bg-white border border-black/[0.08] text-[#666660]"
                     )}
                   >
@@ -404,7 +404,7 @@ export function CollectionsClient({ storeSlug }: { storeSlug: string }) {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-[#111111] text-white font-bold hover:bg-black"
+                  className="px-5 py-2 rounded-xl bg-[#1F3A26] text-white font-bold hover:bg-[#162B1C]"
                 >
                   {editingCollection ? "Mettre à jour" : "Créer la collection"}
                 </button>

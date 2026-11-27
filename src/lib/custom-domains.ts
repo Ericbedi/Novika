@@ -93,7 +93,7 @@ export function validateDomainFormat(input: string): { isValid: boolean; normali
       return {
         isValid: false,
         normalized: "",
-        error: "Ce domaine est réservé par la plateforme Novika et ne peut pas être attribué à une boutique.",
+        error: "Ce domaine est réservé par la plateforme Kelio et ne peut pas être attribué à une boutique.",
       };
     }
   }

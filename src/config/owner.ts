@@ -1,5 +1,5 @@
 /**
- * Configuration du compte Propriétaire Novika (Prompt 18)
+ * Configuration du compte Propriétaire Kelio (Prompt 18)
  * L'adresse est lue depuis la variable d'environnement OWNER_EMAIL
  * et n'est jamais codée en dur.
  */

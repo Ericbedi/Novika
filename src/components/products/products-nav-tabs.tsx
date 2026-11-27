@@ -167,7 +167,7 @@ export function ProductsNavTabs({ storeSlug }: ProductsNavTabsProps) {
               key={tab.id}
               href={tab.href}
               className={`group flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap shadow-xs ${active
-                ? "bg-[#111111] text-white shadow-sm"
+                ? "bg-[#1F3A26] text-white shadow-sm"
                 : "bg-white text-[#4A4A4A] hover:text-[#111111] hover:bg-[#F3EFE6] border border-[#E6E0D4]"
                 }`}
             >
