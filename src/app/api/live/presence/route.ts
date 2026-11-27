@@ -1,60 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+
+export const dynamic = "force-dynamic";
 
 /**
  * Collecte des visiteurs sans cookie et sans adresse IP enregistrée.
- * Le serveur déduit le code pays depuis l'en-tête d'hébergement ou la requête,
- * puis jette immédiatement l'adresse IP (ni enregistrée, ni journalisée).
+ * Le pays est déduit de l'en-tête d'hébergement puis l'IP est jetée ; seule une session volatile (id aléatoire de l'onglet) est conservée.
  */
-
-interface PresenceRecord {
-  shopSlug: string;
-  visitorId: string;
-  country: string;
-  pageType: "home" | "catalog" | "product" | "checkout";
-  lastActivity: number;
-}
-
-// Magasin éphémère en mémoire (nettoyage automatique)
-const presenceStore: Map<string, PresenceRecord> = new Map();
+const PAGES = ["home", "catalog", "product", "checkout"];
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { shopSlug, visitorId, pageType = "home", country: reqCountry, token } = body;
+    const body = await req.json().catch(() => ({}));
+    const shopSlug = String(body.shopSlug || "").replace(/[^a-z0-9-]/gi, "").slice(0, 60);
+    const visitorId = String(body.visitorId || "");
+    const pageType = PAGES.includes(body.pageType) ? body.pageType : "home";
+    if (!shopSlug || !visitorId) return NextResponse.json({ error: "Champs requis manquants" }, { status: 400 });
 
-    if (!shopSlug || !visitorId) {
-      return NextResponse.json({ error: "Champs requis manquants" }, { status: 400 });
-    }
-
-    // Déduction du pays via les en-têtes d'hébergement (Vercel / Cloudflare)
-    // L'adresse IP est STRICTEMENT jetée et n'est jamais consignée dans les logs
-    const geoCountry =
-      req.headers.get("x-vercel-ip-country") ||
-      req.headers.get("cf-ipcountry") ||
-      reqCountry ||
-      "TG";
-
-    const cleanCountry = typeof geoCountry === "string" ? geoCountry.slice(0, 2).toUpperCase() : "TG";
-
-    const recordKey = `${shopSlug}:${visitorId}`;
-    presenceStore.set(recordKey, {
-      shopSlug,
-      visitorId,
-      country: cleanCountry,
-      pageType,
-      lastActivity: Date.now(),
-    });
-
-    // Nettoyage des sessions inactives (> 5 minutes)
-    const now = Date.now();
-    for (const [key, record] of presenceStore.entries()) {
-      if (now - record.lastActivity > 5 * 60 * 1000) {
-        presenceStore.delete(key);
-      }
-    }
-
-    return NextResponse.json({ success: true, timestamp: now });
-  } catch (error) {
+    const country = (req.headers.get("x-vercel-ip-country") || req.headers.get("cf-ipcountry") || "").slice(0, 2).toUpperCase();
+    const secret = process.env.PRODUCT_SYNC_SECRET;
+    if (!secret) return NextResponse.json({ success: false });
+    const supabase = await createClient();
+    await (supabase as any).rpc("visit_ping_server", { p_secret: secret, p_slug: shopSlug, p_visitor: visitorId, p_page: pageType, p_country: country });
+    return NextResponse.json({ success: true, timestamp: Date.now() });
+  } catch {
     return NextResponse.json({ error: "Erreur traitement présence" }, { status: 500 });
   }
 }

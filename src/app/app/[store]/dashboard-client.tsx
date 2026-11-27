@@ -100,11 +100,16 @@ export function DashboardClient({ storeSlug }: { storeSlug: string }) {
   };
 
   const kpis: DashboardKpi = {
-    visitors: { value: 0, delta: 0, isUpGood: true },
+    visitors: kpi("visitors"),
     totalSales: kpi("total_sales"),
     deliveredSales: kpi("delivered_sales"),
     ordersCount: kpi("orders"),
-    conversionRate: { value: 0, delta: 0, isUpGood: true },
+    conversionRate: (() => {
+      const rate = (days: any[] | undefined) => { const vis = sum(days, "visitors"); return vis > 0 ? Math.round((sum(days, "orders") / vis) * 1000) / 10 : 0; };
+      const cur = rate(stats?.current?.days);
+      const prev = stats?.previous ? rate(stats.previous.days) : null;
+      return { value: cur, delta: prev === null || prev === 0 ? 0 : Math.round(((cur - prev) / prev) * 100), isUpGood: true };
+    })(),
     pendingOrdersCount: Number(stats?.current?.pending_count) || 0,
     todayDeliveriesCount: Number(stats?.current?.today_deliveries) || 0,
   };
@@ -133,7 +138,7 @@ export function DashboardClient({ storeSlug }: { storeSlug: string }) {
     return {
       date: d.date,
       dayLabel: new Date(d.date + "T00:00:00").toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }),
-      visitors: 0,
+      visitors: Number(d.visitors) || 0,
       totalSales: Number(d.total_sales) || 0,
       deliveredSales,
       orders: Number(d.orders) || 0,

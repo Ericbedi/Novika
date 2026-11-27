@@ -21,10 +21,20 @@ export async function GET(req: NextRequest) {
   const prevTo = new Date(Date.parse(from) - DAY).toISOString().slice(0, 10);
   const prevFrom = new Date(Date.parse(from) - span * DAY).toISOString().slice(0, 10);
   const db = a.supabase as any;
+  const [curV, prevV] = await Promise.all([
+    db.rpc("visitor_stats_server", { p_secret: a.secret, p_slug: store, p_from: from, p_to: to }),
+    db.rpc("visitor_stats_server", { p_secret: a.secret, p_slug: store, p_from: prevFrom, p_to: prevTo }),
+  ]);
   const [cur, prev] = await Promise.all([
     db.rpc("dashboard_stats_server", { p_secret: a.secret, p_slug: store, p_from: from, p_to: to }),
     db.rpc("dashboard_stats_server", { p_secret: a.secret, p_slug: store, p_from: prevFrom, p_to: prevTo }),
   ]);
   if (cur.error || !cur.data?.success) return NextResponse.json({ success: false, error: "Lecture impossible." }, { status: 500 });
-  return NextResponse.json({ success: true, current: cur.data, previous: prev.data?.success ? prev.data : null });
+  const withVisitors = (stats: any, v: any) => {
+    if (!stats?.success) return stats;
+    const per = (v?.success ? v.days : {}) || {};
+    return { ...stats, days: (stats.days || []).map((d: any) => ({ ...d, visitors: Number(per[d.date]) || 0 })), visitors_total: Number(v?.total) || 0,
+      funnel: v?.success ? { visitors: Number(v.total) || 0, catalog: Number(v.reached_catalog) || 0, product: Number(v.reached_product) || 0, checkout: Number(v.reached_checkout) || 0 } : null };
+  };
+  return NextResponse.json({ success: true, current: withVisitors(cur.data, curV.data), previous: prev.data?.success ? withVisitors(prev.data, prevV.data) : null });
 }

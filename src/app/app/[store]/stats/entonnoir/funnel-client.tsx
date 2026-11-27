@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   Filter,
@@ -42,76 +42,44 @@ export function FunnelClient({ storeSlug }: FunnelClientProps) {
   const [sourceFilter, setSourceFilter] = useState<"all" | "meta_ads" | "tiktok" | "whatsapp" | "direct">("all");
   const [productFilter, setProductFilter] = useState<string>("all");
 
-  // Données de l'entonnoir (ajustées dynamiquement selon les filtres)
+  // Chiffres réels : visites enregistrées par la vitrine + commandes de la boutique
+  const [real, setReal] = useState<{ visitors: number; product: number; checkout: number; orders: number; delivered: number } | null>(null);
+  useEffect(() => {
+    const days = periodFilter === "today" ? 1 : periodFilter === "30d" ? 30 : 7;
+    const iso = (d: Date) => d.toISOString().slice(0, 10);
+    const to = new Date();
+    const from = new Date(to.getTime() - (days - 1) * 86400000);
+    let off = false;
+    fetch(`/api/dashboard?store=${encodeURIComponent(storeSlug)}&from=${iso(from)}&to=${iso(to)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (off || !d?.success || !d.current) return;
+        const f = d.current.funnel || {};
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const sum = (k: string) => ((d.current.days as any[]) || []).reduce((t, x) => t + (Number(x[k]) || 0), 0);
+        setReal({ visitors: Number(f.visitors) || 0, product: Number(f.product) || 0, checkout: Number(f.checkout) || 0, orders: sum("orders"), delivered: sum("delivered_count") });
+      })
+      .catch(() => {});
+    return () => { off = true; };
+  }, [storeSlug, periodFilter]);
+
+  // Les étapes non mesurables (appareil, clic, formulaire commencé) ne sont pas inventées
   const funnelData = useMemo(() => {
-    let multiplier = periodFilter === "today" ? 0.2 : periodFilter === "30d" ? 3.8 : 1.0;
-    if (deviceFilter === "mobile") multiplier *= 0.85;
-    if (deviceFilter === "desktop") multiplier *= 0.15;
-
-    const visitors = Math.round(0 * multiplier);
-    const productView = Math.round(0 * multiplier);
-    const clickOrder = Math.round(0 * multiplier);
-    const formStarted = Math.round(0 * multiplier);
-    const orderSent = Math.round(0 * multiplier);
-    const orderConfirmed = Math.round(0 * multiplier); // Taux final de closing COD ~45 %
-
+    const visitors = real?.visitors ?? 0;
+    const productView = real?.product ?? 0;
+    const checkout = real?.checkout ?? 0;
+    const orderSent = real?.orders ?? 0;
+    const delivered = real?.delivered ?? 0;
+    const pct = (n: number) => (visitors > 0 ? Math.round((n / visitors) * 100) : 0);
+    const drop = (a: number, b: number) => (a > 0 ? Math.max(0, Math.round(((a - b) / a) * 100)) : 0);
     return [
-      {
-        id: "step_visitors",
-        label: "1. Visiteurs uniques",
-        count: visitors,
-        percentOfTotal: 100,
-        dropOffCount: visitors - productView,
-        dropOffPercent: visitors > 0 ? Math.round(((visitors - productView) / visitors) * 100) : 0,
-        hint: "Trafic brut arrivant sur la vitrine depuis vos annonces ou partages WhatsApp.",
-      },
-      {
-        id: "step_product_view",
-        label: "2. Fiche produit consultée",
-        count: productView,
-        percentOfTotal: visitors > 0 ? Math.round((productView / visitors) * 100) : 0,
-        dropOffCount: productView - clickOrder,
-        dropOffPercent: productView > 0 ? Math.round(((productView - clickOrder) / productView) * 100) : 0,
-        hint: "Visiteurs ayant exploré les images, les avis et la description du produit.",
-      },
-      {
-        id: "step_click_order",
-        label: "3. Clic sur « Commander »",
-        count: clickOrder,
-        percentOfTotal: visitors > 0 ? Math.round((clickOrder / visitors) * 100) : 0,
-        dropOffCount: clickOrder - formStarted,
-        dropOffPercent: clickOrder > 0 ? Math.round(((clickOrder - formStarted) / clickOrder) * 100) : 0,
-        hint: "Clic sur le bouton collant mobile ou le bouton principal d'achat.",
-      },
-      {
-        id: "step_form_started",
-        label: "4. Formulaire commencé",
-        count: formStarted,
-        percentOfTotal: visitors > 0 ? Math.round((formStarted / visitors) * 100) : 0,
-        dropOffCount: formStarted - orderSent,
-        dropOffPercent: formStarted > 0 ? Math.round(((formStarted - orderSent) / formStarted) * 100) : 0,
-        hint: "Visiteur ayant cliqué sur l'un des champs (nom, téléphone, ville).",
-      },
-      {
-        id: "step_order_sent",
-        label: "5. Commande envoyée",
-        count: orderSent,
-        percentOfTotal: visitors > 0 ? Math.round((orderSent / visitors) * 100) : 0,
-        dropOffCount: orderSent - orderConfirmed,
-        dropOffPercent: orderSent > 0 ? Math.round(((orderSent - orderConfirmed) / orderSent) * 100) : 0,
-        hint: "Formulaire soumis et enregistré avec succès en base de données.",
-      },
-      {
-        id: "step_order_confirmed",
-        label: "6. Commande confirmée (Closeuse)",
-        count: orderConfirmed,
-        percentOfTotal: visitors > 0 ? Math.round((orderConfirmed / visitors) * 100) : 0,
-        dropOffCount: 0,
-        dropOffPercent: 0,
-        hint: "Appel de la closeuse abouti avec acceptation de livraison et date convenue.",
-      },
+      { id: "step_visitors", label: "1. Visiteurs uniques", count: visitors, percentOfTotal: 100, dropOffCount: Math.max(0, visitors - productView), dropOffPercent: drop(visitors, productView), hint: "Visiteurs distincts enregistrés sur la vitrine (sans cookie, sans adresse IP)." },
+      { id: "step_product_view", label: "2. Fiche produit consultée", count: productView, percentOfTotal: pct(productView), dropOffCount: Math.max(0, productView - checkout), dropOffPercent: drop(productView, checkout), hint: "Visiteurs ayant ouvert au moins une fiche produit." },
+      { id: "step_checkout", label: "3. Page de commande ouverte", count: checkout, percentOfTotal: pct(checkout), dropOffCount: Math.max(0, checkout - orderSent), dropOffPercent: drop(checkout, orderSent), hint: "Visiteurs arrivés sur le formulaire de commande." },
+      { id: "step_order_sent", label: "4. Commande envoyée", count: orderSent, percentOfTotal: pct(orderSent), dropOffCount: Math.max(0, orderSent - delivered), dropOffPercent: drop(orderSent, delivered), hint: "Commandes enregistrées sur la période." },
+      { id: "step_delivered", label: "5. Commande livrée", count: delivered, percentOfTotal: pct(delivered), dropOffCount: 0, dropOffPercent: 0, hint: "Commandes livrées sur la période." },
     ];
-  }, [periodFilter, deviceFilter]);
+  }, [real]);
 
   // Analyse d'abandon par champ
   const fieldDropoffs = useMemo(() => {

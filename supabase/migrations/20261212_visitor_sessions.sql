@@ -1,0 +1,3 @@
+-- Appliquée via MCP Supabase (migration "visitor_sessions").
+-- Table shop_visitor_sessions (sans IP, sans cookie) + RPC visit_ping_server, live_metrics_server, visitor_stats_server,
+-- toutes protégées par _check_product_sync_secret. Voir l'historique des migrations du projet pour le SQL complet.
