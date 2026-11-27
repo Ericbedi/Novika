@@ -42,7 +42,7 @@ const SHOW_QUICK_BUY_ACTIONS = false;
 
 // Mode du formulaire de commande : "popup" (fenêtre ouverte par le bouton « Commander maintenant »)
 // ou "inline" (formulaire affiché dans la page).
-const ORDER_FORM_MODE: "popup" | "inline" = "popup";
+const ORDER_FORM_MODE: "popup" | "inline" = "inline";
 
 function BenefitIcon({ icon, className }: { icon?: string; className?: string }) {
   switch (icon) {
@@ -520,7 +520,13 @@ export function NovikaProductPage({
             <div id="cod-order-form" className="pt-2">
               <StandardOrderForm
                 product={product}
-                settings={settings}
+                settings={{
+                  ...settings,
+                  isWarningEnabled: false,
+                  showEmailField: false,
+                  showDistrictField: false,
+                  requireCommitmentCheckbox: false,
+                }}
                 quantityOffers={quantityOffers}
                 storeSlug={storeSlug}
                 isOutOfStock={isOutOfStock}
