@@ -29,7 +29,6 @@ import { ProductGallery } from "./ProductGallery";
 import { ScarcityStockBadge } from "./ScarcityStockBadge";
 import { StickyMobileCta } from "./StickyMobileCta";
 import { StandardOrderForm } from "@/components/storefront/standard-order-form";
-import { OrderPopup } from "./OrderPopup";
 import { ProductDescription } from "@/components/products/product-description";
 import { formatFcfa } from "@/lib/money";
 import { ProductPageTemplateType } from "@/lib/theme-engine/types";
@@ -42,7 +41,6 @@ const SHOW_QUICK_BUY_ACTIONS = false;
 
 // Mode du formulaire de commande : "popup" (fenêtre ouverte par le bouton « Commander maintenant »)
 // ou "inline" (formulaire affiché dans la page).
-const ORDER_FORM_MODE: "popup" | "inline" = "inline";
 
 function BenefitIcon({ icon, className }: { icon?: string; className?: string }) {
   switch (icon) {
@@ -101,7 +99,6 @@ export function NovikaProductPage({
 
   const [selectedPackQuantity, setSelectedPackQuantity] = useState<number>(1);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [isOrderOpen, setIsOrderOpen] = useState(false);
   const shopBrandForButton = useShopBrand(storeSlug);
   const [addedToCartAnim, setAddedToCartAnim] = useState(false);
 
@@ -484,40 +481,8 @@ export function NovikaProductPage({
             )}
           </div>
 
-          {/* Commande : bouton principal + formulaire (pop-up ou intégré selon ORDER_FORM_MODE) */}
-          {ORDER_FORM_MODE === "popup" ? (
-            <>
-              {!isOutOfStock && (
-                <button
-                  type="button"
-                  onClick={() => setIsOrderOpen(true)}
-                  data-testid="btn-open-order-popup"
-                  className="w-full min-h-[56px] px-5 py-3.5 rounded-2xl bg-gradient-to-r from-amber-200 to-amber-500 text-[#1a1a1a] text-sm sm:text-base font-black italic flex items-center justify-center gap-2.5 shadow-lg active:scale-[0.98] transition-transform cursor-pointer"
-                >
-                  <ShoppingBag className="w-5 h-5 shrink-0" />
-                  <span>{shopBrandForButton.formButton || "Commander maintenant - Paiement à la livraison"}</span>
-                </button>
-              )}
-              <OrderPopup open={isOrderOpen} onClose={() => setIsOrderOpen(false)}>
-                <StandardOrderForm
-                  product={product}
-                  settings={{
-                    ...settings,
-                    isWarningEnabled: false,
-                    showEmailField: false,
-                    showDistrictField: false,
-                    requireCommitmentCheckbox: false,
-                  }}
-                  quantityOffers={quantityOffers}
-                  storeSlug={storeSlug}
-                  isOutOfStock={isOutOfStock}
-                  formId="popup-cod-order-form"
-                  compact
-                />
-              </OrderPopup>
-            </>
-          ) : (
-            <div id="cod-order-form" className="pt-2">
+          {/* Formulaire de commande intégré à la page */}
+          <div id="cod-order-form" className="pt-2">
               <StandardOrderForm
                 product={product}
                 settings={{
@@ -532,7 +497,6 @@ export function NovikaProductPage({
                 isOutOfStock={isOutOfStock}
               />
             </div>
-          )}
 
           {/* Description nettoyée et caractéristiques (Prompt 17-F, Composant unique ProductDescription) */}
           {Boolean(product.description) && (
@@ -644,7 +608,6 @@ export function NovikaProductPage({
         productTitle={product.title || product.name}
         targetFormId="cod-order-form"
         isOutOfStock={isOutOfStock}
-        onOrderClick={ORDER_FORM_MODE === "popup" ? () => setIsOrderOpen(true) : undefined}
       />
     </div>
   );
