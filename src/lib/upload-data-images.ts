@@ -106,3 +106,20 @@ export async function ensureListImagesRemote(
   }
   return { products: out, changed, failed };
 }
+
+/** Envoie directement un fichier image vers le stockage réel ; renvoie l'adresse publique ou null. */
+export async function uploadImageFile(storeSlug: string, file: File, altText = ""): Promise<string | null> {
+  try {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("storeSlug", storeSlug);
+    fd.append("altText", altText);
+    fd.append("contextType", "product");
+    const res = await fetch("/api/media/upload", { method: "POST", body: fd });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return typeof data?.url === "string" && /^https?:\/\//.test(data.url) ? data.url : null;
+  } catch {
+    return null;
+  }
+}

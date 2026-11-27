@@ -1,5 +1,6 @@
 "use client";
 
+import { uploadImageFile } from "@/lib/upload-data-images";
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -52,7 +53,7 @@ export function AiProductGeneratorClient({ storeSlug }: AiProductGeneratorClient
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
 
   // Étape 1 : Images et Source
-  const [images, setImages] = useState<Array<{ name: string; size: number; type?: string; previewUrl: string }>>([]);
+  const [images, setImages] = useState<Array<{ name: string; size: number; type?: string; previewUrl: string; remoteUrl?: string }>>([]);
   const [productPageUrl, setProductPageUrl] = useState("");
   const [confirmedRights, setConfirmedRights] = useState(false);
   const [isExtractingFacts, setIsExtractingFacts] = useState(false);
@@ -161,7 +162,7 @@ export function AiProductGeneratorClient({ storeSlug }: AiProductGeneratorClient
       return;
     }
 
-    const newImgs: Array<{ name: string; size: number; type?: string; previewUrl: string }> = [];
+    const newImgs: Array<{ name: string; size: number; type?: string; previewUrl: string; remoteUrl?: string }> = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       if (file.size > 5 * 1024 * 1024) {
@@ -181,6 +182,13 @@ export function AiProductGeneratorClient({ storeSlug }: AiProductGeneratorClient
     }
 
     setImages((prev) => [...prev, ...newImgs]);
+
+    // Envoi vers le stockage réel : l'adresse locale (blob) ne fonctionne que sur cet appareil
+    newImgs.forEach((img, idx) => {
+      void uploadImageFile(storeSlug, files[idx], img.name).then((url) => {
+        if (url) setImages((prev) => prev.map((x) => (x.previewUrl === img.previewUrl ? { ...x, remoteUrl: url } : x)));
+      });
+    });
   };
 
   const handleRemoveImage = (index: number) => {
@@ -421,7 +429,7 @@ export function AiProductGeneratorClient({ storeSlug }: AiProductGeneratorClient
       sellingPrice: Number(sellingPrice),
       comparePrice: comparePrice ? Number(comparePrice) : undefined,
       category: category || "Général",
-      images: images.map((i) => i.previewUrl),
+      images: images.map((i) => i.remoteUrl || i.previewUrl),
       stock: 50,
       availableStock: 50,
       physicalStock: 50,
