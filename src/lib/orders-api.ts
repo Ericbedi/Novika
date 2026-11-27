@@ -24,7 +24,6 @@ export function mapApiOrder(o: any): Order {
     currency: o.currency || "XOF",
     deliveryAddress: o.delivery_address || o.deliveryAddress,
     status: (o.status === "NOUVELLE" ? "pending" : o.status || "pending") as OrderStatus,
-    statusReason: o.status_reason || null,
     subtotal: Number(o.subtotal) || Number(o.total_amount) || 0,
     shippingFee: Number(o.shipping_fee) || 0,
     totalAmount: Number(o.total_amount) || Number(o.subtotal) || 0,
@@ -32,6 +31,9 @@ export function mapApiOrder(o: any): Order {
     updatedAt: o.updated_at || o.updatedAt || o.created_at || new Date().toISOString(),
     items: o.order_items || o.items || [],
     notes: o.notes || undefined,
+    statusReason: o.failure_reason || o.status_reason || null,
+    assignedRider: o.rider_id ? { id: o.rider_id, name: o.rider_name || "", phone: o.rider_phone || "" } : undefined,
+    riderFee: Number(o.rider_fee) || 0,
     utm: o.source_channel
       ? { source: ORDER_SOURCE_OPTIONS.find((x) => x.value === o.source_channel)?.label || o.source_channel }
       : undefined,
@@ -57,4 +59,32 @@ export async function persistOrderStatus(
   } catch {
     return "Connexion impossible : le statut n'a pas été enregistré.";
   }
+}
+
+/** Affecte un livreur (ou retire-le avec null). Renvoie null si OK, sinon le message d'erreur. */
+export async function assignOrderRider(storeSlug: string, orderNumber: string, riderId: string | null): Promise<string | null> {
+  try {
+    const res = await fetch("/api/orders/assign", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ store: storeSlug, orderNumber, riderId }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data?.success) return data?.error || "Affectation impossible.";
+    return null;
+  } catch {
+    return "Connexion impossible : le livreur n'a pas été enregistré.";
+  }
+}
+
+export interface RiderRow {
+  id: string;
+  name: string;
+  phone: string;
+  city: string | null;
+  default_fee: number;
+  active: boolean;
+  active_count: number;
+  delivered_count: number;
+  failed_count: number;
 }

@@ -40,6 +40,22 @@ export function NewManualOrderClient({ storeSlug }: { storeSlug: string }) {
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [shippingFee, setShippingFee] = useState<number>(1500);
 
+  // Tarifs de livraison enregistrés : le frais se remplit selon la ville tapée
+  const [rates, setRates] = useState<{ city: string; fee: number }[]>([]);
+  const [feeTouched, setFeeTouched] = useState(false);
+  useEffect(() => {
+    fetch(`/api/delivery-rates?store=${encodeURIComponent(storeSlug)}`)
+      .then((r) => r.json())
+      .then((d) => d?.success && setRates(d.rates))
+      .catch(() => {});
+  }, [storeSlug]);
+  useEffect(() => {
+    if (feeTouched || !rates.length) return;
+    const c = city.trim().toLowerCase();
+    const hit = rates.find((r) => c === r.city.toLowerCase()) || rates.find((r) => c.includes(r.city.toLowerCase()));
+    if (hit) setShippingFee(hit.fee);
+  }, [city, rates, feeTouched]);
+
   // Détails de la commande
   const [source, setSource] = useState("whatsapp");
   const [notes, setNotes] = useState("");
@@ -430,7 +446,7 @@ export function NewManualOrderClient({ storeSlug }: { storeSlug: string }) {
                   type="number"
                   step="500"
                   value={shippingFee}
-                  onChange={(e) => setShippingFee(Number(e.target.value) || 0)}
+                  onChange={(e) => { setFeeTouched(true); setShippingFee(Number(e.target.value) || 0); }}
                   className="w-full p-2 text-xs rounded-xl border border-black/[0.08] bg-white text-[#111111] font-mono text-right focus:outline-none"
                 />
               </div>
