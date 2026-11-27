@@ -14,7 +14,6 @@ import { Product } from "@/server/data/types";
 import { ProductImage } from "@/components/ui/ProductImage";
 import { isProductVisibleOnStorefront } from "@/lib/stock-settings-store";
 import { getProductPublicUrl } from "@/lib/storefront-urls";
-import { getShopProducts } from "@/lib/products-store";
 import { ResolvedStorefront } from "@/lib/storefront-resolver";
 
 interface CatalogueClientProps {
@@ -28,70 +27,42 @@ export function CatalogueClient({
 }: CatalogueClientProps) {
   const store = initialResolved.store;
 
-  const [productsList, setProductsList] = useState<Product[]>(() => {
-    if (initialResolved.products && initialResolved.products.length > 0) {
-      return initialResolved.products;
-    }
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem(`novika_store_products_${storeSlug}`);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        } catch {}
-      }
-    }
-    return getShopProducts(storeSlug);
-  });
+  // La base de données fait foi : on n'affiche que des produits que la page
+  // produit sait réellement ouvrir (pas de cache local périmé ni de données de démo).
+  const [productsList, setProductsList] = useState<Product[]>(
+    () => initialResolved.products ?? [],
+  );
 
   const [hideCatalog, setHideCatalog] = useState(false);
 
   React.useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedProds = localStorage.getItem(`novika_store_products_${storeSlug}`);
-      if (savedProds) {
-        try {
-          const parsed = JSON.parse(savedProds);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setProductsList(parsed);
-          } else if (initialResolved.products.length > 0) {
-            setProductsList(initialResolved.products);
-          } else {
-            setProductsList(getShopProducts(storeSlug));
-          }
-        } catch {
-          setProductsList(initialResolved.products.length > 0 ? initialResolved.products : getShopProducts(storeSlug));
+    let cancelled = false;
+    fetch(`/api/products?store=${encodeURIComponent(storeSlug)}`, { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
+        if (data?.source === "supabase" && Array.isArray(data.products)) {
+          setProductsList(data.products);
+        } else if (
+          initialResolved.products.length === 0 &&
+          Array.isArray(data?.products) &&
+          data.products.length > 0
+        ) {
+          setProductsList(data.products);
         }
-      } else if (initialResolved.products.length > 0) {
-        setProductsList(initialResolved.products);
-      } else {
-        // Synchronisation distante avec la base de données Supabase
-        fetch(`/api/products?store=${encodeURIComponent(storeSlug)}`)
-          .then((res) => res.json())
-          .then((data) => {
-            if (data?.products && Array.isArray(data.products) && data.products.length > 0) {
-              setProductsList((prev) => {
-                const merged = [...prev];
-                for (const p of data.products) {
-                  if (!merged.some((m) => m.id === p.id || m.slug === p.slug)) {
-                    merged.push(p);
-                  }
-                }
-                return merged;
-              });
-            }
-          })
-          .catch(() => {});
-      }
+      })
+      .catch(() => {});
 
+    try {
       const savedSettings = localStorage.getItem(`novika_storefront_settings_${storeSlug}`);
       if (savedSettings) {
-        try {
-          const parsed = JSON.parse(savedSettings);
-          setHideCatalog(Boolean(parsed.hideCatalog));
-        } catch {}
+        const parsed = JSON.parse(savedSettings);
+        setHideCatalog(Boolean(parsed.hideCatalog));
       }
-    }
+    } catch {}
+    return () => {
+      cancelled = true;
+    };
   }, [storeSlug, initialResolved]);
 
   const [searchQuery, setSearchQuery] = useState("");
